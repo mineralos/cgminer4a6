@@ -35,6 +35,9 @@ struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
 
+int g_hwver;
+int g_type;
+
 /*
 struct Test_bench Test_bench_Array[6]={
 	{1260,   14,	0,	0}, //default
@@ -668,6 +671,7 @@ static bool detect_A1_chain(void)
 /* Probe SPI channel and register chip chain */
 void A1_detect(bool hotplug)
 {
+	int chainNo;
 	/* no hotplug support for SPI */
 	if (hotplug)
 		return;
@@ -702,8 +706,12 @@ void A1_detect(bool hotplug)
 	}
 	applog(LOG_DEBUG, "A1 detect");
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
+
+	g_hwver = inno_get_hwver();
+	g_type = inno_get_miner_type();
     
     inno_fan_init(&s_fan_ctrl);
+	
 	set_vid_value(opt_voltage);
 	
 	A1Pll1 = A1_ConfigA1PLLClock(opt_A1Pll1);

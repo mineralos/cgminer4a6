@@ -13,7 +13,10 @@
 
 #define MAGIC_NUM  100 
 
-#define IOCTL_SET_VAL_0 _IOR(MAGIC_NUM, 0, char *)
+#define IOCTL_SET_VALUE_0 _IOR(MAGIC_NUM, 0, char *)
+#define IOCTL_SET_CHAIN_0 _IOR(MAGIC_NUM, 1, char *)
+
+extern int g_hwver;
 
 int SPI_PIN_POWER_EN[] = {
 872,
@@ -50,13 +53,11 @@ int SPI_PIN_PLUG[] = {
 899,
 };
 
-
-
-void set_vid_value(int level)
+void set_vid_value_g9(int level)
 {
 	int fd; 
     
-    printf("%s:%d.\n", __func__, level);
+    //printf("%s:%d.\n", __func__, level);
 
     fd = open(SYSFS_VID_DEV, O_RDWR);
     if(fd < 0)
@@ -65,12 +66,54 @@ void set_vid_value(int level)
         return;
     }
 
-    if(ioctl(fd, IOCTL_SET_VAL_0, 0x100 | level) < 0)
+    if(ioctl(fd, IOCTL_SET_VALUE_0, 0x100 | level) < 0)
     {
         fprintf(stderr, "set vid value fail.\n");
         return;
     }
     close(fd);	
+}
+
+void set_vid_value_g19(int level, int chainNum)
+{
+	int fd; 
+		
+	printf("%s:%d,chain %d.\n", __func__, level, chainNum);
+	
+	fd = open(SYSFS_VID_DEV, O_RDWR);
+	if(fd < 0)
+	{
+		fprintf(stderr, "open %s fail.\n", SYSFS_VID_DEV);
+		return;
+	}
+	
+	if(ioctl(fd, IOCTL_SET_CHAIN_0, chainNum) < 0)
+	{
+		fprintf(stderr, "set vid value fail.\n");
+		return;
+	}
+	
+	if(ioctl(fd, IOCTL_SET_VALUE_0, 0x100 | level) < 0)
+	{
+		fprintf(stderr, "set vid value fail.\n");
+		return;
+	}
+	close(fd);	
+}
+
+void set_vid_value(int level)
+{
+	int i;
+	if(HARDWARE_VERSION_G9 == g_hwver){
+		set_vid_value_g9(level);
+	}else if(HARDWARE_VERSION_G19 == g_hwver){
+		for(i = 0; i < ASIC_CHAIN_NUM; i++)
+		{
+			set_vid_value_g19(level, i);
+		}	
+	}else{
+		fprintf(stderr, "Set vid but hardware version is unknown!!!");
+	}
 }
 
 void asic_spi_init(void)

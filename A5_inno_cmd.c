@@ -478,9 +478,12 @@ bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 
 bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 {
-	int i;
+	int i,j;
 	int tx_len;
 	int ret,index; 
+	uint16_t clc_crc; 
+	uint16_t res_crc;
+	uint8_t tmp_buf[64];
 	uint8_t spi_tx[MAX_CMD_LENGTH];
 	uint8_t spi_rx[MAX_CMD_LENGTH];
 	struct spi_ctx *ctx = pChain->spi_ctx;
@@ -520,8 +523,27 @@ bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 			}while(index < REG_LENGTH);
 
 			//hexdump("poll: RX", spi_rx + 2, REG_LENGTH);
-			
-			memcpy(reg, spi_rx + 2, REG_LENGTH);
+			memset(tmp_buf, 0, sizeof(tmp_buf));
+			for(j = 0; j < REG_LENGTH + 2; j = j + 2)
+			{
+				tmp_buf[j + 0] = spi_rx[j + 1];
+				tmp_buf[j + 1] = spi_rx[j + 0];
+			}
+			clc_crc = CRC16_2(tmp_buf, REG_LENGTH);
+			//printf("clc_crc:0x%x.", clc_crc);
+			res_crc = (spi_rx[REG_LENGTH] << 8) + (spi_rx[REG_LENGTH + 1] << 0);
+
+			//hexdump("result: RX", spi_rx, READ_RESULT_LEN);
+			if(clc_crc == res_crc)
+			{
+				memcpy(reg, spi_rx + 2, REG_LENGTH);
+				return true;
+			}
+			else
+			{
+				applog(LOG_INFO, "inno_cmd_read_reg crc error clc=0x%4x, res=0x%4x \r\n", clc_crc, res_crc);
+				return false;
+			}				
 
 			return true;
 		}

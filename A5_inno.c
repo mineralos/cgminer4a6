@@ -972,3 +972,71 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
    }
 }
 
+int inno_get_hwver(void)
+{
+	FILE* fd;
+	char buffer[64] = {0};
+	int version;
+	
+	fd = fopen(INNO_HARDWARE_VERSION_FILE, "r");	
+	if(fd == NULL)
+	{				
+		applog(LOG_ERR, "Open hwver File Failed !");
+		return -1;
+	}
+
+	fread(buffer, 8, 1, fd);
+	fclose(fd);
+
+	if(strstr(buffer, "G9") != NULL) {
+		version = HARDWARE_VERSION_G9;
+		applog(LOG_INFO, "hardware version is G9");
+	}else if(strstr(buffer, "G19") != 0) {
+		version = HARDWARE_VERSION_G19;
+		applog(LOG_INFO, "hardware version is G19");
+	}else {
+		version = 0;
+		applog(LOG_ERR, "unknown hardware version !!!");
+	}
+
+	return version;
+}
+
+
+int inno_get_miner_type(void)
+{
+	FILE* fd;
+	char buffer[64] = {0};
+	int miner_type;
+	
+	fd = fopen(INNO_MINER_TYPE_FILE, "r");	
+	if(fd == NULL)
+	{				
+		applog(LOG_ERR, "Open type File Failed!");
+		return -1;
+	}
+
+	fread(buffer, 8, 1, fd);
+	fclose(fd);
+
+	if(strcmp(buffer, "T1") == 0) {
+		miner_type = MINER_TYPE_T1;
+		applog(LOG_INFO, "miner type is T1");
+	}else if(strcmp(buffer, "T2") == 0) {
+		miner_type = MINER_TYPE_T2;
+		applog(LOG_INFO, "miner type is T2");
+	}else if(strcmp(buffer, "T3") == 0) {
+		miner_type = MINER_TYPE_T3;
+		applog(LOG_INFO, "miner type is T3");
+	}else if(strcmp(buffer, "T4") == 0) {
+		miner_type = MINER_TYPE_T4;
+		applog(LOG_INFO, "miner type is T4");
+	}else {
+		miner_type = 0;
+		applog(LOG_INFO, "unknown miner type !!!");
+	}
+
+	return miner_type;
+}
+
+

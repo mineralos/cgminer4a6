@@ -25,6 +25,16 @@
 /* 数值越小,温度打印得越频繁 */
 #define ASIC_INNO_FAN_CTLR_FREQ_DIV     (0)
 
+#define INNO_MINER_TYPE_FILE			"/tmp/type"
+#define INNO_HARDWARE_VERSION_FILE		"/tmp/hwver"
+#define HARDWARE_VERSION_G9		(9)
+#define HARDWARE_VERSION_G19	(19)
+
+#define MINER_TYPE_T1			(1)
+#define MINER_TYPE_T2			(2)
+#define MINER_TYPE_T3			(3)
+#define MINER_TYPE_T4			(4)
+
 
 #define WEAK_CHIP_THRESHOLD	5
 #define BROKEN_CHIP_THRESHOLD 5
@@ -57,6 +67,9 @@ bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t q
 void check_disabled_chips(struct A1_chain *a1, int pllnum);
 uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work);
 void test_bench_pll_config(struct A1_chain *a1,uint32_t uiPll);
+
+int inno_get_hwver(void);
+int inno_get_miner_type(void);
 
 #endif
 
