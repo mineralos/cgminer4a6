@@ -82,6 +82,7 @@ struct A1_chip {
 	bool disabled;
 
 	int temp;
+	int nVol;
 };
 
 struct A1_chain {

@@ -855,8 +855,58 @@ void A1_detect(bool hotplug)
 #define CHECK_DISABLE_TIME  0
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
-FILE* fd[ASIC_CHAIN_NUM];
 #define  LOG_FILE_PREFIX "/home/www/conf/analys"
+
+uint8_t cLevelError1[3] = "!";
+uint8_t cLevelError2[3] = "#";
+uint8_t cLevelError3[3] = "$";
+uint8_t cLevelError4[3] = "%";
+uint8_t cLevelError5[3] = "*";
+uint8_t cLevelNormal[3] = "+";
+
+void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
+{
+	uint8_t szInNormal[8] = {0};
+	memset(szInNormal,0, sizeof(szInNormal));
+	if(chip->hw_errors > 0){
+		strcat(szInNormal,cLevelError1);
+	}
+	if(chip->stales > 0){
+		strcat(szInNormal,cLevelError2);
+	}
+	if((chip->temp > 564) || (chip->temp < 445)){
+		strcat(szInNormal,cLevelError3);
+	}
+	if(chip->num_cores < 32){
+		strcat(szInNormal,cLevelError4);
+	}
+	if((chip->nVol > 440) || (chip->nVol < 360)){
+		strcat(szInNormal,cLevelError5);
+	}
+
+	if((chip->hw_errors == 0) && (chip->stales == 0) && ((chip->temp < 564) && (chip->temp > 445)) &&((chip->nVol < 440) && (chip->nVol > 360)) && (chip->num_cores == 32)){
+		strcat(szInNormal,cLevelNormal);
+	}
+	
+	sprintf(szShowLog[nChain][nChip], "\n%-8s|%32d|%8d|%8d|%8d|%8d|%8d|%8d|%8d",szInNormal,chip->nonces_found,
+		chip->hw_errors, chip->stales,chip->temp,chip->nVol,chip->num_cores,nChip,nChain);
+}
+
+void inno_log_print(int cid, void* log, int len)
+{
+	FILE* fd;
+	char fileName[128] = {0};
+	
+	sprintf(fileName, "%s%d.log", LOG_FILE_PREFIX, cid);
+	fd = fopen(fileName, "w+");	
+	if(fd == NULL){				
+		applog(LOG_ERR, "Open log File%d Failed!", cid);
+	}
+
+	fwrite(log, len, 1, fd);
+	fflush(fd);
+	fclose(fd);
+}
 
 static int64_t  A1_scanwork(struct thr_info *thr)
 {
@@ -912,14 +962,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
 		if (write_flag[cid] > WRITE_CONFG_TIME)
 		{
-			char fileName[128] = {0};
-			sprintf(fileName, "%s%d.log", LOG_FILE_PREFIX, cid);
-			fd[cid] = fopen(fileName, "w+");
-			//fseek(fd[cid],0,SEEK_SET);
-			fwrite(szShowLog[cid],sizeof(szShowLog[0]),1,fd[cid]);
-			fflush(fd[cid]);
-			fclose(fd[cid]);
-			
+			inno_log_print(cid, szShowLog[cid], sizeof(szShowLog[0]));			
 			write_flag[cid] = 0;
 		}
 
@@ -1052,11 +1095,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 						applog(LOG_INFO, "%d: chip:%d ,core:%d ,job done: %d/%d/%d/%d/%d/%5.2f",
 							   cid, c, chip->num_cores,chip->nonce_ranges_done, chip->nonces_found,
 							   chip->hw_errors, chip->stales,chip->temp, inno_fan_temp_to_float(&s_fan_ctrl,chip->temp));
-						
-						sprintf(szShowLog[cid][c-1], "%8d/%8d/%8d/%8d/%8d/%4d/%2d/%2d\r\n",
-								chip->nonce_ranges_done, chip->nonces_found,
-								chip->hw_errors, chip->stales,chip->temp,chip->num_cores,c-1,cid);
-						
+						Inno_Log_Save(chip,c-1,cid);
 						if(i==1) show_log[cid] = 0;
 
 					}
