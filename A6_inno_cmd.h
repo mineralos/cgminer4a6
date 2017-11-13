@@ -84,6 +84,7 @@ struct A1_chip {
 
     /* temp */
 	int temp;
+	int nVol;
 };
 
 struct A1_chain {
