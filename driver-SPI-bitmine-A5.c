@@ -849,10 +849,10 @@ void A1_detect(bool hotplug)
 	}	
 }
 
-#define TEMP_UPDATE_INT_MS	180000
-#define VOLTAGE_UPDATE_INT  120
-#define WRITE_CONFG_TIME  0
-#define CHECK_DISABLE_TIME  0
+#define TEMP_UPDATE_INT_MS	300000
+#define VOLTAGE_UPDATE_INT  121
+#define WRITE_CONFG_TIME  3
+#define CHECK_DISABLE_TIME  59
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
 #define  LOG_FILE_PREFIX "/home/www/conf/analys"
@@ -1090,7 +1090,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 						chip->nonce_ranges_done++;
 					}
 					
-					if(show_log[cid] > 0)					
+					if(show_log[cid] > 2)					
 					{												
 						applog(LOG_INFO, "%d: chip:%d ,core:%d ,job done: %d/%d/%d/%d/%d/%5.2f",
 							   cid, c, chip->num_cores,chip->nonce_ranges_done, chip->nonces_found,
