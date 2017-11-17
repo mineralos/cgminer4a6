@@ -445,7 +445,6 @@ static bool detect_A1_chain(void)
 			return false;
 		}
 
-        mutex_init(&spi[i]->spi_lock);
 		spi[i]->power_en = SPI_PIN_POWER_EN[i];		
 		spi[i]->start_en = SPI_PIN_START_EN[i];		
 		spi[i]->reset = SPI_PIN_RESET[i];
@@ -772,7 +771,7 @@ void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
 	if((chip->temp > 564) || (chip->temp < 445)){
 		strcat(szInNormal,cLevelError3);
 	}
-	if(chip->num_cores < 32){
+	if(chip->num_cores < 9){
 		strcat(szInNormal,cLevelError4);
 	}
 	if((chip->nVol > 440) || (chip->nVol < 360)){
@@ -989,7 +988,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 						chip->nonce_ranges_done++;
 					}
 
-					if(show_log[cid] > 0)					
+					if(show_log[cid] > 1)					
 					{												
 						applog(LOG_INFO, "%d: chip:%d ,core:%d ,job done: %d/%d/%d/%d/%d/%5.2f",
 							   cid, c, chip->num_cores,chip->nonce_ranges_done, chip->nonces_found,

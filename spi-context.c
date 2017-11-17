@@ -52,6 +52,9 @@ struct spi_ctx *spi_init(struct spi_config *config)
 
 	ctx->fd = fd;
 	ctx->config = *config;
+	
+	mutex_init(&ctx->spi_lock);
+	
 	applog(LOG_WARNING, "SPI '%s': mode=%hhu, bits=%hhu, speed=%u",
 	       dev_fname, ctx->config.mode, ctx->config.bits,
 	       ctx->config.speed);
