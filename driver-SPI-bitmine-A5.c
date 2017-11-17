@@ -38,19 +38,7 @@ struct A1_chain *chain[ASIC_CHAIN_NUM];
 int g_hwver;
 int g_type;
 
-/*
-struct Test_bench Test_bench_Array[6]={
-	{1260,   14,	0,	0}, //default
-	{1260,   15,	0,	0}, 
-	{1296,   14,	0,	0},
-	{1296,   15,	0,	0}, 
-	{1332,   14,	0,	0},
-	{1332,   15,	0,	0}, 
-};
-*/
-struct Test_bench Test_bench_Array[5]={
-	{1332,	0,	0,	0},
-	{1332,	0,	0,	0},
+struct Test_bench Test_bench_Array[3]={
 	{1332,	0,	0,	0},
 	{1332,	0,	0,	0},
 	{1332,	0,	0,	0},
@@ -530,7 +518,7 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
-/*
+#if 0
 	Test_bench_Array[0].uiVol = opt_voltage;
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
@@ -542,9 +530,9 @@ static bool detect_A1_chain(void)
 		Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
 	}
 
-	for(i = 1; i < 3; i++)
+	for(i = 1; i < 2; i++)
 	{
-		if(Test_bench_Array[0].uiVol - i < 1)
+		if(Test_bench_Array[0].uiVol - i < 10)
 		{
 			continue;
 		}
@@ -563,21 +551,17 @@ static bool detect_A1_chain(void)
 		}
 	}
 
-	for(i = 1; i >= 0; i--)
-	{
-		set_vid_value(Test_bench_Array[0].uiVol - i);
-		sleep(1);
-	}
+	set_vid_value(Test_bench_Array[0].uiVol);
 	
-	for(i = 3; i < 5; i++)
+	for(i = 1; i < 2; i++)
 	{
-		if(Test_bench_Array[0].uiVol + i - 2 > 31)
+		if(Test_bench_Array[0].uiVol + i > 15)
 		{
 			continue;
 		}
 		sleep(1);
-		set_vid_value(Test_bench_Array[0].uiVol + i - 2);
-		Test_bench_Array[i].uiVol = Test_bench_Array[0].uiVol + i - 2;
+		set_vid_value(Test_bench_Array[0].uiVol + i);
+		Test_bench_Array[i+1].uiVol = Test_bench_Array[0].uiVol + i;
 		sleep(1);
 		for(j = 0; j < ASIC_CHAIN_NUM; j++)
 		{
@@ -585,21 +569,24 @@ static bool detect_A1_chain(void)
 			{
 				continue;
 			}
-			Test_bench_Array[i].uiScore += inno_cmd_test_chip(chain[j]);
-	    	Test_bench_Array[i].uiCoreNum += chain[j]->num_cores;
+			Test_bench_Array[i+1].uiScore += inno_cmd_test_chip(chain[j]);
+	    	Test_bench_Array[i+1].uiCoreNum += chain[j]->num_cores;
 		}
 	}
 
-	for(j = 0; j < 5; j++)
+	for(j = 0; j < 3; j++)
 	{
 		printf("after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
 	}
 
 	int index = 0;
 	uint32_t cur= 0;
-	for(j = 1; j < 5; j++)
+	for(j = 1; j < 3; j++)
 	{
-		cur = Test_bench_Array[j].uiScore + 5 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
+		if((Test_bench_Array[j].uiVol < 10) || (Test_bench_Array[j].uiVol > 15)){
+			continue;
+		}
+		cur = Test_bench_Array[j].uiScore + 10 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
 		
 		if(cur > Test_bench_Array[index].uiScore)
 		{
@@ -614,55 +601,13 @@ static bool detect_A1_chain(void)
 
 	printf("The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
 	
-	for(i=Test_bench_Array[0].uiVol + 2; i>=Test_bench_Array[index].uiVol; i--){
+	for(i=Test_bench_Array[0].uiVol + 1; i>=Test_bench_Array[index].uiVol; i--){
 		set_vid_value(i);
 		usleep(500000);
 	}
 
 	opt_voltage = Test_bench_Array[index].uiVol;
-*/
-/*
-	for(i = 0; i < ASIC_CHAIN_NUM; i++)
-	{		
-		Test_bench_Array[0].uiScore += inno_cmd_test_chip(chain[i]);
-		Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
-	}
-	
-	for(j = 1; j < 3; j++)
-	{
-		//printf("pll_vid_test_bench Test_bench_Array[%d].uiPll =%d. \n", j, Test_bench_Array[j].uiPll);
-		//printf("pll_vid_test_bench Test_bench_Array[%d].uiVol =%d. \n", j, Test_bench_Array[j].uiVol);
-		Test_bench_Array[j].uiScore += pll_vid_test_bench(Test_bench_Array[j].uiPll, Test_bench_Array[j].uiVol);
-		//printf("Test_bench_Array[%d].uiScore=%d. \n", j, Test_bench_Array[j].uiScore);
-		for(i = 0; i < ASIC_CHAIN_NUM; i++)
-		{		
-	    	Test_bench_Array[j].uiCoreNum += chain[i]->num_cores;
-		}
-	}
-
-	for(j = 0; j < 3; j++)
-	{
-		printf("after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
-	}
-
-	int index = 0;
-	double cur= 0;
-	double max = ((double)(Test_bench_Array[0].uiPll * Test_bench_Array[0].uiCoreNum)) /((double)(Test_bench_Array[0].uiVol)) * ((double)(Test_bench_Array[0].uiScore) / (double)1134);
-	printf("max value:%lf. \n", max);
-	for(j = 1; j < 3; j++)
-	{
-		cur = ((double)(Test_bench_Array[j].uiPll * Test_bench_Array[j].uiCoreNum)) /((double)(Test_bench_Array[j].uiVol)) * ((double)(Test_bench_Array[j].uiScore) / (double)1134);
-		printf("OutputData[%d]=%lf. \n", j, cur);
-		if(cur >= max)
-		{
-			index = j;
-			max = cur;
-		}
-	}
-
-	printf("The best group is %d!!! \t \n", index);
-	config_best_pll_vid(Test_bench_Array[index].uiPll, Test_bench_Array[index].uiVol);
-*/
+#endif
 	return (cnt == 0) ? false : true;
 }
 
