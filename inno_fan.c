@@ -500,7 +500,7 @@ void inno_fan_speed_update(INNO_FAN_CTRL_T *fan_ctrl, int chain_id, struct cgpu_
     /* applog(LOG_DEBUG, "inno_fan_speed_updat times:%d" , times); */
     //times = 0;
 
-    //applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, arvarge_f, lowest_f, highest_f);
+    applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, arvarge_f, lowest_f, highest_f);
 #endif
 
 }
