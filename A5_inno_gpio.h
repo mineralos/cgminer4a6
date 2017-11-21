@@ -35,6 +35,7 @@ extern int SPI_PIN_PLUG[];
 
 
 
+void loop_blink_led(int pos, int cnt);
 
 void asic_gpio_init(int gpio, int direction);
 

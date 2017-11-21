@@ -33,7 +33,8 @@
 
 #ifndef CHIP_A6
 #include "A5_inno.h"
-#include "A5_inno_clock.h"
+#else
+#include "A6_inno.h"
 #endif
 
 #ifdef USE_USBUTILS
@@ -3234,12 +3235,6 @@ double tsince_update(void)
 	return tdiff(&now, &update_tv_start);
 }
 
-#ifndef CHIP_A6
-extern uint8_t A1Pll1;
-extern const struct PLL_Clock PLL_Clk_12Mhz[142];
-extern struct A1_chain *chain[ASIC_CHAIN_NUM];
-#endif
-
 static void get_statline(char *buf, size_t bufsiz, struct cgpu_info *cgpu)
 {
 	char displayed_hashes[16], displayed_rolling[16];
@@ -3249,13 +3244,9 @@ static void get_statline(char *buf, size_t bufsiz, struct cgpu_info *cgpu)
 	dev_runtime = cgpu_runtime(cgpu);
 
 	wu = cgpu->diff1 / dev_runtime * 60.0;
-#ifdef CHIP_A6
+
 	dh64 = (double)cgpu->total_mhashes / dev_runtime * 1000000ull;
 	dr64 = (double)cgpu->rolling * 1000000ull * 6ull;
-#else	
-	dh64 = (double)PLL_Clk_12Mhz[A1Pll1].speedMHz * 2 * 1000000ull * (chain[0]->num_cores);
-	dr64 = (double)PLL_Clk_12Mhz[A1Pll1].speedMHz * 2 * 1000000ull * (chain[0]->num_cores);
-#endif
 	suffix_string(dh64, displayed_hashes, sizeof(displayed_hashes), 4);
 	suffix_string(dr64, displayed_rolling, sizeof(displayed_rolling), 4);
 
@@ -6746,6 +6737,7 @@ static bool supports_resume(struct pool *pool)
 	return ret;
 }
 
+int g_pool_test_cnt;
 /* One stratum receive thread per pool that has stratum waits on the socket
  * checking for new messages and for the integrity of the socket connection. We
  * reset the connection based on the integrity of the receive side only as the
@@ -6754,6 +6746,7 @@ static void *stratum_rthread(void *userdata)
 {
 	struct pool *pool = (struct pool *)userdata;
 	char threadname[16];
+	g_pool_test_cnt = 0;
 
 	pthread_detach(pthread_self());
 
@@ -6820,6 +6813,14 @@ static void *stratum_rthread(void *userdata)
 				pool_died(pool);
 				if (pool->removed)
 					goto out;
+				g_pool_test_cnt++;
+				if(g_pool_test_cnt > total_pools)
+				{
+#ifndef CHIP_A6 				
+					chain_all_exit();
+#endif
+					exit(1);
+				}
 				cgsleep_ms(5000);
 			}
 			continue;

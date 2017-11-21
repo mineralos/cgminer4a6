@@ -60,7 +60,7 @@ static uint32_t check_disbale_flag[ASIC_CHAIN_NUM];
 static uint32_t first_flag[ASIC_CHAIN_NUM] = {0};
 extern const uint32_t magicNum[16];
 static inno_reg_ctrl_t s_reg_ctrl;
-#define DANGEROUS_TMP  110
+#define DANGEROUS_TMP  100
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
 
@@ -118,6 +118,7 @@ void exit_A1_chain(struct A1_chain *a1)
 		return;
 	free(a1->chips);
 	asic_gpio_write(a1->spi_ctx->led, 1);
+	asic_gpio_write(a1->spi_ctx->power_en, 0);
 	a1->chips = NULL;
 	a1->spi_ctx = NULL;
 	free(a1);
@@ -954,10 +955,13 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 				
 			//a1->temp = board_selector->get_temp(0);
 			a1->last_temp_time = get_current_ms();
-			if(inno_fan_temp_get_highest(&s_fan_ctrl,a1->chain_id) > DANGEROUS_TMP)
+			applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, cgpu->temp, cgpu->temp_min, cgpu->temp_max);
+			if(cgpu->temp_max > DANGEROUS_TMP)
 			{
+				applog(LOG_ERR, "disable chain %d", a1->chain_id);
 	   			asic_gpio_write(spi[a1->chain_id]->power_en, 0);
-	   			early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
+				loop_blink_led(spi[a1->chain_id]->led, 10);
+	   			//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
 			}
 		}
 	}

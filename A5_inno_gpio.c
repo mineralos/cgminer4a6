@@ -181,7 +181,17 @@ uint32_t get_spi_speed(void)
 	return speed;
 }
 
-
+void loop_blink_led(int pos, int cnt)
+{
+	int i;
+    //while(--cnt)
+	while(1)
+	{
+		asic_gpio_write(pos, 1);
+		usleep(500000);
+		asic_gpio_write(pos, 0);
+	}
+}
 
 void asic_gpio_init(int gpio, int direction)
 {
