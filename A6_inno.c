@@ -1051,4 +1051,22 @@ int inno_get_miner_type(void)
 	return miner_type;
 }
 
+extern struct A1_chain *chain[ASIC_CHAIN_NUM];
+void chain_all_exit(void)
+{
+	int i;
+	applog(LOG_ERR, "All chain power off and spi exit!");
+
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		if (chain[i] == NULL)
+			continue;
+		free(chain[i]->chips);
+		asic_gpio_write(chain[i]->spi_ctx->led, 1);
+		asic_gpio_write(chain[i]->spi_ctx->power_en, 0);
+		chain[i]->chips = NULL;
+		chain[i]->spi_ctx = NULL;
+		free(chain[i]);
+	}
+}
 

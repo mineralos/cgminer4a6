@@ -6815,10 +6815,8 @@ static void *stratum_rthread(void *userdata)
 					goto out;
 				g_pool_test_cnt++;
 				if(g_pool_test_cnt > total_pools)
-				{
-#ifndef CHIP_A6 				
+				{				
 					chain_all_exit();
-#endif
 					exit(1);
 				}
 				cgsleep_ms(5000);

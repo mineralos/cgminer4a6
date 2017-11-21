@@ -70,6 +70,7 @@ void test_bench_pll_config(struct A1_chain *a1,uint32_t uiPll);
 
 int inno_get_hwver(void);
 int inno_get_miner_type(void);
+void chain_all_exit(void);
 
 #endif
 
