@@ -847,6 +847,7 @@ void inno_log_print(int cid, void* log, int len)
 	fd = fopen(fileName, "w+");	
 	if(fd == NULL){				
 		applog(LOG_ERR, "Open log File%d Failed!", cid);
+        return;
 	}
 
 	fwrite(log, len, 1, fd);
