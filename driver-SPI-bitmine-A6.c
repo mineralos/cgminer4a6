@@ -130,7 +130,7 @@ void exit_A1_chain(struct A1_chain *a1)
 	if (a1 == NULL)
 		return;
 	free(a1->chips);
-	asic_gpio_write(a1->spi_ctx->led, 0);
+	asic_gpio_write(a1->spi_ctx->led, 1);
 	asic_gpio_write(a1->spi_ctx->power_en, 0);
 	a1->chips = NULL;
 	a1->spi_ctx = NULL;
