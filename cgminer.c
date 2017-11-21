@@ -7159,7 +7159,7 @@ retry_stratum:
 		bool init = pool_tset(pool, &pool->stratum_init);
 
 		if (!init) {
-			applog(LOG_ERR, "------POOL ACTIVE  FOR NXSUB------");
+			applog(LOG_ERR, "------POOL ACTIVE  FOR XNSUB------");
 			bool ret = initiate_stratum(pool) && (!pool->extranonce_subscribe || subscribe_extranonce(pool)) && auth_stratum(pool);
 			
 			if (ret)
