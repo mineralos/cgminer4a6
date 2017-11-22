@@ -488,6 +488,9 @@ void inno_fan_speed_update(INNO_FAN_CTRL_T *fan_ctrl, int chain_id, struct cgpu_
 		case 0:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll1].speedMHz * 2ull * (a1->num_cores);break;
 		case 1:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll2].speedMHz * 2ull * (a1->num_cores);break;
 		case 2:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll3].speedMHz * 2ull * (a1->num_cores);break;
+		case 3:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll4].speedMHz * 2ull * (a1->num_cores);break;
+		case 4:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll5].speedMHz * 2ull * (a1->num_cores);break;
+		case 5:cgpu->mhs_av = (double)PLL_Clk_12Mhz[A1Pll6].speedMHz * 2ull * (a1->num_cores);break;
 		default:;
 	}
 #endif
