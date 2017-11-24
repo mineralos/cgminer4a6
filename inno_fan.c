@@ -383,6 +383,9 @@ void inno_fan_speed_down(INNO_FAN_CTRL_T *fan_ctrl)
 extern uint8_t A1Pll1;
 extern uint8_t A1Pll2;
 extern uint8_t A1Pll3;
+extern uint8_t A1Pll4;
+extern uint8_t A1Pll5;
+extern uint8_t A1Pll6;
 extern const struct PLL_Clock PLL_Clk_12Mhz[142];
 extern struct A1_chain *chain[ASIC_CHAIN_NUM];
 #endif
