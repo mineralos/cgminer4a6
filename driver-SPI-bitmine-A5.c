@@ -253,8 +253,8 @@ uint32_t pll_vid_test_bench(uint32_t uiPll, int uiVol)
 	int i;
 	uint32_t uiScore = 0;
 
-	if(opt_voltage > 8){
-		for(i=opt_voltage-1; i>=8; i--){
+	if(opt_voltage1 > 8){
+		for(i=opt_voltage1-1; i>=8; i--){
 			set_vid_value(i);
 			usleep(100000);
 		}
@@ -292,7 +292,7 @@ uint32_t pll_vid_test_bench(uint32_t uiPll, int uiVol)
 		}
 	}
 			
-	opt_voltage = uiVol;
+	opt_voltage1 = uiVol;
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
@@ -311,8 +311,8 @@ void config_best_pll_vid(uint32_t uiPll, int uiVol)
 {
 	int i;
 
-	if(opt_voltage > 8){
-		for(i=opt_voltage-1; i>=8; i--){
+	if(opt_voltage1 > 8){
+		for(i=opt_voltage1-1; i>=8; i--){
 			set_vid_value(i);
 			usleep(100000);
 		}
@@ -350,7 +350,7 @@ void config_best_pll_vid(uint32_t uiPll, int uiVol)
 		}
 	}
 			
-	opt_voltage = uiVol;
+	opt_voltage1 = uiVol;
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
@@ -475,15 +475,15 @@ static bool detect_A1_chain(void)
 	}
 
 	//divide the init to break two part
-	if(opt_voltage > 8){
-		for(i=9; i<=opt_voltage; i++){
+	if(opt_voltage1 > 8){
+		for(i=9; i<=opt_voltage1; i++){
 			set_vid_value(i);
 			usleep(200000);
 		}
 	}
 			
-	if(opt_voltage < 8){
-		for(i=7; i>=opt_voltage; i--){
+	if(opt_voltage1 < 8){
+		for(i=7; i>=opt_voltage1; i--){
 			set_vid_value(i);
 			usleep(200000);
 		}
@@ -520,7 +520,7 @@ static bool detect_A1_chain(void)
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
 #if 0
-	Test_bench_Array[0].uiVol = opt_voltage;
+	Test_bench_Array[0].uiVol = opt_voltage1;
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
 		if(chain_flag[i] != 1)
@@ -607,7 +607,7 @@ static bool detect_A1_chain(void)
 		usleep(500000);
 	}
 
-	opt_voltage = Test_bench_Array[index].uiVol;
+	opt_voltage1 = Test_bench_Array[index].uiVol;
 #endif
 	return (cnt == 0) ? false : true;
 }

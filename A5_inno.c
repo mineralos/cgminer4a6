@@ -963,7 +963,7 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
 			printf("read tmp %f/%d form chain %d,chip %d h:%f,l:%f,av:%f,cnt:%d\n",tmp_v,rd_v,a1->chain_id, chip_id,s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1],s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]);
 		
 			//if read valtage higher than standard 8% or less than 8%,we think the chain has some problem
-			if((tmp_v > (1.08 * inno_vsadc_table[opt_voltage])) || (tmp_v < (0.92 * inno_vsadc_table[opt_voltage]))){ 
+			if((tmp_v > (1.08 * inno_vsadc_table[opt_voltage1])) || (tmp_v < (0.92 * inno_vsadc_table[opt_voltage1]))){ 
 				applog(LOG_ERR,"Notice chain %d maybe has some promble in voltage\n",a1->chain_id);
 				//asic_gpio_write(a1->spi_ctx->power_en, 0);
 				//asic_gpio_write(GPIO_RED, 1);

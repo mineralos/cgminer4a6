@@ -352,7 +352,17 @@ int opt_A1Pll3=120; // -1 Default
 int opt_A1Pll4=120; // -1 Default
 int opt_A1Pll5=120; // -1 Default
 int opt_A1Pll6=120; // -1 Default
-int opt_voltage = 1;
+int opt_A1Pll7=120; // -1 Default
+int opt_A1Pll8=120; // -1 Default
+
+int opt_voltage1 = 1;
+int opt_voltage2 = 1;
+int opt_voltage3 = 1;
+int opt_voltage4 = 1;
+int opt_voltage5 = 1;
+int opt_voltage6 = 1;
+int opt_voltage7 = 1;
+int opt_voltage8 = 1;
 
 
 char *opt_kernel_path;
@@ -1672,9 +1682,35 @@ static struct opt_table opt_config_table[] = {
 	OPT_WITH_ARG("--A1Pll6",
              set_int_0_to_9999, opt_show_intval, &opt_A1Pll6,
              "Set PLL Clock in bitmine A1 broad 6 chip (-1: 1000MHz, >0:Look PLL table)"),
-		     
-	OPT_WITH_ARG("--A1Vol",
-		     set_int_0_to_31, opt_show_intval, &opt_voltage,
+	OPT_WITH_ARG("--A1Pll7",
+             set_int_0_to_9999, opt_show_intval, &opt_A1Pll7,
+             "Set PLL Clock in bitmine A1 broad 6 chip (-1: 1000MHz, >0:Look PLL table)"),
+	OPT_WITH_ARG("--A1Pll8",
+             set_int_0_to_9999, opt_show_intval, &opt_A1Pll8,
+             "Set PLL Clock in bitmine A1 broad 6 chip (-1: 1000MHz, >0:Look PLL table)"),
+	OPT_WITH_ARG("--A1Vol1",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage1,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol2",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage2,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol3",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage3,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol4",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage4,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol5",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage5,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol6",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage6,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol7",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage7,
+		     "set voltage (0 ~ 31)"),
+	OPT_WITH_ARG("--A1Vol8",
+		     set_int_0_to_31, opt_show_intval, &opt_voltage8,
 		     "set voltage (0 ~ 31)"),
 
 #endif
