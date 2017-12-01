@@ -373,7 +373,7 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 #define COOLDOWN_MS (30 * 1000)
 /* if after this number of retries a chip is still inaccessible, disable it */
 #define DISABLE_CHIP_FAIL_THRESHOLD	3
-#define LEAST_CORE_ONE_CHAIN	600
+#define LEAST_CORE_ONE_CHAIN	550
 #define RESET_CHAIN_CNT	2
 
 
