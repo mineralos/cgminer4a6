@@ -577,7 +577,7 @@ static bool detect_A1_chain(void)
 
 	for(j = 0; j < 3; j++)
 	{
-		printf("after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
+		applog(LOG_WARNING, "after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
 	}
 
 	int index = 0;
@@ -600,7 +600,7 @@ static bool detect_A1_chain(void)
 		}
 	}
 
-	printf("The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
+	applog(LOG_WARNING, "The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
 	
 	for(i=Test_bench_Array[0].uiVol + 1; i>=Test_bench_Array[index].uiVol; i--){
 		set_vid_value(i);
