@@ -533,7 +533,7 @@ static bool detect_A1_chain(void)
 
 	for(i = 1; i < 2; i++)
 	{
-		if(Test_bench_Array[0].uiVol - i < 10)
+		if(Test_bench_Array[0].uiVol - i < 9)
 		{
 			continue;
 		}
@@ -556,7 +556,7 @@ static bool detect_A1_chain(void)
 	
 	for(i = 1; i < 2; i++)
 	{
-		if(Test_bench_Array[0].uiVol + i > 15)
+		if(Test_bench_Array[0].uiVol + i > 14)
 		{
 			continue;
 		}
@@ -584,7 +584,7 @@ static bool detect_A1_chain(void)
 	uint32_t cur= 0;
 	for(j = 1; j < 3; j++)
 	{
-		if((Test_bench_Array[j].uiVol < 10) || (Test_bench_Array[j].uiVol > 15)){
+		if((Test_bench_Array[j].uiVol < 9) || (Test_bench_Array[j].uiVol > 14)){
 			continue;
 		}
 		cur = Test_bench_Array[j].uiScore + 10 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
