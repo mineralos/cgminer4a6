@@ -1051,7 +1051,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 	}
 
     // core*freq(system)*16/33811
-	return (int64_t)(2214663.87 * A1Pll / 1000 * (a1->num_cores/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
+	return (int64_t)(2214663.87 * A1Pll / 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
 
 }
 
