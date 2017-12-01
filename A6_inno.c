@@ -471,6 +471,7 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
 	    	inno_preinit(ctx, cid);
 	    	
 	    	a1->num_chips =  chain_detect(a1);
+            a1->num_cores = 0;
 	    	usleep(10000);
 	    	
 	    	if (a1->num_chips <= 0)
