@@ -38,7 +38,9 @@ struct A1_chain *chain[ASIC_CHAIN_NUM];
 int g_hwver;
 int g_type;
 
-struct Test_bench Test_bench_Array[3]={
+struct Test_bench Test_bench_Array[5]={
+	{1332,	0,	0,	0},
+	{1332,	0,	0,	0},
 	{1332,	0,	0,	0},
 	{1332,	0,	0,	0},
 	{1332,	0,	0,	0},
@@ -54,7 +56,6 @@ uint8_t A1Pll6=A5_PLL_CLOCK_800MHz;
 /* FAN CTRL */
 static INNO_FAN_CTRL_T s_fan_ctrl;
 static uint32_t show_log[ASIC_CHAIN_NUM];
-static uint32_t update_cnt[ASIC_CHAIN_NUM];
 static uint32_t write_flag[ASIC_CHAIN_NUM];
 static uint32_t check_disbale_flag[ASIC_CHAIN_NUM];
 static uint32_t first_flag[ASIC_CHAIN_NUM] = {0};
@@ -448,7 +449,6 @@ static bool detect_A1_chain(void)
 		asic_gpio_init(spi[i]->led, 0);
 
 		show_log[i] = 0;
-		update_cnt[i] = 0;
 		write_flag[i] = 0;
 		check_disbale_flag[i] = 0;
 	}
@@ -531,9 +531,9 @@ static bool detect_A1_chain(void)
 		Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
 	}
 
-	for(i = 1; i < 2; i++)
+	for(i = 1; i < 3; i++)
 	{
-		if(Test_bench_Array[0].uiVol - i < 9)
+		if(Test_bench_Array[0].uiVol - i < 8)
 		{
 			continue;
 		}
@@ -552,9 +552,10 @@ static bool detect_A1_chain(void)
 		}
 	}
 
+	set_vid_value(Test_bench_Array[0].uiVol - 1);
 	set_vid_value(Test_bench_Array[0].uiVol);
 	
-	for(i = 1; i < 2; i++)
+	for(i = 1; i < 3; i++)
 	{
 		if(Test_bench_Array[0].uiVol + i > 14)
 		{
@@ -562,7 +563,7 @@ static bool detect_A1_chain(void)
 		}
 		sleep(1);
 		set_vid_value(Test_bench_Array[0].uiVol + i);
-		Test_bench_Array[i+1].uiVol = Test_bench_Array[0].uiVol + i;
+		Test_bench_Array[i+2].uiVol = Test_bench_Array[0].uiVol + i;
 		sleep(1);
 		for(j = 0; j < ASIC_CHAIN_NUM; j++)
 		{
@@ -570,21 +571,21 @@ static bool detect_A1_chain(void)
 			{
 				continue;
 			}
-			Test_bench_Array[i+1].uiScore += inno_cmd_test_chip(chain[j]);
-	    	Test_bench_Array[i+1].uiCoreNum += chain[j]->num_cores;
+			Test_bench_Array[i+2].uiScore += inno_cmd_test_chip(chain[j]);
+	    	Test_bench_Array[i+2].uiCoreNum += chain[j]->num_cores;
 		}
 	}
 
-	for(j = 0; j < 3; j++)
+	for(j = 0; j < 5; j++)
 	{
 		applog(LOG_WARNING, "after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
 	}
 
 	int index = 0;
 	uint32_t cur= 0;
-	for(j = 1; j < 3; j++)
+	for(j = 1; j < 5; j++)
 	{
-		if((Test_bench_Array[j].uiVol < 9) || (Test_bench_Array[j].uiVol > 14)){
+		if((Test_bench_Array[j].uiVol < 8) || (Test_bench_Array[j].uiVol > 14)){
 			continue;
 		}
 		cur = Test_bench_Array[j].uiScore + 10 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
@@ -602,7 +603,7 @@ static bool detect_A1_chain(void)
 
 	applog(LOG_WARNING, "The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
 	
-	for(i=Test_bench_Array[0].uiVol + 1; i>=Test_bench_Array[index].uiVol; i--){
+	for(i=Test_bench_Array[0].uiVol + 2; i>=Test_bench_Array[index].uiVol; i--){
 		set_vid_value(i);
 		usleep(500000);
 	}
@@ -796,9 +797,8 @@ void A1_detect(bool hotplug)
 }
 
 #define TEMP_UPDATE_INT_MS	300000
-#define VOLTAGE_UPDATE_INT  121
 #define WRITE_CONFG_TIME  3
-#define CHECK_DISABLE_TIME  59
+#define CHECK_DISABLE_TIME  60
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
 #define  LOG_FILE_PREFIX "/home/www/conf/analys"
@@ -902,7 +902,6 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
 	if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
 	{
-		update_cnt[cid]++;
 		show_log[cid]++;
 		write_flag[cid]++;
 		check_disbale_flag[cid]++;
@@ -913,58 +912,38 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			write_flag[cid] = 0;
 		}
 
-		if (update_cnt[cid] >= VOLTAGE_UPDATE_INT)
-		{
-			//configure for vsensor
-    		inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
-		}
-		
 		for (i = a1->num_active_chips; i > 0; i--) 
 		{		
 			uint8_t c=i;
-			if(update_cnt[cid] >= VOLTAGE_UPDATE_INT)
+			if(is_chip_disabled(a1,c))
+				continue;
+			if (!inno_cmd_read_reg(a1, c, reg)) 
 			{
-				inno_check_voltage(a1, i, &s_reg_ctrl);
-				//applog(LOG_NOTICE, "%d: chip %d: stat:%f/%f/%f/%d\n",cid, c, s_reg_ctrl.highest_vol[0][i],s_reg_ctrl.lowest_vol[0][i],s_reg_ctrl.avarge_vol[0][i],s_reg_ctrl.stat_cnt[0][i]);
+				disable_chip(a1,c);
+				applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
+				continue;
 			}
-			else
-			{
-				if(is_chip_disabled(a1,c))
-					continue;
-				if (!inno_cmd_read_reg(a1, c, reg)) 
-				{
-					disable_chip(a1,c);
-					applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
-					continue;
-				}
-				/* update temp database */
-                uint32_t temp = 0;
-                float    temp_f = 0.0f;
+			/* update temp database */
+            uint32_t temp = 0;
+            float    temp_f = 0.0f;
 
-                temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-                inno_fan_temp_add(&s_fan_ctrl, cid, temp, false);
-			}    
-		}
-
-		if (update_cnt[cid] >= VOLTAGE_UPDATE_INT)
-		{
-			//configure for tsensor
-    		inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
-			update_cnt[cid] = 0;
-		}else{
-			inno_fan_speed_update(&s_fan_ctrl, cid, cgpu);
+            temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
+            inno_fan_temp_add(&s_fan_ctrl, cid, temp, false);
+		}    
+	
+		inno_fan_speed_update(&s_fan_ctrl, cid, cgpu);
 				
-			//a1->temp = board_selector->get_temp(0);
-			a1->last_temp_time = get_current_ms();
-			applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, cgpu->temp, cgpu->temp_min, cgpu->temp_max);
-			if(cgpu->temp_max > DANGEROUS_TMP)
-			{
-				applog(LOG_ERR, "disable chain %d", a1->chain_id);
-	   			asic_gpio_write(spi[a1->chain_id]->power_en, 0);
-				loop_blink_led(spi[a1->chain_id]->led, 10);
-	   			//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
-			}
+		//a1->temp = board_selector->get_temp(0);
+		a1->last_temp_time = get_current_ms();
+		applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, cgpu->temp, cgpu->temp_min, cgpu->temp_max);
+		if(cgpu->temp_max > DANGEROUS_TMP)
+		{
+			applog(LOG_ERR, "disable chain %d", a1->chain_id);
+	   		asic_gpio_write(spi[a1->chain_id]->power_en, 0);
+			loop_blink_led(spi[a1->chain_id]->led, 10);
+	   		//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
 		}
+		
 	}
 
 	/* poll queued results */
