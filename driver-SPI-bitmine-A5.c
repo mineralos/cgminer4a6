@@ -64,6 +64,7 @@ static inno_reg_ctrl_t s_reg_ctrl;
 #define DANGEROUS_TMP  100
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
+int chain_flag[ASIC_CHAIN_NUM] = {0};
 
 /* one global board_selector and spi context is enough */
 //static struct board_selector *board_selector;
@@ -385,33 +386,166 @@ int  cfg_tsadc_divider(struct A1_chain *a1,uint32_t pll_clk)
 	applog(LOG_WARNING, "#####Write t/v sensor Value Success!\n");
 }
 
-void inno_preinit(struct spi_ctx *ctx, int chain_id)
+int inno_get_best_vid(void)
 {
-	int i;
-	struct A1_chain *a1 = malloc(sizeof(*a1));
-	assert(a1 != NULL);
+    int i, j;
+    Test_bench_Array[0].uiVol = opt_voltage1;
+    for(i = 0; i < ASIC_CHAIN_NUM; i++)
+    {
+        if(chain_flag[i] != 1)
+        {
+             continue;
+        }
+        Test_bench_Array[0].uiScore += inno_cmd_test_chip(chain[i]);
+        Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
+        }
 
-	applog(LOG_DEBUG, "%d: A1 init chain", chain_id);
-	
-	memset(a1, 0, sizeof(*a1));
-	a1->spi_ctx = ctx;
-	a1->chain_id = chain_id;
-	
-	applog(LOG_INFO,"chain_id:%d", chain_id);
-	switch(chain_id){
-		case 0:prechain_detect(a1, A1Pll1);break;
-		case 1:prechain_detect(a1, A1Pll2);break;
-		case 2:prechain_detect(a1, A1Pll3);break;
-		case 3:prechain_detect(a1, A1Pll4);break;
-		case 4:prechain_detect(a1, A1Pll5);break;
-		case 5:prechain_detect(a1, A1Pll6);break;
-		default:;
-	}
-	//add 0929
-	cfg_tsadc_divider(a1, 120);
+        for(i = 1; i < 3; i++)
+        {
+            if(Test_bench_Array[0].uiVol - i < 8)
+            {
+                continue;
+            }
+            sleep(1);
+            set_vid_value(Test_bench_Array[0].uiVol - i);
+            Test_bench_Array[i].uiVol = Test_bench_Array[0].uiVol - i;
+            sleep(1);
+            for(j = 0; j < ASIC_CHAIN_NUM; j++)
+            {
+                if(chain_flag[j] != 1)
+                {
+                    continue;
+                }
+                Test_bench_Array[i].uiScore += inno_cmd_test_chip(chain[j]);
+                Test_bench_Array[i].uiCoreNum += chain[j]->num_cores;
+        }
+    }
+   
+    set_vid_value(Test_bench_Array[0].uiVol - 1);
+    set_vid_value(Test_bench_Array[0].uiVol);
+    for(i = 1; i < 3; i++)
+    {
+        if(Test_bench_Array[0].uiVol + i > 14)
+        {
+            continue;
+        }
+        sleep(1);
+        set_vid_value(Test_bench_Array[0].uiVol + i);
+        Test_bench_Array[i+2].uiVol = Test_bench_Array[0].uiVol + i;
+        sleep(1);
+        for(j = 0; j < ASIC_CHAIN_NUM; j++)
+        {
+            if(chain_flag[j] != 1)
+            {
+                continue;
+            }
+            Test_bench_Array[i+2].uiScore += inno_cmd_test_chip(chain[j]);
+            Test_bench_Array[i+2].uiCoreNum += chain[j]->num_cores;
+        }
+    }
+
+    for(j = 0; j < 5; j++)
+    {
+        applog(LOG_WARNING, "after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
+    }
+    
+    int index = 0;
+    uint32_t cur= 0;
+    for(j = 1; j < 5; j++)
+    {
+        if((Test_bench_Array[j].uiVol < 8) || (Test_bench_Array[j].uiVol > 14)){
+            continue;
+        }
+        cur = Test_bench_Array[j].uiScore + 10 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
+        
+        if(cur > Test_bench_Array[index].uiScore)
+        {
+            index = j;
+        }
+
+        if((cur == Test_bench_Array[index].uiScore) && (Test_bench_Array[j].uiVol > Test_bench_Array[index].uiVol))
+        {
+            index = j;
+        }
+    }
+
+    applog(LOG_WARNING, "The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
+    
+    for(i=Test_bench_Array[0].uiVol + 2; i>=Test_bench_Array[index].uiVol; i--){
+        set_vid_value(i);
+        sleep(500000);
+    }
+
+    opt_voltage1 = Test_bench_Array[index].uiVol;
+    return opt_voltage1;
 }
 
-int chain_flag[ASIC_CHAIN_NUM] = {0};
+
+#define INNO_AUTO_PLL_FILE    "/home/www/conf/defaultPLL"
+#define INNO_AUTO_VID_FILE    "/home/www/conf/defaultVID"
+void inno_get_auto_pll_vid(void)
+{
+    FILE* fd;
+    int best_vid;
+    int i;
+
+    if((access(INNO_AUTO_VID_FILE, F_OK)) != -1)
+    {
+        /* set default vid */
+        applog(LOG_ERR, "Open auto vid File success !");
+        fd = fopen(INNO_AUTO_VID_FILE, "r");
+        if(fd == NULL){
+            applog(LOG_ERR, "Create auto vid file failed!");
+            return;
+        }
+        rewind(fd);
+        fscanf(fd, "%d", &best_vid);
+        applog(LOG_INFO, "Get the best vid is %d!", best_vid);
+        fclose(fd);
+     }
+     else
+     {
+        applog(LOG_ERR, "Open auto vid File failed !");
+        best_vid = inno_get_best_vid();
+        fd = fopen(INNO_AUTO_VID_FILE, "w+");
+        if(fd == NULL){
+            applog(LOG_ERR, "Create auto vid file failed!");
+            return;
+      }
+      rewind(fd);
+      fprintf(fd, "%d", best_vid);
+      applog(LOG_INFO, "Get the best vid is %d!", best_vid);
+      fclose(fd);
+    }
+    return;
+}
+
+void inno_preinit(struct spi_ctx *ctx, int chain_id)
+{
+    int i;
+    struct A1_chain *a1 = malloc(sizeof(*a1));
+    assert(a1 != NULL);
+    
+    applog(LOG_DEBUG, "%d: A1 init chain", chain_id);
+    
+    memset(a1, 0, sizeof(*a1));
+    a1->spi_ctx = ctx;
+    a1->chain_id = chain_id;
+    
+    applog(LOG_INFO,"chain_id:%d", chain_id);
+    switch(chain_id){
+        case 0:prechain_detect(a1, A1Pll1);break;
+        case 1:prechain_detect(a1, A1Pll2);break;
+        case 2:prechain_detect(a1, A1Pll3);break;
+        case 3:prechain_detect(a1, A1Pll4);break;
+        case 4:prechain_detect(a1, A1Pll5);break;
+        case 5:prechain_detect(a1, A1Pll6);break;
+        default:;
+    }
+    //add 0929
+    cfg_tsadc_divider(a1, 120);
+}
+
 static bool detect_A1_chain(void)
 {
 	int i, j, cnt = 0;
@@ -503,7 +637,7 @@ static bool detect_A1_chain(void)
 
 		struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
 		assert(cgpu != NULL);
-	
+
 		memset(cgpu, 0, sizeof(*cgpu));
 		cgpu->drv = &bitmineA1_drv;
 		cgpu->name = "BitmineA1.SingleChain";
@@ -519,6 +653,7 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
+	inno_get_auto_pll_vid();
 #if 0
 	Test_bench_Array[0].uiVol = opt_voltage1;
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
