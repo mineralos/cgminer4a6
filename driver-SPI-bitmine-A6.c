@@ -35,9 +35,6 @@ struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
 
-int g_hwver;
-int g_type;
-
 /*
 struct Test_bench Test_bench_Array[6]={
 	{1260,   14,	0,	0}, //default
@@ -66,17 +63,19 @@ uint8_t A1Pll5=A5_PLL_CLOCK_800MHz;
 uint8_t A1Pll6=A5_PLL_CLOCK_800MHz;
 
 /* FAN CTRL */
-static INNO_FAN_CTRL_T s_fan_ctrl;
+inno_fan_temp_s g_fan_ctrl;
 static uint32_t show_log[ASIC_CHAIN_NUM];
 static uint32_t update_cnt[ASIC_CHAIN_NUM];
 static uint32_t write_flag[ASIC_CHAIN_NUM];
 static uint32_t check_disbale_flag[ASIC_CHAIN_NUM];
 static uint32_t first_flag[ASIC_CHAIN_NUM] = {0};
 static inno_reg_ctrl_t s_reg_ctrl;
-#define DANGEROUS_TMP  100
+
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
-
+int fan_level[4]={10,40,80,100};
+hardware_version_e g_hwver;
+inno_type_e g_type;
 /* one global board_selector and spi context is enough */
 //static struct board_selector *board_selector;
 //static struct spi_ctx *spi;
@@ -199,21 +198,23 @@ struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
     {
 		check_chip(a1, i);
 
-        inno_fan_temp_add(&s_fan_ctrl, chain_id, a1->chips[i].temp, true);
+        inno_fan_temp_add(&g_fan_ctrl, chain_id, i+1, a1->chips[i].temp);
     }
-    /* ÉèÖÃ³õÊ¼Öµ */ 
-    inno_fan_temp_init(&s_fan_ctrl, chain_id);
-#ifndef CHIP_A6
-	inno_temp_contrl(&s_fan_ctrl, a1, chain_id);
+   
+   inno_fan_temp_update(&g_fan_ctrl,chain_id, g_type,fan_level);
+	   
+	   applog(LOG_WARNING, "[chain_ID:%d]: Found %d Chips With Total %d Active Cores",a1->chain_id, a1->num_active_chips, a1->num_cores);
+	   applog(LOG_WARNING, "[chain_ID]: Temp:%d\n",g_fan_ctrl.temp_highest[chain_id]);
+   
+#if 1
+	   if(g_fan_ctrl.temp_highest[chain_id] < DANGEROUS_TMP){
+		   //asic_gpio_write(spi[a1->chain_id]->power_en, 0);
+		   //loop_blink_led(spi[a1->chain_id]->led, 10);
+		   goto failure;
+		   //early_quit(1,"Notice Chain %d temp:%d Maybe Has Some Problem in Temperate\n",a1->chain_id,s_fan_ctrl.temp_highest[chain_id]);
+	   }
 #endif
-	applog(LOG_WARNING, "%d: found %d chips with total %d active cores",
-	       a1->chain_id, a1->num_active_chips, a1->num_cores);
-	//modify 0922       
-	if(inno_fan_temp_get_highest(&s_fan_ctrl,chain_id) > DANGEROUS_TMP)
-	{
-	 asic_gpio_write(spi[a1->chain_id]->power_en, 0);
-	 early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
-	}
+   
 	
 	mutex_init(&a1->lock);
 	INIT_LIST_HEAD(&a1->active_wq.head);
@@ -397,6 +398,46 @@ int  cfg_tsadc_divider(struct A1_chain *a1,uint32_t pll_clk)
 	applog(LOG_WARNING, "#####Write t/v sensor Value Success!\n");
 }
 
+bool init_ReadTemp(struct A1_chain *a1, int chain_id)
+{
+	int i;
+	uint8_t reg[64];
+	//applog(LOG_ERR, "start read temp cid %d, a1 addr 0x%x\n", chain_id,a1);
+	/* update temp database */
+	uint32_t temp = 0;
+
+	if(a1 == NULL)
+	{
+		return ;
+	}
+	int cid = a1->chain_id;
+
+	//while(s_fan_ctrl.temp_highest[cid] > 505)//FAN_FIRST_STAGE)
+	do{
+		for (i = a1->num_active_chips; i > 0; i--)
+		{ 
+			if (!inno_cmd_read_reg(a1, i, reg))
+			{
+				applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
+				
+				continue;
+			}
+			
+
+			temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
+			//applog(LOG_ERR,"cid %d,chip %d,temp %d\n",cid, i, temp);
+			inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
+		} 
+		
+		asic_temp_sort(&g_fan_ctrl, chain_id);
+		inno_fan_temp_highest(&g_fan_ctrl, chain_id,g_type);
+		inno_fan_speed_set(&g_fan_ctrl,PREHEAT_SPEED);
+		applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
+	}while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH);
+	return true;
+}
+
+
 void inno_preinit(struct spi_ctx *ctx, int chain_id)
 {
 	int i;
@@ -467,12 +508,13 @@ static bool detect_A1_chain(void)
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
+        sleep(2);
 		asic_gpio_write(spi[i]->power_en, 1);
-		sleep(2);
+		sleep(1);
 		asic_gpio_write(spi[i]->reset, 1);
 		sleep(1);
 		asic_gpio_write(spi[i]->start_en, 1);
-		sleep(2);
+		sleep(1);
 
 		if(asic_gpio_read(spi[i]->plug) != 0)
 		{
@@ -481,25 +523,11 @@ static bool detect_A1_chain(void)
 		}
 	}
 
+	
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{		
 	    inno_preinit(spi[i], i);
 	}
-
-	//divide the init to break two part
-	//if(opt_voltage > 8){
-	//	for(i=9; i<=opt_voltage; i++){
-	//		set_vid_value(i);
-	//		usleep(200000);
-	//	}
-	//}
-	//		
-	//if(opt_voltage < 8){
-	//	for(i=7; i>=opt_voltage; i--){
-	//		set_vid_value(i);
-	//		usleep(200000);
-	//	}
-	//}
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
@@ -531,6 +559,13 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
+
+    applog(LOG_ERR, "init_ReadTemp...");
+	for(i = 0; i < ASIC_CHAIN_NUM; i++){
+		init_ReadTemp(chain[i],i);
+	}
+	
+
 
 #if 0
 	Test_bench_Array[0].uiVol = opt_voltage1;
@@ -705,14 +740,19 @@ void A1_detect(bool hotplug)
 		parsed_config_options = &A1_config_options;
 	}
 	applog(LOG_DEBUG, "A1 detect");
-    memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
+  //  memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
 
 	g_hwver = inno_get_hwver();
 	g_type = inno_get_miner_type();
     
-    inno_fan_init(&s_fan_ctrl);
+   // inno_fan_init(&s_fan_ctrl);
 	
 	set_vid_value(opt_voltage1);
+	
+	memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
+	memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
+	
+	inno_fan_temp_init(&g_fan_ctrl);
 	
 	A1Pll1 = A1_ConfigA1PLLClock(opt_A1Pll1);
 	A1Pll2 = A1_ConfigA1PLLClock(opt_A1Pll2);
@@ -842,10 +882,17 @@ static int64_t  A1_scanwork(struct thr_info *thr)
             float    temp_f = 0.0f;
 
             temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-            inno_fan_temp_add(&s_fan_ctrl, cid, temp, false);
+            inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
 		}    
 
-		inno_fan_speed_update(&s_fan_ctrl, cid, cgpu);
+		inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		cgpu->temp = g_fan_ctrl.temp2float[cid][1];
+		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
+		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];
+		cgpu->fan_duty = g_fan_ctrl.speed;
+				
+		cgpu->chip_num = a1->num_active_chips;
+		cgpu->core_num = a1->num_cores; 
 	}
 
 	if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
@@ -860,68 +907,47 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			inno_log_print(cid, szShowLog[cid], sizeof(szShowLog[0]));			
 			write_flag[cid] = 0;
 		}
-
-        /*
-		if (update_cnt[cid] >= VOLTAGE_UPDATE_INT)
-		{
-			//configure for vsensor
-    		inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
-		}
-        */
 		
 		for (i = a1->num_active_chips; i > 0; i--) 
 		{		
 			uint8_t c=i;
-            /*
-			if(update_cnt[cid] >= VOLTAGE_UPDATE_INT)
+			
+			if(is_chip_disabled(a1,c))
+				continue;
+			if (!inno_cmd_read_reg(a1, c, reg)) 
 			{
-				inno_check_voltage(a1, i, &s_reg_ctrl);
-				//applog(LOG_NOTICE, "%d: chip %d: stat:%f/%f/%f/%d\n",cid, c, s_reg_ctrl.highest_vol[0][i],s_reg_ctrl.lowest_vol[0][i],s_reg_ctrl.avarge_vol[0][i],s_reg_ctrl.stat_cnt[0][i]);
+				disable_chip(a1,c);
+				applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
+				continue;
 			}
-			else
-            */
-			{
-				if(is_chip_disabled(a1,c))
-					continue;
-				if (!inno_cmd_read_reg(a1, c, reg)) 
-				{
-					disable_chip(a1,c);
-					applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
-					continue;
-				}
-				/* update temp database */
-                uint32_t temp = 0;
-                float    temp_f = 0.0f;
+			/* update temp database */
+            uint32_t temp = 0;
+            float    temp_f = 0.0f;
 
-                temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-                inno_fan_temp_add(&s_fan_ctrl, cid, temp, false);
-			}    
+            temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
+            inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
+			    
 		}
 
-        /*
-		if (update_cnt[cid] >= VOLTAGE_UPDATE_INT)
-		{
-			//configure for tsensor
-    		inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
-			update_cnt[cid] = 0;
-		}
-        else
-        */
-        {
-			inno_fan_speed_update(&s_fan_ctrl, cid, cgpu);
+		inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		cgpu->temp = g_fan_ctrl.temp2float[cid][1];
+		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
+		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];
+		cgpu->fan_duty = g_fan_ctrl.speed;
 				
-			//a1->temp = board_selector->get_temp(0);
-			a1->last_temp_time = get_current_ms();
-			applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, cgpu->temp, cgpu->temp_min, cgpu->temp_max);
-			if(cgpu->temp_max > DANGEROUS_TMP)
-			{
-				applog(LOG_ERR, "disable chain %d", a1->chain_id);
-	   			asic_gpio_write(spi[a1->chain_id]->power_en, 0);
-				loop_blink_led(spi[a1->chain_id]->led, 10);
-	   			//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
-			}
+		cgpu->chip_num = a1->num_active_chips;
+		cgpu->core_num = a1->num_cores; 
+		//a1->temp = board_selector->get_temp(0);
+		a1->last_temp_time = get_current_ms();
+		applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%5.2f", __func__, cgpu->temp, cgpu->temp_min, cgpu->temp_max);
+		if(g_fan_ctrl.temp_highest[a1->chain_id] < DANGEROUS_TMP)
+		{
+			applog(LOG_ERR, "disable chain %d", a1->chain_id);
+	   		asic_gpio_write(spi[a1->chain_id]->power_en, 0);
+			loop_blink_led(spi[a1->chain_id]->led, 10);
+	   		//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
 		}
-	}
+	}		
 
 	/* poll queued results */
 	while (true)
@@ -995,9 +1021,9 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
 					if(show_log[cid] > 1)					
 					{												
-						applog(LOG_INFO, "%d: chip:%d ,core:%d ,job done: %d/%d/%d/%d/%d/%5.2f",
-							   cid, c, chip->num_cores,chip->nonce_ranges_done, chip->nonces_found,
-							   chip->hw_errors, chip->stales,chip->temp, inno_fan_temp_to_float(&s_fan_ctrl,chip->temp));
+						//applog(LOG_INFO, "%d: chip:%d ,core:%d ,job done: %d/%d/%d/%d/%d/%5.2f",
+						//	   cid, c, chip->num_cores,chip->nonce_ranges_done, chip->nonces_found,
+						//	   chip->hw_errors, chip->stales,chip->temp, inno_fan_temp_to_float(&g_fan_ctrl,chip->temp));
 						Inno_Log_Save(chip,c-1,cid);
 						if(i==1) show_log[cid] = 0;
 
@@ -1005,7 +1031,6 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 				}
 			}
 		}
-
 	}
 
 	if(check_disbale_flag[cid] > CHECK_DISABLE_TIME)

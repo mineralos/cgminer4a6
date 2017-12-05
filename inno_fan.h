@@ -1,70 +1,124 @@
-#ifndef _INNO_FAN_
-#define _INNO_FAN_
+/******************************************************************************
+ *
+ * 文件名  ： 
+ * 负责人  ： yex
+ * 创建日期： 20171122 
+ * 版本号  ： 
+ * 文件描述： 
+ * 版权说明： Copyright (c) 2000-2020   GNU
+ * 其    他： 无
+ * 修改日志： 无
+ *
+ *******************************************************************************/
 
-#include <stdint.h>
-#include "logging.h"
-#include "miner.h"
-#include "util.h"
-#ifdef CHIP_A6
-#include "A6_inno.h"
-#else
-#include "A5_inno.h"
-#include "A5_inno_cmd.h"
-#include "A5_inno_clock.h"
-#endif
+/*---------------------------------- 预处理区 ---------------------------------*/
+#ifndef _INNO_FAN_H_
+#define _INNO_FAN_H_
 
-#define ASIC_INNO_TEMP_CONTRL_THRESHOLD (25.0f)
+/************************************ 头文件 ***********************************/
+#include <stdio.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <sys/ioctl.h>
 
-typedef struct INNO_FAN_CTRL_tag{
-    /* 温度原始值 */
-	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* chip temp bits */
-    int index[ASIC_CHAIN_NUM];                  /* chip index in chain */
+/************************************ 宏定义 ***********************************/
+#define ASIC_CHAIN_NUM                  4
+#define ASIC_CHIP_NUM                   72
 
-    /* 以寄存器原始值为格式 */
-    int temp_arvarge[ASIC_CHAIN_NUM];           /* 当前温度(均值) */
-    int temp_init[ASIC_CHAIN_NUM];              /* 初始温度(均值) */
-    int temp_highest[ASIC_CHAIN_NUM];           /* 当前温度(最高) */
-    int temp_lowest[ASIC_CHAIN_NUM];            /* 当前温度(最低) */
+#define ASIC_INNO_FAN_PWM0_DEVICE_NAME  ("/dev/pwmgen0.0")
 
-    /* 保护多链(线程)共享的数据 */
-	pthread_mutex_t lock;                       /* 互斥锁 */
-    int duty;                                   /* 0 - 100 */
+#define ASIC_INNO_FAN_PWM_STEP            (5)
+#define ASIC_INNO_FAN_PWM_DUTY_MAX        (100)
+#define ASIC_INNO_FAN_PWM_FREQ_TARGET     (7000)
+#define ASIC_INNO_FAN_PWM_FREQ            (50000000 / ASIC_INNO_FAN_PWM_FREQ_TARGET)
+#define FAN_CNT                           ( 2 )
+#define ASIC_INNO_FAN_TEMP_MAX_THRESHOLD  (100)
+#define ASIC_INNO_FAN_TEMP_UP_THRESHOLD   (55)
+#define ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD (35)
+#define ERR_HIGH_TEMP                     (399)
+#define ERR_LOW_TEMP                      (647)
+#define FAN_FIRST_STAGE                   (550)//25
+#define FAN_SECOND_STAGE                  (512)//50
+#define FAN_THIRD_STAGE                   (474)//75
+#define FAN_FOUR_STAGE                    (437)//100
+#define FAN_DELTA                         (23)//15
+#define TEMP_LABEL                        (594)
+#define ACTIVE_STAT                       (6)
+#define START_FAN_TH                      (520)
+#define PREHEAT_SPEED                     (0)
+#define DANGEROUS_TMP                     437
 
-    /* 用于转化寄存器原始值到实际温度 */
-    int temp_nums;                              /* temp寄存器与温度对应表 的点数 */
-    int temp_v_max;                             /* temp最大值 对应最低温度 */
-    int temp_v_min;                             /* temp最小值 对应最高温度 */
-    float temp_f_min;                           /* 温度最小值 */
-    float temp_f_max;                           /* 温度最大值 */
-    float temp_f_step;                          /* 温度步长 */
-}INNO_FAN_CTRL_T;
 
-/* 模块初始化 */
-void inno_fan_init(INNO_FAN_CTRL_T *fan_ctrl);
-/* 设置启动温度 */
-void inno_fan_temp_init(INNO_FAN_CTRL_T *fan_ctrl, int chain_id);
-/* 加入芯片温度 */
-void inno_fan_temp_add(INNO_FAN_CTRL_T *fan_ctrl, int chain_id, int temp, bool warn_on);
-/* 清空芯片温度,为下轮循环准备 */
-void inno_fan_temp_clear(INNO_FAN_CTRL_T *fan_ctrl, int chain_id);
-/* 根据温度更新转速 */
-void inno_fan_speed_update(INNO_FAN_CTRL_T *fan_ctrl, int chain_id, struct cgpu_info *cgpu);
 
-float inno_fan_temp_to_float(INNO_FAN_CTRL_T *fan_ctrl, int temp);
+#define MAGIC_NUM                         (100) 
 
-int inno_fan_temp_get_highest(INNO_FAN_CTRL_T *fan_ctrl, int chain_id);
+#define IOCTL_SET_FREQ(X) _IOR(MAGIC_NUM, (2*X), char *)
+#define IOCTL_SET_DUTY(X) _IOR(MAGIC_NUM, (2*X+1), char *)
 
-void inno_temp_contrl(INNO_FAN_CTRL_T *fan_ctrl, struct A1_chain *a1, int chain_id);
 
-#if 0
-float inno_fan_temp_get(INNO_FAN_CTRL_T *fan_ctrl, int chain_id);
-#endif
+#define ASIC_CHIP_A_BUCKET              (ASIC_CHAIN_NUM * ASIC_CHIP_NUM)
+#define ASIC_INNO_FAN_TEMP_MARGIN_RATE  (5.0f / 100.0f)
+#define ASIC_INNO_FAN_CTLR_FREQ_DIV     (0)
 
-#if 0
-void inno_fan_speed_up(INNO_FAN_CTRL_T *fan_ctrl);
-void inno_fan_speed_down(INNO_FAN_CTRL_T *fan_ctrl);
-void inno_fan_pwm_set(INNO_FAN_CTRL_T *fan_ctrl, int duty);
-#endif
 
-#endif
+
+/*********************************** 类型定义 **********************************/
+
+
+/*--------------------------------- 接口声明区 --------------------------------*/
+
+/*********************************** 全局变量 **********************************/
+typedef struct {
+	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* 用于存放所有链上的芯片温度*/
+	bool valid_temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];  //用于判断该温度是否有效
+    int index[ASIC_CHAIN_NUM];                  /*对应链上的chip_id */
+
+    int speed;                              /* 0 - 100用于设置风扇转速(可能32档) */
+    int last_fan_speed;
+	int auto_ctrl;
+
+    int temp_arvarge[ASIC_CHAIN_NUM];          /*对应链上的平均温度*/
+    int temp_highest[ASIC_CHAIN_NUM];            /*对应链上的最高温度*/
+    int temp_lowest[ASIC_CHAIN_NUM];             /*对应链上的最低温度*/
+	float temp2float[ASIC_CHAIN_NUM][3];         /*[][0]->highest,[][1]->avg, [][2]->lowest*/
+    int last_fan_temp;
+	pthread_mutex_t lock;                       /* lock */
+
+}inno_fan_temp_s;
+
+
+typedef enum{
+    INNO_TYPE_NONE = 0x00,
+	INNO_TYPE_A4,
+	INNO_TYPE_A5,
+	INNO_TYPE_A6,
+	INNO_TYPE_A7,
+    INNO_TYPE_A8,
+	INNO_TYPE_A9,
+}inno_type_e;
+
+
+/*********************************** 接口函数 **********************************/
+void inno_fan_temp_init(inno_fan_temp_s *fan_temp);   /*主要用于Ax系列初始化风扇控制与温度显示*/
+
+bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp); /*用于实时更新统计到的当前温度值，异常记录*/
+
+void asic_temp_sort(inno_fan_temp_s *fan_temp, int chain_id);   /*对单条链统计到的所有温度做一次升序排列*/
+
+int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链统计到的实时最高温度(chip_type)*/
+
+int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链统计到的实时最低温（chip_type）*/
+
+int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链所有芯片统计的实时平均温度*/
+
+void inno_fan_temp_update(inno_fan_temp_s *fan_temp,int chain_id, inno_type_e inno_type, int *fan_level);  /*用于更新风扇转速与温度显示数据*/
+
+void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed);  /*设置风扇转速 */
+
+
+#endif // #ifndef _INNO_FAN_TEMP_H_
+
 

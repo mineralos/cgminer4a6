@@ -1,47 +1,35 @@
 #ifndef _A6_INNO_
 #define _A6_INNO_
 
-#define ASIC_CHAIN_NUM                  4
-#define ASIC_CHIP_NUM                   72
-
-#define ASIC_CHIP_A_BUCKET              (ASIC_CHAIN_NUM * ASIC_CHIP_NUM)
-#define ASIC_INNO_FAN_PWM0_DEVICE_NAME  ("/dev/pwmgen0.0")
-//#define ASIC_INNO_FAN_PWM1_DEVICE_NAME  ("/dev/pwmgen0.1")
-#define ASIC_INNO_FAN_PWM_STEP          (10)
-#define ASIC_INNO_FAN_PWM_DUTY_MAX      (100)
-/* 此宏表示PWM载波频率:7KHz,经验值 */
-#define ASIC_INNO_FAN_PWM_FREQ_TARGET   (7000)
-/* 此宏表示分频比 分频比=50M/PWM载波频率 */
-#define ASIC_INNO_FAN_PWM_FREQ          (50000000 / ASIC_INNO_FAN_PWM_FREQ_TARGET)
-/* 芯片上电高于100°(<445),告警 */
-#define ASIC_INNO_FAN_TEMP_MAX_THRESHOLD (100.0f)
-/* chip高于55°后,100% */
-#define ASIC_INNO_FAN_TEMP_UP_THRESHOLD (55.0f)
-/* chip板低于35°后,60% */
-#define ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD (35.0f)
-
-/* 去掉的最高分和最低分比例 */
-#define ASIC_INNO_FAN_TEMP_MARGIN_RATE  (5.0f / 72)
-/* 数值越小,温度打印得越频繁 */
-#define ASIC_INNO_FAN_CTLR_FREQ_DIV     (0)
-
-#define INNO_MINER_TYPE_FILE			"/tmp/type"
-#define INNO_HARDWARE_VERSION_FILE		"/tmp/hwver"
-#define HARDWARE_VERSION_G9		(9)
-#define HARDWARE_VERSION_G19	(19)
-
-#define MINER_TYPE_T1			(1)
-#define MINER_TYPE_T2			(2)
-#define MINER_TYPE_T3			(3)
-#define MINER_TYPE_T4			(4)
-
+#include "A6_inno_cmd.h"
+#include "inno_fan.h"
 
 #define WEAK_CHIP_THRESHOLD	5
 #define BROKEN_CHIP_THRESHOLD 5
-#define WEAK_CHIP_SYS_CLK	(600 * 1000)
-#define BROKEN_CHIP_SYS_CLK	(400 * 1000)
 
-#include "A6_inno_cmd.h"
+#define INNO_MINER_TYPE_FILE			"/tmp/type"
+#define INNO_HARDWARE_VERSION_FILE		"/tmp/hwver"
+
+typedef enum{
+HARDWARE_VERSION_NONE = 0x00,
+HARDWARE_VERSION_G9 = 0x09,
+HARDWARE_VERSION_G19 = 0x13,
+
+}hardware_version_e;
+
+/*
+typedef enum{
+MINER_TYPE_NONE = 0x00,
+MINER_TYPE_T0,
+MINER_TYPE_T1,
+MINER_TYPE_T2,
+MINER_TYPE_T3,
+MINER_TYPE_T4,
+MINER_TYPE_T5,
+MINER_TYPE_SUM,
+
+}miner_type_e;
+*/
 
 typedef struct{
    float highest_vol[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* chip temp bits */;
@@ -68,8 +56,8 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum);
 uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work);
 void test_bench_pll_config(struct A1_chain *a1,uint32_t uiPll);
 
-int inno_get_hwver(void);
-int inno_get_miner_type(void);
+hardware_version_e inno_get_hwver(void);
+inno_type_e inno_get_miner_type(void);
 void chain_all_exit(void);
 
 #endif

@@ -14,6 +14,7 @@
 #include "A6_inno_cmd.h"
 #include "A6_inno_clock.h"
 #include "A6_inno_gpio.h"
+#include "inno_fan.h"
 
 
 #define MUL_COEF 1.23
@@ -639,17 +640,6 @@ void prechain_detect(struct A1_chain *a1, int idxpll)
 	inno_cmd_reset(a1, ADDR_BROADCAST);
 
 	usleep(1000);
-/*
-	memcpy(temp_reg, default_reg[idxpll], REG_LENGTH-2);
-	if(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
-	{
-		applog(LOG_WARNING, "set default PLL fail");
-		return -1;
-	}
-	applog(LOG_WARNING, "set default %d PLL success", i);
-
-	usleep(100000);
-*/
 
 	for(i=0; i<idxpll+1; i++)
 	{
@@ -985,11 +975,12 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
    }
 }
 
-int inno_get_hwver(void)
+
+hardware_version_e inno_get_hwver(void)
 {
 	FILE* fd;
 	char buffer[64] = {0};
-	int version;
+	hardware_version_e version;
 	
 	fd = fopen(INNO_HARDWARE_VERSION_FILE, "r");	
 	if(fd == NULL)
@@ -998,6 +989,7 @@ int inno_get_hwver(void)
 		return -1;
 	}
 
+	memset(buffer, 0, sizeof(buffer));
 	fread(buffer, 8, 1, fd);
 	fclose(fd);
 
@@ -1016,11 +1008,11 @@ int inno_get_hwver(void)
 }
 
 
-int inno_get_miner_type(void)
+inno_type_e inno_get_miner_type(void)
 {
 	FILE* fd;
 	char buffer[64] = {0};
-	int miner_type;
+	inno_type_e miner_type;
 	
 	fd = fopen(INNO_MINER_TYPE_FILE, "r");	
 	if(fd == NULL)
@@ -1032,17 +1024,17 @@ int inno_get_miner_type(void)
 	fread(buffer, 8, 1, fd);
 	fclose(fd);
 
-	if(strcmp(buffer, "T1") == 0) {
-		miner_type = MINER_TYPE_T1;
+	if(strstr(buffer, "T1") != NULL) {
+		miner_type = INNO_TYPE_A5;
 		applog(LOG_INFO, "miner type is T1");
-	}else if(strcmp(buffer, "T2") == 0) {
-		miner_type = MINER_TYPE_T2;
+	}else if(strstr(buffer, "T2") != NULL) {
+		miner_type = INNO_TYPE_A6;
 		applog(LOG_INFO, "miner type is T2");
-	}else if(strcmp(buffer, "T3") == 0) {
-		miner_type = MINER_TYPE_T3;
+	}else if(strstr(buffer, "T3") != NULL) {
+		miner_type = INNO_TYPE_A7;
 		applog(LOG_INFO, "miner type is T3");
-	}else if(strcmp(buffer, "T4") == 0) {
-		miner_type = MINER_TYPE_T4;
+	}else if(strstr(buffer, "T4") != NULL) {
+		miner_type = INNO_TYPE_A8;
 		applog(LOG_INFO, "miner type is T4");
 	}else {
 		miner_type = 0;

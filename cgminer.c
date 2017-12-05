@@ -1718,6 +1718,15 @@ static struct opt_table opt_config_table[] = {
 		     set_int_0_to_31, opt_show_intval, &opt_voltage8,
 		     "set voltage (0 ~ 31)"),
 
+    OPT_WITH_ARG("--A1Fanspd",
+			 set_int_0_to_31, opt_show_intval, &g_fan_speed,
+			 "set fan speed (0 ~ 3)"),
+	 OPT_WITH_ARG("--A1Fanmode",
+			 set_int_0_to_31, opt_show_intval, &g_auto_fan,
+			 "set fan mode (0 ~ 1)"),
+	
+ 
+
 #endif
 #ifdef USE_BITFURY
 	OPT_WITH_ARG("--bxf-bits",

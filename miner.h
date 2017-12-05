@@ -17,7 +17,10 @@
 #include "util.h"
 #include <sys/types.h>
 
-#define CHIP_A5
+#define CHIP_A6
+
+extern int g_auto_fan;
+extern int g_fan_speed;
 
 #ifndef WIN32
 # include <sys/socket.h>
@@ -118,6 +121,7 @@ static inline int fsync (int fd)
       }							      \
    } while (0)
  #endif
+
 #endif
 
 
