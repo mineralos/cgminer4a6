@@ -11,12 +11,10 @@
 #include "A5_inno.h"
 #include "A5_inno_gpio.h"
 
-#define MAGIC_NUM  100 
-
 #define IOCTL_SET_VALUE_0 _IOR(MAGIC_NUM, 0, char *)
 #define IOCTL_SET_CHAIN_0 _IOR(MAGIC_NUM, 1, char *)
 
-extern int g_hwver;
+extern hardware_version_e g_hwver;
 
 int SPI_PIN_POWER_EN[] = {
 872,

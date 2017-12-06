@@ -25,6 +25,7 @@
 #include <sys/ioctl.h>
 
 /************************************ 宏定义 ***********************************/
+#ifdef CHIP_A6
 #define ASIC_CHAIN_NUM                  4
 #define ASIC_CHIP_NUM                   72
 
@@ -50,7 +51,32 @@
 #define START_FAN_TH                      (542)
 #define PREHEAT_SPEED                     (0)
 #define DANGEROUS_TMP                     468
+#else
+#define ASIC_CHAIN_NUM                  3
+#define ASIC_CHIP_NUM                   63
 
+#define ASIC_INNO_FAN_PWM0_DEVICE_NAME  ("/dev/pwmgen0.0")
+#define ASIC_INNO_FAN_PWM_STEP            (5)
+#define ASIC_INNO_FAN_PWM_DUTY_MAX        (100)
+#define ASIC_INNO_FAN_PWM_FREQ_TARGET     (7000)
+#define ASIC_INNO_FAN_PWM_FREQ            (50000000 / ASIC_INNO_FAN_PWM_FREQ_TARGET)
+#define FAN_CNT                           ( 2 )
+#define ASIC_INNO_FAN_TEMP_MAX_THRESHOLD  (100)
+#define ASIC_INNO_FAN_TEMP_UP_THRESHOLD   (55)
+#define ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD (35)
+#define ERR_HIGH_TEMP                     (399)
+#define ERR_LOW_TEMP                      (647)
+#define FAN_FIRST_STAGE                   (550)//25
+#define FAN_SECOND_STAGE                  (512)//50
+#define FAN_THIRD_STAGE                   (474)//75
+#define FAN_FOUR_STAGE                    (437)//100
+#define FAN_DELTA                         (23)//15
+#define TEMP_LABEL                        (588)
+#define ACTIVE_STAT                       (6)
+#define START_FAN_TH                      (535)
+#define PREHEAT_SPEED                     (10)
+#define DANGEROUS_TMP                     437 
+#endif
 
 
 #define MAGIC_NUM                         (100) 
