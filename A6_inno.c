@@ -331,7 +331,7 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 	startnonce[2]=0x00;
 	startnonce[3]=0x00;
 	
-	endnonce[0]=0xff;
+	endnonce[0]=0x05;
 	endnonce[1]=0xff;
 	endnonce[2]=0xff;
 	endnonce[3]=0xff;
