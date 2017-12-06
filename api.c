@@ -2024,6 +2024,12 @@ static void ascstatus(struct io_data *io_data, int asc, bool isjson, bool precom
 
 		status = (char *)status2str(cgpu->status);
 
+		 root = api_add_int(root, "PREHT", &(cgpu->pre_heat), false);
+         root = api_add_int(root, "CID", &(cgpu->temp_prewarn[0]), false);
+		 root = api_add_string(root, "CPIDA", &(cgpu->temp_prewarn[1]), false);
+		 root = api_add_string(root, "CPIDB", &(cgpu->temp_prewarn[2]), false);
+		 root = api_add_int(root, "TEMPH", &(cgpu->temp_prewarn[3]), false);
+		
 		root = api_add_int(root, "ASC", &asc, false);
 		root = api_add_string(root, "Name", cgpu->drv->name, false);
 		root = api_add_int(root, "ID", &(cgpu->device_id), false);

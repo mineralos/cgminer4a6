@@ -515,7 +515,9 @@ struct cgpu_info {
 	int fan_duty;
 #ifndef CHIP_A6
 	double mhs_av;
-#endif	
+#endif
+    int pre_heat;
+    int temp_prewarn[4];	
 	int cutofftemp;
 
 	int64_t diff1;

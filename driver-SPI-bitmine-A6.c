@@ -1005,6 +1005,12 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
 		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];
 		cgpu->fan_duty = g_fan_ctrl.speed;
+		
+		cgpu->pre_heat = a1->pre_heat;
+		//printf("g_fan_ctrl: cid %d,chip %d, chip %d,hi %d\n",g_fan_ctrl.pre_warn[0],g_fan_ctrl.pre_warn[1],g_fan_ctrl.pre_warn[2],g_fan_ctrl.pre_warn[3]);
+		memcpy(cgpu->temp_prewarn,g_fan_ctrl.pre_warn, 4*sizeof(int));
+		//printf("cgpu: cid %d,chip %d, chip %d,hi %d\n",cgpu->temp_prewarn[0],cgpu->temp_prewarn[1],cgpu->temp_prewarn[2],cgpu->temp_prewarn[3]);
+
 				
 		cgpu->chip_num = a1->num_active_chips;
 		cgpu->core_num = a1->num_cores; 
