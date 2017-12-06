@@ -20,7 +20,11 @@ int SPI_PIN_POWER_EN[] = {
 872,
 873,
 874,
-875
+875,
+876,
+877,
+878,
+879,
 };
 
 int SPI_PIN_START_EN[] = {
@@ -28,6 +32,10 @@ int SPI_PIN_START_EN[] = {
 856,
 858,
 860,
+862,
+864,
+866,
+868,
 };
 
 int SPI_PIN_RESET[] = {
@@ -35,6 +43,10 @@ int SPI_PIN_RESET[] = {
 857,
 859,
 861,
+863,
+865,
+867,
+869,
 };
 
 int SPI_PIN_LED[] = {
@@ -42,6 +54,10 @@ int SPI_PIN_LED[] = {
 882,
 883,
 884,
+885,
+886,
+887,
+888,
 };
 
 int SPI_PIN_PLUG[] = {
@@ -49,6 +65,10 @@ int SPI_PIN_PLUG[] = {
 897,
 898,
 899,
+900,
+901,
+902,
+903,
 };
 
 void set_vid_value_g9(int level)
@@ -181,14 +201,14 @@ uint32_t get_spi_speed(void)
 
 void loop_blink_led(int pos, int cnt)
 {
-	int i;
+       int i;
     //while(--cnt)
-	while(1)
-	{
-		asic_gpio_write(pos, 1);
-		usleep(500000);
-		asic_gpio_write(pos, 0);
-	}
+      // while(1)
+       {
+               asic_gpio_write(pos, 1);
+               usleep(500000);
+               //asic_gpio_write(pos, 0);
+       }
 }
 
 void asic_gpio_init(int gpio, int direction)

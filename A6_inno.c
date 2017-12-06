@@ -18,6 +18,8 @@
 
 
 #define MUL_COEF 1.23
+extern struct spi_ctx *spi[ASIC_CHAIN_NUM];
+extern struct A1_chain *chain[ASIC_CHAIN_NUM];
 static const float inno_vsadc_table[] = {
 	0.85308,
 	0.84808,
@@ -656,6 +658,46 @@ void prechain_detect(struct A1_chain *a1, int idxpll)
 
 }
 
+bool zynq_spi_exit(void)
+{
+	int i;
+	
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		if(spi[i] != NULL)
+		{
+			spi_exit(spi[i]);
+		}
+
+		if(chain[i] != NULL)
+		{
+			free(chain[i]);
+		}
+	}
+
+	return true;
+}
+
+
+int inno_chain_power_down(struct A1_chain *a1)
+{
+	asic_gpio_write(a1->spi_ctx->power_en, 0);
+	asic_gpio_write(a1->spi_ctx->start_en, 0);
+
+	return 0;
+}
+
+
+
+int power_down_all_chain(void)
+{
+	int i;
+
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		inno_chain_power_down(chain[i]);
+	}
+}
 
 /*
  * BIST_START works only once after HW reset, on subsequent calls it

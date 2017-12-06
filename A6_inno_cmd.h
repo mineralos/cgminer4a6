@@ -107,6 +107,7 @@ struct A1_chain {
 	bool disabled;
 	uint8_t temp;
 	int last_temp_time;
+	int pre_heat;
 
 	struct timeval tvScryptLast;
 	struct timeval tvScryptCurr;

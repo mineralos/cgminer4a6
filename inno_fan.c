@@ -19,7 +19,7 @@
 /*----------------------------------- 声明区 ----------------------------------*/
 /********************************** 变量声明区 *********************************/
 /* FAN CTRL */
-extern inno_fan_temp_s g_fan_ctrl;
+//extern inno_fan_temp_s g_fan_ctrl;
 int g_auto_fan = 1;
 int g_fan_speed = 1;
 int fan_speed[4]={10,50,80,100};
@@ -34,40 +34,40 @@ static void asic_fan_speed_down(inno_fan_temp_s *fan_temp);   /*降低风扇转�
 /********************************** 变量实现区 *********************************/  
 static const int inno_tsadc_table[] = {
     /* val temp_f */
-    652, //-40, 
-    645, //-35, 
-    638, //-30, 
-    631, //-25, 
-    623, //-20, 
-    616, //-15, 
-    609, //-10, 
-    601, // -5, 
-    594, //  0, 
-    587, //  5, 
-    579, // 10, 
-    572, // 15, 
-    564, // 20, 
-    557, // 25, 
-    550, // 30, 
-    542, // 35, 
-    535, // 40, 
-    527, // 45, 
-    520, // 50, 
-    512, // 55, 
-    505, // 60, 
-    498, // 65, 
-    490, // 70, 
-    483, // 75, 
-    475, // 80, 
-    468, // 85, 
-    460, // 90, 
-    453, // 95, 
-    445, //100, 
-    438, //105, 
-    430, //110, 
-    423, //115, 
-    415, //120, 
-    408, //125, 
+    647, //-40, 
+    640, //-35, 
+    632, //-30, 
+    625, //-25, 
+    617, //-20, 
+    610, //-15, 
+    602, //-10, 
+    595, // -5, 
+    588, //  0, 
+    580, //  5, 
+    572, // 10, 
+    565, // 15, 
+    557, // 20, 
+    550, // 25, 
+    542, // 30, 
+    535, // 35, 
+    527, // 40, 
+    520, // 45, 
+    512, // 50, 
+    505, // 55, 
+    497, // 60, 
+    489, // 65, 
+    482, // 70, 
+    474, // 75, 
+    467, // 80, 
+    459, // 85, 
+    452, // 90, 
+    444, // 95, 
+    437, //100, 
+    429, //105, 
+    421, //110, 
+    414, //115, 
+    406, //120, 
+    399 //125, 
 };
 
 /********************************** 函数实现区 *********************************/
@@ -258,20 +258,45 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
    case INNO_TYPE_A6:
    case INNO_TYPE_A7:
    case INNO_TYPE_A8:
-	for(i=0; i<ACTIVE_STAT; i++)
+	for(i=0; i<ASIC_CHIP_NUM; i++)
 	{
-	 if(fan_temp->temp[chain_id][i] != 0)
-	   high_avg += fan_temp->temp[chain_id][i];
-	 else
-	 	stat_hi++;
-	}
-	
-	if(stat_hi != ACTIVE_STAT)  
-	  fan_temp->temp_highest[chain_id] = (high_avg/(ACTIVE_STAT - stat_hi));
-
-   stat_hi = 0;
-	 break;
-   
+	   if(fan_temp->temp[chain_id][i] != 0)
+	   {
+	 	  if(fan_temp->temp[chain_id][i] < PRE_DGR_TEMP)
+	 	  {
+	 	     fan_temp->pre_warn[0] = chain_id;
+			 fan_temp->pre_warn[1] = i;
+			 fan_temp->pre_warn[2] = 0;
+			 fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+	 	     printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
+		     //fan_temp->temp_highest[chain_id] = fan_temp->temp[chain_id][i];
+	      // break;
+	 	  }
+		  
+	 	    if(stat_hi < 2)
+	 		{
+              high_avg += fan_temp->temp[chain_id][i];
+			  //printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
+		      stat_hi++;
+	 	    }
+			else
+			{
+			   fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
+                if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
+                {
+                 fan_temp->pre_warn[0] = chain_id;
+			     fan_temp->pre_warn[1] = i;
+			     fan_temp->pre_warn[2] = i-1;
+			     fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+				 printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);              
+                }
+			   stat_hi = 0;
+			   break;
+			 }
+		   }
+	     }     
+	  
+     break;
    case INNO_TYPE_A9:
 	printf("Sorry do not have such type named INNO_TYPE_A9\n");
    default:
@@ -413,7 +438,7 @@ void inno_fan_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inn
 			//applog(LOG_ERR, "%s +:arv:%5.2f, lest:%5.2f, hest:%5.2f, speed:%d%%", __func__, arvarge_f, lowest_f, highest_f, 100 - fan_ctrl->duty);
 		}
 			fan_temp->speed = fan_speed[fan_temp->last_fan_temp];
-			printf("temp_highest %d, fan speed %d,last fan id: %d\n",fan_temp->temp_highest[chain_id],fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp);
+		 printf("temp_highest %d, fan speed %d,last fan id: %d\n",fan_temp->temp_highest[chain_id],fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp);
    	}else{
 		fan_temp->speed = fan_speed[g_fan_speed];
 
