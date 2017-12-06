@@ -38,19 +38,19 @@
 #define ASIC_INNO_FAN_TEMP_MAX_THRESHOLD  (100)
 #define ASIC_INNO_FAN_TEMP_UP_THRESHOLD   (55)
 #define ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD (35)
-#define ERR_HIGH_TEMP                     (399)
-#define ERR_LOW_TEMP                      (647)
-#define FAN_FIRST_STAGE                   (550)//25
-#define FAN_SECOND_STAGE                  (512)//50
-#define FAN_THIRD_STAGE                   (474)//75
-#define FAN_FOUR_STAGE                    (437)//100
+#define ERR_HIGH_TEMP                     (400)
+#define ERR_LOW_TEMP                      (655)
+#define FAN_FIRST_STAGE                   (550)//30
+#define FAN_SECOND_STAGE                  (520)//50
+#define FAN_THIRD_STAGE                   (490)//70
+#define FAN_FOUR_STAGE                    (460)//90
 #define FAN_DELTA                         (23)//15
 #define TEMP_LABEL                        (594)
 #define ACTIVE_STAT                       (6)
-#define START_FAN_TH                      (520)
+#define START_FAN_TH                      (550)//30
 #define PREHEAT_SPEED                     (0)
-#define DANGEROUS_TMP                     452
-#define PRE_DGR_TEMP                      456
+#define DANGEROUS_TMP                     (460)//90
+#define PRE_DGR_TEMP                      (456)//92.x
 
 
 #define MAGIC_NUM                         (100) 

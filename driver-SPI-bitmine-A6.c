@@ -73,7 +73,7 @@ static inno_reg_ctrl_t s_reg_ctrl;
 
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
-int fan_level[4]={10,40,80,100};
+int fan_level[4]={10,50,80,100};
 hardware_version_e g_hwver;
 inno_type_e g_type;
 /* one global board_selector and spi context is enough */
