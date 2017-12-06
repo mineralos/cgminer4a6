@@ -2398,14 +2398,14 @@ static struct opt_table opt_cmdline_table[] = {
 };
 
 /*
-uint32_t magicNum[16]= {
+uint32_t data_001[16]= {
 	0x00000020, 0x00000020, 0x02000020, 0x00000020,
 	0x10000020, 0x00000020, 0x00000020, 0x00000020, 
 	0x12000020, 0x00000020, 0x00000020, 0x00000020,
 	0x00000020, 0x00000020, 0x00000020, 0x00000020};
 */
 #ifndef CHIP_A6
-extern uint32_t magicNum[16];
+extern uint32_t data_001[16];
 #endif
 
 static void calc_midstate(struct work *work)
@@ -2420,28 +2420,28 @@ static void calc_midstate(struct work *work)
 	cg_memcpy(work->midstate, ctx.h, 32);
 	endian_flip32(work->midstate, work->midstate);
 #else
-	memcpy(work->data, &(magicNum[0]), 4);
+	memcpy(work->data, &(data_001[0]), 4);
 	flip64(data32, work->data);
 	sha256_init(&ctx);
 	sha256_update(&ctx, data, 64);
 	cg_memcpy(work->midstate, ctx.h, 32);
 	endian_flip32(work->midstate, work->midstate);
 
-	memcpy(work->data, &(magicNum[2]), 4);
+	memcpy(work->data, &(data_001[2]), 4);
 	flip64(data32, work->data);
 	sha256_init(&ctx);
 	sha256_update(&ctx, data, 64);
 	cg_memcpy(work->midstate1, ctx.h, 32);
 	endian_flip32(work->midstate1, work->midstate1);
 
-	memcpy(work->data, &(magicNum[4]), 4);
+	memcpy(work->data, &(data_001[4]), 4);
 	flip64(data32, work->data);
 	sha256_init(&ctx);
 	sha256_update(&ctx, data, 64);
 	cg_memcpy(work->midstate2, ctx.h, 32);
 	endian_flip32(work->midstate2, work->midstate2);
 	
-	memcpy(work->data, &(magicNum[8]), 4);
+	memcpy(work->data, &(data_001[8]), 4);
 	flip64(data32, work->data);
 	sha256_init(&ctx);
 	sha256_update(&ctx, data, 64);
@@ -6902,16 +6902,16 @@ out:
  * threads being created for submission since all sends need to be serialised
  * anyway. */
 #ifndef CHIP_A6
-extern char maskstr[16][9];
+extern char data_002[16][9];
 #endif
 /*
-static const char maskstr[16][9]= {
+static const char data_002[16][9]= {
 	"00000000", "00000000", "00000002", "00000000",
 	"00000010", "00000000", "00000000", "00000000", 
 	"00000012", "00000000", "00000000", "00000000",
 	"00000000", "00000000", "00000000", "00000000"}; 
 
-static const char maskstr[4][9] = 
+static const char data_002[4][9] = 
 {
 	"00000000",
 	"00000002",
@@ -6991,19 +6991,19 @@ static void *stratum_sthread(void *userdata)
 /*
 		switch (work->micro_job_id) {
 			case 1:
-				memcpy(verstr, maskstr[0], 9);
+				memcpy(verstr, data_002[0], 9);
 				break;
 			case 2:
-				memcpy(verstr, maskstr[1], 9);
+				memcpy(verstr, data_002[1], 9);
 				break;
 			case 4:
-				memcpy(verstr, maskstr[2], 9);
+				memcpy(verstr, data_002[2], 9);
 				break;
 			case 8:
-				memcpy(verstr, maskstr[3], 9);
+				memcpy(verstr, data_002[3], 9);
 				break;
 			default:
-				memcpy(verstr, maskstr[0], 9);
+				memcpy(verstr, data_002[0], 9);
 				break;
 		}
 */
@@ -7017,7 +7017,7 @@ static void *stratum_sthread(void *userdata)
 #else
 		snprintf(s, sizeof(s),
 			"{\"params\": [\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\"], \"id\": %d, \"method\": \"mining.submit\"}",
-			pool->rpc_user, work->job_id, nonce2hex, work->ntime, noncehex, maskstr[work->micro_job_id], sshare->id);
+			pool->rpc_user, work->job_id, nonce2hex, work->ntime, noncehex, data_002[work->micro_job_id], sshare->id);
 
 		//applog(LOG_INFO, "rpc_request: %s", s);
 		applog(LOG_INFO, "Submitting share %08lx with magic id %d to pool %d",

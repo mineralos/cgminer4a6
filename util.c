@@ -2012,12 +2012,12 @@ static int calculate_num_bits(int num)
 }
 #endif
 
-uint32_t magicNum[16] = {0};
-int pre_version_mask[4] = {0};
-char maskstr[16][9] = {0}; 
+uint32_t data_001[16] = {0};
+int date_003[4] = {0};
+char data_002[16][9] = {0}; 
 
 #ifndef CHIP_A6
-static void generate_magic_num_str(char *bbversion)
+static void func_001(char *bbversion)
 {
 	int bversion;
 	bversion = strtol(bbversion, NULL, 16);
@@ -2035,16 +2035,16 @@ static void generate_magic_num_str(char *bbversion)
 
 	for(i = 0; i < 4; i++)
 	{
-		uiMagicNum = bversion | pre_version_mask[i];
+		uiMagicNum = bversion | date_003[i];
 		//printf("[ccx]uiMagicNum:0x%x. \n", uiMagicNum);
 		*p1 = bswap_32(uiMagicNum);
 		
 		//printf("[ccx]*p1:0x%x. \n", *p1);
 		switch(i){
-			case 0:magicNum[8] = *p1;break;
-			case 1:magicNum[4] = *p1;break;
-			case 2:magicNum[2] = *p1;break;
-			case 3:magicNum[0] = *p1;break;
+			case 0:data_001[8] = *p1;break;
+			case 1:data_001[4] = *p1;break;
+			case 2:data_001[2] = *p1;break;
+			case 3:data_001[0] = *p1;break;
 			default:;
 		}
 	}
@@ -2053,18 +2053,18 @@ static void generate_magic_num_str(char *bbversion)
 	{
 		if((i!= 2) && (i!=4) && (i!=8))
 		{
-			magicNum[i] = magicNum[0];
+			data_001[i] = data_001[0];
 		}
 	}
 	/*
 	for(i=0;i<16;i++)
 	{
-		printf("[ccx]magicNum[%d]:0x%x. \n", i, magicNum[i]);
+		printf("[ccx]data_001[%d]:0x%x. \n", i, data_001[i]);
 	}
 	*/
 	for(i = 0; i < 16; i++)
 	{
-		memcpy(maskstr[i], defaultStr, 9);
+		memcpy(data_002[i], defaultStr, 9);
 	}
 
 	for(i = 0; i < 3; i++)
@@ -2072,20 +2072,20 @@ static void generate_magic_num_str(char *bbversion)
 		char cMask[8];
 		tmpstr = (char *)malloc(9);
 		memset(tmpstr, 0, sizeof(tmpstr));
-		num_bits = calculate_num_bits(pre_version_mask[i]);
+		num_bits = calculate_num_bits(date_003[i]);
 		for(j=0; j<(8-num_bits); j++){
 			tmpstr[j] = '0';
 		}
 
-		sprintf(cMask, "%x", pre_version_mask[i]);
+		sprintf(cMask, "%x", date_003[i]);
 		memcpy(tmpstr+8-num_bits, cMask, num_bits);
 		tmpstr[8] = '\0';
 
 		//printf("[ccx]tmpstr:%s. \n", tmpstr);
 		switch(i){
-			case 0:memcpy(maskstr[8], tmpstr, 9);break;
-			case 1:memcpy(maskstr[4], tmpstr, 9);break;
-			case 2:memcpy(maskstr[2], tmpstr, 9);break;
+			case 0:memcpy(data_002[8], tmpstr, 9);break;
+			case 1:memcpy(data_002[4], tmpstr, 9);break;
+			case 2:memcpy(data_002[2], tmpstr, 9);break;
 			default:;
 		}
 		free(tmpstr);
@@ -2093,7 +2093,7 @@ static void generate_magic_num_str(char *bbversion)
 	/*
 	for(i=0;i<16;i++)
 	{
-		printf("[ccx]maskstr[%d]:%s. \n", i, maskstr[i]);
+		printf("[ccx]data_002[%d]:%s. \n", i, data_002[i]);
 	} */
 }
 #endif
@@ -2124,7 +2124,7 @@ static bool parse_notify(struct pool *pool, json_t *val)
 	clean = json_is_true(json_array_get(val, 8));
 
 #ifndef CHIP_A6
-	generate_magic_num_str(bbversion);
+	func_001(bbversion);
 #endif
 
 	if (!valid_ascii(job_id) || !valid_hex(prev_hash) || !valid_hex(coinbase1) ||
@@ -2293,7 +2293,7 @@ static bool parse_diff(struct pool *pool, json_t *val)
 	return true;
 }
 
-static bool parse_set_version_mask(struct pool *pool, json_t *val)
+static bool func_002(struct pool *pool, json_t *val)
 {
 	char *version_mask;
 	int mask;
@@ -2308,7 +2308,7 @@ static bool parse_set_version_mask(struct pool *pool, json_t *val)
 	//mask = 0x30000;
 	//printf("mask:0x%x. \n", mask);
 
-	pre_version_mask[0] = mask;
+	date_003[0] = mask;
 
 	while(mask%16 == 0){
 		cnt++;
@@ -2328,11 +2328,11 @@ static bool parse_set_version_mask(struct pool *pool, json_t *val)
 	for(i=0; i<cnt; i++){
 		tmpMask *= 16;
 	}
-	pre_version_mask[2] = tmpMask;
-	pre_version_mask[1] = pre_version_mask[0] - tmpMask;
+	date_003[2] = tmpMask;
+	date_003[1] = date_003[0] - tmpMask;
 	/*
 	for(i=0;i<4;i++){
-		printf("pre_version_mask[%d]:0x%x. \n", i, pre_version_mask[i]);
+		printf("date_003[%d]:0x%x. \n", i, date_003[i]);
 	}
 	*/	
 	return true;
@@ -2541,7 +2541,7 @@ bool parse_method(struct pool *pool, char *s)
 	}
 
 	if (!strncasecmp(buf, "mining.set_version_mask", 23)) {
-		ret = parse_set_version_mask(pool, params);
+		ret = func_002(pool, params);
 		goto out_decref;
 	}
 

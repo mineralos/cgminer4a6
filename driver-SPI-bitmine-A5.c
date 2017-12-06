@@ -56,7 +56,7 @@ static uint32_t show_log[ASIC_CHAIN_NUM];
 static uint32_t write_flag[ASIC_CHAIN_NUM];
 static uint32_t check_disbale_flag[ASIC_CHAIN_NUM];
 static uint32_t first_flag[ASIC_CHAIN_NUM] = {0};
-extern const uint32_t magicNum[16];
+extern const uint32_t data_001[16];
 static inno_reg_ctrl_t s_reg_ctrl;
 int chain_flag[ASIC_CHAIN_NUM] = {0};
 
@@ -1199,7 +1199,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			continue;
 		}
 		work->micro_job_id = micro_job_id;
-		memcpy(work->data, &(magicNum[micro_job_id]), 4);
+		memcpy(work->data, &(data_001[micro_job_id]), 4);
 		
 		if (!submit_nonce(thr, work, nonce)) 
 		{
