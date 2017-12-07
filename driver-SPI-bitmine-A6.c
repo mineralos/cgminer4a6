@@ -29,7 +29,7 @@
 #include "A6_inno_cmd.h"
 #include "A6_inno_gpio.h"
 
-#include "inno_fan.h"
+#include "A6_inno_fan.h"
 
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];

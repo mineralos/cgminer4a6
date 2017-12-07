@@ -125,7 +125,7 @@ cgminer_SOURCES += A5_inno.c A5_inno.h
 cgminer_SOURCES += A5_inno_cmd.c
 cgminer_SOURCES += A5_inno_clock.c
 cgminer_SOURCES += A5_inno_gpio.c
-cgminer_SOURCES += inno_fan.c
+cgminer_SOURCES += A5_inno_fan.c
 cgminer_SOURCES += scrypt.c
 endif
 
@@ -142,7 +142,7 @@ cgminer_SOURCES += A6_inno.c A6_inno.h
 cgminer_SOURCES += A6_inno_cmd.c
 cgminer_SOURCES += A6_inno_clock.c
 cgminer_SOURCES += A6_inno_gpio.c
-cgminer_SOURCES += inno_fan.c
+cgminer_SOURCES += A6_inno_fan.c
 cgminer_SOURCES += scrypt.c
 endif
 

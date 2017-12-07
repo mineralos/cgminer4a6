@@ -14,7 +14,7 @@
 #include "A6_inno_cmd.h"
 #include "A6_inno_clock.h"
 #include "A6_inno_gpio.h"
-#include "inno_fan.h"
+#include "A6_inno_fan.h"
 
 
 #define MUL_COEF 1.23

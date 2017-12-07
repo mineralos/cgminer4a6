@@ -29,7 +29,7 @@
 #include "A5_inno_cmd.h"
 #include "A5_inno_gpio.h"
 
-#include "inno_fan.h"
+#include "A5_inno_fan.h"
 
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
@@ -62,7 +62,7 @@ int chain_flag[ASIC_CHAIN_NUM] = {0};
 
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
-int fan_level[4]={40,80,90,100};
+int fan_level[4]={10,50,80,100};
 hardware_version_e g_hwver;
 inno_type_e g_type;
 /* one global board_selector and spi context is enough */
@@ -521,10 +521,54 @@ void inno_get_auto_pll_vid(void)
     return;
 }
 
+#define NET_PORT 53
+#define NET_IP "8.8.8.8" //谷歌DNS
+
+ //获取联网状态
+static int check_net(void)
+ {
+
+         int fd; 
+         int in_len=0;
+         struct sockaddr_in servaddr;
+         //char buf[128];
+ 
+         in_len = sizeof(struct sockaddr_in);
+         fd = socket(AF_INET,SOCK_STREAM,0);
+         if(fd < 0)
+         {   
+                 perror("socket");
+                 return -1; 
+         }   
+ 
+         /*设置默认服务器的信息*/
+         servaddr.sin_family = AF_INET;
+         servaddr.sin_port = htons(NET_PORT);
+         servaddr.sin_addr.s_addr = inet_addr(NET_IP);
+         memset(servaddr.sin_zero,0,sizeof(servaddr.sin_zero));
+ 
+         /*connect 函数*/
+         if(connect(fd,(struct sockaddr* )&servaddr,in_len) < 0 ) 
+         {   
+ 
+               //  printf("not connect to internet!\n ");
+                 close(fd);
+                 return -2; //没有联网成功
+         }   
+         else
+         {   
+              //   printf("=====connect ok!=====\n");
+                 close(fd);
+                 return 1;
+         }   
+ }
+ 
 bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 {
-	int i;
+	int i,j;
 	uint8_t reg[64];
+	static int cnt = 0;
+	
 	//applog(LOG_ERR, "start read temp cid %d, a1 addr 0x%x\n", chain_id,a1);
 	/* update temp database */
 	uint32_t temp = 0;
@@ -533,11 +577,12 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 	{
 		return ;
 	}
+	
 	int cid = a1->chain_id;
+	//struct cgpu_info *cgpu = a1->cgpu;
 
 	//while(s_fan_ctrl.temp_highest[cid] > 505)//FAN_FIRST_STAGE)
-	while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH){
-		applog(LOG_ERR, "Pre heating");
+	do{
 		for (i = a1->num_active_chips; i > 0; i--)
 		{ 
 			if (!inno_cmd_read_reg(a1, i, reg))
@@ -556,10 +601,34 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 		asic_temp_sort(&g_fan_ctrl, chain_id);
 		inno_fan_temp_highest(&g_fan_ctrl, chain_id,g_type);
 		inno_fan_speed_set(&g_fan_ctrl,PREHEAT_SPEED);
-		applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
-	}
+		a1->pre_heat = 1;
+
+        if(check_net()== -2)
+		{
+		  cnt++;
+          //printf("cnt = %d\n",cnt);
+		}
+		else
+		{
+		 //printf("ping ok\n");
+		 cnt = 0;
+		}
+		
+		if(cnt > 20)
+		{
+		  printf("shutdown spi link\n");
+		  power_down_all_chain();
+		  
+		  for(j=0; j<ASIC_CHAIN_NUM; j++)
+		    loop_blink_led(spi[j]->led,10);
+		  
+		}
+		//applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
+	}while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH);
+	a1->pre_heat = 0;
 	return true;
 }
+
 
 void inno_preinit(struct spi_ctx *ctx, int chain_id)
 {
@@ -695,11 +764,14 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
-	inno_get_auto_pll_vid();
-	applog(LOG_ERR, "init_ReadTemp...");
+/*
+    applog(LOG_ERR, "init_ReadTemp...");
 	for(i = 0; i < ASIC_CHAIN_NUM; i++){
 		init_ReadTemp(chain[i],i);
 	}
+*/	
+
+
 #if 0
 	Test_bench_Array[0].uiVol = opt_voltage1;
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
@@ -1102,11 +1174,6 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			default:;
 		}
 
-		if(g_fan_ctrl.temp_highest[a1->chain_id] < DANGEROUS_TMP){
-			asic_gpio_write(spi[a1->chain_id]->power_en, 0);
-			loop_blink_led(spi[a1->chain_id]->led, 10);
-	   		//early_quit(1,"Notice Chain %d temp:%d Maybe Has Some Problem in Temperate\n",a1->chain_id,s_fan_ctrl.temp_highest[a1->chain_id]);
-		}
 	}
 
 	if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
@@ -1146,6 +1213,12 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
 		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];
 		cgpu->fan_duty = g_fan_ctrl.speed;
+		
+		cgpu->pre_heat = a1->pre_heat;
+		//printf("g_fan_ctrl: cid %d,chip %d, chip %d,hi %d\n",g_fan_ctrl.pre_warn[0],g_fan_ctrl.pre_warn[1],g_fan_ctrl.pre_warn[2],g_fan_ctrl.pre_warn[3]);
+		memcpy(cgpu->temp_prewarn,g_fan_ctrl.pre_warn, 4*sizeof(int));
+		//printf("cgpu: cid %d,chip %d, chip %d,hi %d\n",cgpu->temp_prewarn[0],cgpu->temp_prewarn[1],cgpu->temp_prewarn[2],cgpu->temp_prewarn[3]);
+
 				
 		cgpu->chip_num = a1->num_active_chips;
 		cgpu->core_num = a1->num_cores;

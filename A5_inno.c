@@ -14,10 +14,12 @@
 #include "A5_inno_cmd.h"
 #include "A5_inno_clock.h"
 #include "A5_inno_gpio.h"
-#include "inno_fan.h"
+#include "A5_inno_fan.h"
 
 
 #define MUL_COEF 1.248
+extern struct spi_ctx *spi[ASIC_CHAIN_NUM];
+extern struct A1_chain *chain[ASIC_CHAIN_NUM];
 static const float inno_vsadc_table[32] = {
 	0.44047619,
 	0.437809524,
@@ -435,36 +437,44 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
 	}
 
 	//if the core in chain least than 600, reinit this chain 	
-	if(a1->num_cores <= LEAST_CORE_ONE_CHAIN)
-	{
-		applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
-		applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
-		applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
-		
-		asic_gpio_write(ctx->power_en, 0);
-		sleep(3);
-		asic_gpio_write(ctx->power_en, 1);
-		sleep(2);
-		asic_gpio_write(ctx->reset, 1);
-		sleep(1);
-		asic_gpio_write(ctx->start_en, 1);
-		sleep(2);
-		
-		inno_preinit(ctx, cid);
-		
-		a1->num_chips =  chain_detect(a1);
-		usleep(10000);
-		
-		if (a1->num_chips <= 0)
-			goto failure;
+    if(asic_gpio_read(ctx->plug) == 0)
+    {
+	    if(a1->num_cores <= LEAST_CORE_ONE_CHAIN)
+	    {
+	    	applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
+	    	applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
+	    	applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
+	    	
+	    	asic_gpio_write(ctx->power_en, 0);
+	    	sleep(3);
+	    	asic_gpio_write(ctx->power_en, 1);
+	    	sleep(2);
+	    	asic_gpio_write(ctx->reset, 1);
+	    	sleep(1);
+	    	asic_gpio_write(ctx->start_en, 1);
+	    	sleep(2);
+	    	
+	    	inno_preinit(ctx, cid);
+	    	
+	    	a1->num_chips =  chain_detect(a1);
+            a1->num_cores = 0;
+	    	usleep(10000);
+	    	
+	    	if (a1->num_chips <= 0)
+	    		goto failure;
 
-		inno_cmd_bist_fix(a1, ADDR_BROADCAST);
+	    	inno_cmd_bist_fix(a1, ADDR_BROADCAST);
 
-		for (i = 0; i < a1->num_active_chips; i++)
-		{
-			check_chip(a1, i);
-		}
-	}
+	    	for (i = 0; i < a1->num_active_chips; i++)
+	    	{
+	    		check_chip(a1, i);
+	    	}
+	    }
+    }
+    else
+    {
+	    applog(LOG_WARNING, "******there is no board insert******");
+    }
 	
 	return;
 
@@ -654,6 +664,46 @@ void prechain_detect(struct A1_chain *a1, int idxpll)
 
 }
 
+bool zynq_spi_exit(void)
+{
+	int i;
+	
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		if(spi[i] != NULL)
+		{
+			spi_exit(spi[i]);
+		}
+
+		if(chain[i] != NULL)
+		{
+			free(chain[i]);
+		}
+	}
+
+	return true;
+}
+
+
+int inno_chain_power_down(struct A1_chain *a1)
+{
+	asic_gpio_write(a1->spi_ctx->power_en, 0);
+	asic_gpio_write(a1->spi_ctx->start_en, 0);
+
+	return 0;
+}
+
+
+
+int power_down_all_chain(void)
+{
+	int i;
+
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		inno_chain_power_down(chain[i]);
+	}
+}
 
 /*
  * BIST_START works only once after HW reset, on subsequent calls it

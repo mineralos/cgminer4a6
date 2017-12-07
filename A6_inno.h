@@ -2,7 +2,7 @@
 #define _A6_INNO_
 
 #include "A6_inno_cmd.h"
-#include "inno_fan.h"
+#include "A6_inno_fan.h"
 
 #define WEAK_CHIP_THRESHOLD	5
 #define BROKEN_CHIP_THRESHOLD 5
