@@ -631,10 +631,10 @@ static bool detect_A1_chain(void)
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
 
-    applog(LOG_ERR, "init_ReadTemp...");
-	for(i = 0; i < ASIC_CHAIN_NUM; i++){
-		init_ReadTemp(chain[i],i);
-	}
+    //applog(LOG_ERR, "init_ReadTemp...");
+	//for(i = 0; i < ASIC_CHAIN_NUM; i++){
+	//	init_ReadTemp(chain[i],i);
+	//}
 	
 
 
