@@ -509,6 +509,41 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 	return true;
 }
 
+void init_CheckNet()
+{
+	int j;
+	static int cnt = 0;
+
+	while(cnt <=2){
+		if(check_net() == -2)
+		{
+			cnt++;
+        	//printf("cnt = %d\n",cnt);
+        	sleep(1);
+		}
+		else
+		{
+		 	//printf("ping ok\n");
+		 	cnt = 0;
+			break;
+		}
+	}
+		
+	if(cnt >= 2)
+	{
+		 printf("shutdown spi link\n");
+		 power_down_all_chain();
+		  
+		 for(j=0; j<ASIC_CHAIN_NUM; j++)
+		 {
+		    loop_blink_led(spi[j]->led,10);
+		  
+		}
+		exit(1);
+	}
+
+	return;
+}
 
 void inno_preinit(struct spi_ctx *ctx, int chain_id)
 {
@@ -632,6 +667,7 @@ static bool detect_A1_chain(void)
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
 
+	init_CheckNet();
     //applog(LOG_ERR, "init_ReadTemp...");
 	//for(i = 0; i < ASIC_CHAIN_NUM; i++){
 	//	init_ReadTemp(chain[i],i);
@@ -771,6 +807,7 @@ static bool detect_A1_chain(void)
 	printf("The best group is %d!!! \t \n", index);
 	config_best_pll_vid(Test_bench_Array[index].uiPll, Test_bench_Array[index].uiVol);
 #endif
+
 	return (cnt == 0) ? false : true;
 }
 
