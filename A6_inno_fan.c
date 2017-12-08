@@ -229,13 +229,28 @@ void inno_fan_temp_init(inno_fan_temp_s *fan_temp)
 	
 bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp)
 {
+  int i = 0;
   if((temp > ERR_LOW_TEMP) || (temp < ERR_HIGH_TEMP))
   {
-	printf("Notice!!! Error temperature %d\n",temp);
+	printf("Notice!!! Error temperature %d for chain %d, chip %d\n",temp, chain_id, chip_id);
    return false;
   }
   
-  fan_temp->valid_temp[chain_id][chip_id-1] = 1;
+  //fan_temp->valid_temp[chain_id][chip_id-1] = 1;
+
+   if(temp < PRE_DGR_TEMP)
+  {
+     fan_temp->pre_warn[0] = chain_id;
+     fan_temp->pre_warn[1] = chip_id;
+     fan_temp->pre_warn[2] = 0;
+     fan_temp->pre_warn[3] = (TEMP_LABEL -	temp) * 5 / 7.5;
+ //fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+     //printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,chip_id,temp);
+ //fan_temp->temp_highest[chain_id] = fan_temp->temp[chain_id][i];
+// break;
+  }
+
+
   fan_temp->temp[chain_id][chip_id-1] = temp;
   //printf("chain %d, chip %d, temp %d\n",chain_id, chip_id,fan_temp->temp[chain_id][chip_id-1]);
   return true;
@@ -262,6 +277,7 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
 	{
 	   if(fan_temp->temp[chain_id][i] != 0)
 	   {
+	     #if 0
 	 	  if(fan_temp->temp[chain_id][i] < PRE_DGR_TEMP)
 	 	  {
 	 	     fan_temp->pre_warn[0] = chain_id;
@@ -273,10 +289,12 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
 		     //fan_temp->temp_highest[chain_id] = fan_temp->temp[chain_id][i];
 	      // break;
 	 	  }
+		  #endif
 		  
 	 	    if(stat_hi < 2)
 	 		{
               high_avg += fan_temp->temp[chain_id][i];
+			  fan_temp->pre_warn[2] = 0;
 			  //printf("There maybe some problem in chain %d, chip %d,The highest temp %d\n",chain_id,i,fan_temp->temp[chain_id][i]);
 		      stat_hi++;
 	 	    }
@@ -286,12 +304,12 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
                 if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
                 {
                  fan_temp->pre_warn[0] = chain_id;
-			     fan_temp->pre_warn[1] = i;
-			     fan_temp->pre_warn[2] = i-1;
+			    // fan_temp->pre_warn[1] = i;
+			     fan_temp->pre_warn[2] = fan_temp->pre_warn[1] - 1;
 			    // fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
 				 
 				 fan_temp->pre_warn[3] = (TEMP_LABEL -	fan_temp->temp_highest[chain_id]) * 5 / 7.5;
-				 printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);              
+				// printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);              
                 }
 			   stat_hi = 0;
 			   break;
@@ -447,7 +465,7 @@ void inno_fan_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inn
 			//applog(LOG_ERR, "%s +:arv:%5.2f, lest:%5.2f, hest:%5.2f, speed:%d%%", __func__, arvarge_f, lowest_f, highest_f, 100 - fan_ctrl->duty);
 		}
 			fan_temp->speed = fan_speed[fan_temp->last_fan_temp];
-		 printf("temp_highest %d, fan speed %d,last fan id: %d\n",fan_temp->temp_highest[chain_id],fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp);
+		 //printf("temp_highest %d, fan speed %d,last fan id: %d\n",fan_temp->temp_highest[chain_id],fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp);
    	}else{
 		fan_temp->speed = fan_speed[g_fan_speed];
 
