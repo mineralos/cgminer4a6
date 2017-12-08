@@ -76,6 +76,7 @@ int spi_plug_status[ASIC_CHAIN_NUM] = {0};
 int fan_level[4]={10,50,80,100};
 hardware_version_e g_hwver;
 inno_type_e g_type;
+int g_reset_delay = 0xffff;
 /* one global board_selector and spi context is enough */
 //static struct board_selector *board_selector;
 //static struct spi_ctx *spi;

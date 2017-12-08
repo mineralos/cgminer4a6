@@ -10569,6 +10569,13 @@ begin_bench:
 		int ts, max_staged = max_queue;
 		struct pool *pool;
 
+		if(g_reset_delay != 0xffff)
+		{
+			applog(LOG_INFO, "powerdown for api commond");
+			power_down_all_chain();
+			sleep(g_reset_delay);
+			exit(1);
+		}
 		if (opt_work_update)
 			signal_work_update();
 		opt_work_update = false;

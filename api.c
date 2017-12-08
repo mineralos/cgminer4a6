@@ -4059,7 +4059,18 @@ static void fanspd(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *p
 	  g_fan_speed = fan_speed;
 }
 
+static void powerdown(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, bool isjson, char group)
+{	
+	if (param == NULL || *param == '\0') {
+	
+		message(io_data, MSG_MISPDP, 0, NULL, isjson);
+		
+		return;
+	}
 
+	//g_reset_delay = 1;
+	g_reset_delay = atoi(param);
+}
 
 static void checkcommand(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, bool isjson, char group);
 
@@ -4120,6 +4131,7 @@ struct CMDS {
 	{ "lockstats",		lockstats,	true,		true },
     { "fanmode",		fanmode,	false,	true },
     { "fanspd",		    fanspd,	    false,		true },
+	{ "powerdown",		powerdown,	false,	true },
 	{ NULL,			NULL,		false,	false }
 };
 

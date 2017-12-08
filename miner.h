@@ -21,6 +21,7 @@
 
 extern int g_auto_fan;
 extern int g_fan_speed;
+extern int g_reset_delay;
 
 #ifndef WIN32
 # include <sys/socket.h>
