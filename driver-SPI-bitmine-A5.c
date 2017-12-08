@@ -1076,7 +1076,7 @@ void A1_detect(bool hotplug)
 #define CHECK_DISABLE_TIME  60
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
-#define  LOG_FILE_PREFIX "/tmp/analys"
+#define  LOG_FILE_PREFIX "/tmp/log/analys"
 
 uint8_t cLevelError1[3] = "!";
 uint8_t cLevelError2[3] = "#";
