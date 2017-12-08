@@ -846,6 +846,11 @@ char *set_int_range(const char *arg, int *i, int min, int max)
 	return NULL;
 }
 
+static char *set_int_0_to_1(const char *arg, int *i)
+{
+	return set_int_range(arg, i, 0, 1);
+}
+
 static char *set_int_0_to_65535(const char *arg, int *i)
 {
 	return set_int_range(arg, i, 0, 65535);
@@ -1719,14 +1724,11 @@ static struct opt_table opt_config_table[] = {
 		     "set voltage (0 ~ 31)"),
 
     OPT_WITH_ARG("--A1Fanspd",
-			 set_int_0_to_31, opt_show_intval, &g_fan_speed,
-			 "set fan speed (0 ~ 3)"),
-	 OPT_WITH_ARG("--A1Fanmode",
-			 set_int_0_to_31, opt_show_intval, &g_auto_fan,
-			 "set fan mode (0 ~ 1)"),
-	
- 
-
+			 set_int_0_to_100, opt_show_intval, &g_fan_speed,
+			 "set fan speed (0 ~ 100)"),
+	OPT_WITH_ARG("--A1Fanmode",
+			 set_int_0_to_1, opt_show_intval, &g_auto_fan,
+			 "set fan control (0 ~ 1)"),
 #endif
 #ifdef USE_BITFURY
 	OPT_WITH_ARG("--bxf-bits",

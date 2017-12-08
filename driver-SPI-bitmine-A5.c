@@ -981,7 +981,9 @@ void A1_detect(bool hotplug)
 	/* no hotplug support for SPI */
 	if (hotplug)
 		return;
-
+		
+    struct timeval test_tv;
+	int j = 0;
 	/* parse bimine-a1-options */
 	if (opt_bitmine_a1_options != NULL && parsed_config_options == NULL) {
 		int ref_clk = 0;
@@ -1024,7 +1026,21 @@ void A1_detect(bool hotplug)
 	memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
 	
 	inno_fan_temp_init(&g_fan_ctrl);
+
+	 // update time
+	for(j = 0; j < 100; j++)
+	{
+		 cgtime(&test_tv);
+		 if(test_tv.tv_sec > 1000000000)
+		 {
+			 break;
+		 }
 	
+		 usleep(500000);
+	}
+
+
+		
 	A1Pll1 = A1_ConfigA1PLLClock(opt_A1Pll1);
 	A1Pll2 = A1_ConfigA1PLLClock(opt_A1Pll2);
 	A1Pll3 = A1_ConfigA1PLLClock(opt_A1Pll3);
