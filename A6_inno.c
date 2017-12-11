@@ -490,7 +490,10 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
     }
     else
     {
-	    applog(LOG_WARNING, "******there is no board insert******");
+	    applog(LOG_WARNING, "****there is no board insert,change all gpio to zero****");
+		asic_gpio_write(ctx->power_en, 0);
+		asic_gpio_write(ctx->reset, 0);
+		asic_gpio_write(ctx->start_en, 0);
     }
 	
 	return;
