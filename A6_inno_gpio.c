@@ -87,9 +87,11 @@ void set_vid_value_g9(int level)
     if(ioctl(fd, IOCTL_SET_VALUE_0, 0x100 | level) < 0)
     {
         fprintf(stderr, "set vid value fail.\n");
+		close(fd);
         return;
     }
-    close(fd);	
+    close(fd);
+	return;
 }
 
 void set_vid_value_g19(int level, int chainNum)
@@ -108,15 +110,18 @@ void set_vid_value_g19(int level, int chainNum)
 	if(ioctl(fd, IOCTL_SET_CHAIN_0, chainNum) < 0)
 	{
 		fprintf(stderr, "set vid value fail.\n");
+		close(fd);
 		return;
 	}
 	
 	if(ioctl(fd, IOCTL_SET_VALUE_0, 0x100 | level) < 0)
 	{
 		fprintf(stderr, "set vid value fail.\n");
+		close(fd);
 		return;
 	}
-	close(fd);	
+	close(fd);
+	return;
 }
 
 void set_vid_value(int level)
@@ -132,6 +137,7 @@ void set_vid_value(int level)
 	}else{
 		fprintf(stderr, "Set vid but hardware version is unknown!!!");
 	}
+	return;
 }
 
 void asic_spi_init(void)
@@ -149,6 +155,7 @@ void asic_spi_init(void)
 	sprintf(fvalue, "%s", "fclk1");
 	write(fd, fvalue, strlen(fvalue));
 	close(fd);
+	return;
 }
 
 uint32_t set_spi_speed(uint32_t speed)
@@ -176,7 +183,8 @@ uint32_t set_spi_speed(uint32_t speed)
 	memset(fvalue, 0, sizeof(fvalue));
 	read(fd, fvalue, 12);			  
 	rdspeed = atoi(fvalue); 		  
-									  
+	close(fd);
+	
 	return rdspeed;
 
 }
@@ -195,20 +203,23 @@ uint32_t get_spi_speed(void)
 	memset(fvalue, 0, sizeof(fvalue));	  
 	read(fd, fvalue, 12);				  
 	speed = atoi(fvalue);				  
-										  
+	close(fd);
+	
 	return speed;
 }
 
 void loop_blink_led(int pos, int cnt)
 {
-       int i;
+	int i;
     //while(--cnt)
-      // while(1)
-       {
-               asic_gpio_write(pos, 1);
-               usleep(500000);
-               //asic_gpio_write(pos, 0);
-       }
+	while(1)
+	{
+	    usleep(500000);
+	    asic_gpio_write(pos, 1);
+	    usleep(500000);
+	    asic_gpio_write(pos, 0);
+	}
+	return;
 }
 
 void asic_gpio_init(int gpio, int direction)
@@ -243,6 +254,7 @@ void asic_gpio_init(int gpio, int direction)
 		write(fd, SYSFS_GPIO_DIR_IN, sizeof(SYSFS_GPIO_DIR_IN));
 	}	
 	close(fd);
+	return;
 }
 
 void asic_gpio_write(int gpio, int value)
@@ -278,7 +290,8 @@ void asic_gpio_write(int gpio, int value)
 	{
 		write(fd, SYSFS_GPIO_VAL_HIGH, sizeof(SYSFS_GPIO_VAL_HIGH));
 	}	
-	close(fd);	
+	close(fd);
+	return;
 }
 
 int asic_gpio_read(int gpio)
@@ -310,10 +323,12 @@ int asic_gpio_read(int gpio)
 	read(fd, fvalue, 1);
 	if(fvalue[0] == '0')
 	{
+		close(fd);
 		return 0;
 	}
 	else
 	{
+		close(fd);
 		return 1;
 	}	
 }  

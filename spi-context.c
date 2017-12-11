@@ -27,6 +27,7 @@ struct spi_ctx *spi_init(struct spi_config *config)
 	if (config == NULL)
 		return NULL;
 
+	memset(dev_fname, 0, sizeof(dev_fname));
 	sprintf(dev_fname, SPI_DEVICE_TEMPLATE, config->bus, config->cs_line);
 
 	int fd = open(dev_fname, O_RDWR);
@@ -64,8 +65,6 @@ struct spi_ctx *spi_init(struct spi_config *config)
 
 extern void spi_exit(struct spi_ctx *ctx)
 {
-	char dev_fname[PATH_MAX];
-
 	if (NULL == ctx)
 	{
 		return;

@@ -531,13 +531,12 @@ void init_CheckNet()
 		
 	if(cnt >= 2)
 	{
-		 printf("shutdown spi link\n");
-		 power_down_all_chain();
-		  
-		 for(j=0; j<ASIC_CHAIN_NUM; j++)
-		 {
-		    loop_blink_led(spi[j]->led,10);
-		  
+		printf("shutdown spi link\n");
+		power_down_all_chain();
+		 
+		for(j=0; j<ASIC_CHAIN_NUM; j++)
+		{
+		   asic_gpio_write(chain[j]->spi_ctx->led, 1);
 		}
 		exit(1);
 	}
