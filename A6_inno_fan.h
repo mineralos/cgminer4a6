@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <sys/ioctl.h>
 
-
 #define ASIC_CHAIN_NUM                  4
 #define ASIC_CHIP_NUM                   72
 

@@ -79,13 +79,22 @@ static int asic_temp_compare(const void *a, const void *b)
 static float asic_temp_to_float(inno_fan_temp_s *fan_ctrl, int chain_id)
 {
   int i = 0;
+  
 
- for(i=0; i<ASIC_CHAIN_NUM; i++)
- {
-   fan_ctrl->temp2float[i][0] = (TEMP_LABEL - fan_ctrl->temp_highest[i]) * 5 / 7.5;
-   fan_ctrl->temp2float[i][1] = (TEMP_LABEL - fan_ctrl->temp_arvarge[i]) * 5 / 7.5;
-   fan_ctrl->temp2float[i][2] = (TEMP_LABEL - fan_ctrl->temp_lowest[i]) * 5 / 7.5;
- }
+  for(i=0; i<ASIC_CHAIN_NUM; i++)
+  {
+    if((fan_ctrl->temp_highest[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_highest[i] < ERR_HIGH_TEMP) || \
+      (fan_ctrl->temp_arvarge[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_arvarge[i] < ERR_HIGH_TEMP) || \
+      (fan_ctrl->temp_lowest[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_lowest[i] < ERR_HIGH_TEMP) )
+    {
+      printf("Notice!!! Error temperature for chain %d, chip %d\n", chain_id, i);
+      continue ;
+    }
+
+    fan_ctrl->temp2float[i][0] = (TEMP_LABEL - fan_ctrl->temp_highest[i]) * 5 / 7.5;
+    fan_ctrl->temp2float[i][1] = (TEMP_LABEL - fan_ctrl->temp_arvarge[i]) * 5 / 7.5;
+    fan_ctrl->temp2float[i][2] = (TEMP_LABEL - fan_ctrl->temp_lowest[i]) * 5 / 7.5;
+  }
 }
 
 
