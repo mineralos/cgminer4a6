@@ -6,6 +6,7 @@
 
 #define WEAK_CHIP_THRESHOLD	5
 #define BROKEN_CHIP_THRESHOLD 5
+#define LOCK_USER 0
 
 #define INNO_MINER_TYPE_FILE			"/tmp/type"
 #define INNO_HARDWARE_VERSION_FILE		"/tmp/hwver"

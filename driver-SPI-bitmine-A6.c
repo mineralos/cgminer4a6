@@ -61,6 +61,9 @@ uint8_t A1Pll3=A5_PLL_CLOCK_800MHz;
 uint8_t A1Pll4=A5_PLL_CLOCK_800MHz;
 uint8_t A1Pll5=A5_PLL_CLOCK_800MHz;
 uint8_t A1Pll6=A5_PLL_CLOCK_800MHz;
+uint8_t A1Pll7=A5_PLL_CLOCK_800MHz;
+uint8_t A1Pll8=A5_PLL_CLOCK_800MHz;
+
 
 /* FAN CTRL */
 inno_fan_temp_s g_fan_ctrl;
@@ -564,6 +567,8 @@ void inno_preinit(struct spi_ctx *ctx, int chain_id)
 		case 3:prechain_detect(a1, A1Pll4);break;
 		case 4:prechain_detect(a1, A1Pll5);break;
 		case 5:prechain_detect(a1, A1Pll6);break;
+		case 6:prechain_detect(a1, A1Pll6);break;
+		case 7:prechain_detect(a1, A1Pll6);break;
 		default:;
 	}
 	//add 0929
@@ -666,7 +671,7 @@ static bool detect_A1_chain(void)
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
 
-	init_CheckNet();
+	//init_CheckNet();
     //applog(LOG_ERR, "init_ReadTemp...");
 	//for(i = 0; i < ASIC_CHAIN_NUM; i++){
 	//	init_ReadTemp(chain[i],i);
@@ -884,6 +889,8 @@ void A1_detect(bool hotplug)
 	A1Pll4 = A1_ConfigA1PLLClock(opt_A1Pll4);
 	A1Pll5 = A1_ConfigA1PLLClock(opt_A1Pll5);
 	A1Pll6 = A1_ConfigA1PLLClock(opt_A1Pll6);
+	A1Pll7 = A1_ConfigA1PLLClock(opt_A1Pll7);
+	A1Pll8 = A1_ConfigA1PLLClock(opt_A1Pll8);
 
 #if 0
 	/* detect and register supported products */
@@ -910,8 +917,8 @@ void A1_detect(bool hotplug)
 
 #define TEMP_UPDATE_INT_MS	10000
 #define VOLTAGE_UPDATE_INT  120
-#define WRITE_CONFG_TIME  1
-#define CHECK_DISABLE_TIME  1
+#define WRITE_CONFG_TIME  3
+#define CHECK_DISABLE_TIME  30
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
 #define  LOG_FILE_PREFIX "/tmp/log/analys"
@@ -1173,11 +1180,12 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			case 3:check_disabled_chips(a1, A1Pll4);;break;
 			case 4:check_disabled_chips(a1, A1Pll5);;break;
 			case 5:check_disabled_chips(a1, A1Pll6);;break;
+			case 6:check_disabled_chips(a1, A1Pll7);;break;
+			case 7:check_disabled_chips(a1, A1Pll8);;break;
 			default:;
 		}
 		check_disbale_flag[cid] = 0;
 	}
-
 
 	mutex_unlock(&a1->lock);
 
@@ -1202,6 +1210,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		case 3:A1Pll = PLL_Clk_12Mhz[A1Pll4].speedMHz;break;
 		case 4:A1Pll = PLL_Clk_12Mhz[A1Pll5].speedMHz;break;
 		case 5:A1Pll = PLL_Clk_12Mhz[A1Pll6].speedMHz;break;
+		case 6:A1Pll = PLL_Clk_12Mhz[A1Pll7].speedMHz;break;
+		case 7:A1Pll = PLL_Clk_12Mhz[A1Pll8].speedMHz;break;
 		default:;
 	}
 

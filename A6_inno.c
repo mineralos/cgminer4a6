@@ -714,7 +714,7 @@ int chain_detect(struct A1_chain *a1)
 	int i;
 
 	set_spi_speed(3250000);
-	usleep(1000);
+	sleep(2);
 
 	memset(buffer, 0, sizeof(buffer));
 	if(!inno_cmd_bist_start(a1, 0, buffer))
