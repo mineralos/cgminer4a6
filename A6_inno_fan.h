@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <sys/ioctl.h>
 
-#define ASIC_CHAIN_NUM                  4
+#define ASIC_CHAIN_NUM                  8
 #define ASIC_CHIP_NUM                   72
 
 #define ASIC_INNO_FAN_PWM0_DEVICE_NAME  ("/dev/pwmgen0.0")
