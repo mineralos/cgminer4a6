@@ -204,8 +204,8 @@ struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
 
         inno_fan_temp_add(&g_fan_ctrl, chain_id, i+1, a1->chips[i].temp);
     }
-   
-   inno_fan_temp_update(&g_fan_ctrl,chain_id, g_type,fan_level);
+   chain_temp_update(&g_fan_ctrl, chain_id, g_type);
+  // inno_fan_temp_update(&g_fan_ctrl,chain_id, g_type,fan_level);
 	   
 	   applog(LOG_WARNING, "[chain_ID:%d]: Found %d Chips With Total %d Active Cores",a1->chain_id, a1->num_active_chips, a1->num_cores);
 	   applog(LOG_WARNING, "[chain_ID]: Temp:%d\n",g_fan_ctrl.temp_highest[chain_id]);
@@ -670,6 +670,8 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
+	
+	inno_fan_speed_update(&g_fan_ctrl,fan_level);
 
 	//init_CheckNet();
     //applog(LOG_ERR, "init_ReadTemp...");
@@ -1016,7 +1018,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
             inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
 		}    
 
-		inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		//inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		chain_temp_update(&g_fan_ctrl, cid, g_type);
 		cgpu->temp = g_fan_ctrl.temp2float[cid][1];
 		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
 		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];
@@ -1060,7 +1063,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			    
 		}
 
-		inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		//inno_fan_temp_update(&g_fan_ctrl, cid, g_type,fan_level);
+		chain_temp_update(&g_fan_ctrl, cid, g_type);
 		cgpu->temp = g_fan_ctrl.temp2float[cid][1];
 		cgpu->temp_max = g_fan_ctrl.temp2float[cid][0];
 		cgpu->temp_min = g_fan_ctrl.temp2float[cid][2];

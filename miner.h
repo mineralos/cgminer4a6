@@ -16,12 +16,16 @@
 #include "logging.h"
 #include "util.h"
 #include <sys/types.h>
+#include "A6_inno_fan.h"
 
 #define CHIP_A6
 
 extern int g_auto_fan;
 extern int g_fan_speed;
 extern int g_reset_delay;
+extern int fan_level[4];
+extern inno_fan_temp_s g_fan_ctrl;
+
 
 #ifndef WIN32
 # include <sys/socket.h>

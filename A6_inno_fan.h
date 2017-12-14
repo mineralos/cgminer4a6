@@ -1,21 +1,21 @@
 /******************************************************************************
  *
- * æ–‡ä»¶å  ï¼š 
- * è´Ÿè´£äºº  ï¼š yex
- * åˆ›å»ºæ—¥æœŸï¼š 20171122 
- * ç‰ˆæœ¬å·  ï¼š 
- * æ–‡ä»¶æè¿°ï¼š 
- * ç‰ˆæƒè¯´æ˜ï¼š Copyright (c) 2000-2020   GNU
- * å…¶    ä»–ï¼š æ— 
- * ä¿®æ”¹æ—¥å¿—ï¼š æ— 
+ * ÎÄ¼şÃû  £º 
+ * ¸ºÔğÈË  £º yex
+ * ´´½¨ÈÕÆÚ£º 20171122 
+ * °æ±¾ºÅ  £º 
+ * ÎÄ¼şÃèÊö£º 
+ * °æÈ¨ËµÃ÷£º Copyright (c) 2000-2020   GNU
+ * Æä    Ëû£º ÎŞ
+ * ĞŞ¸ÄÈÕÖ¾£º ÎŞ
  *
  *******************************************************************************/
 
-/*---------------------------------- é¢„å¤„ç†åŒº ---------------------------------*/
+/*---------------------------------- Ô¤´¦ÀíÇø ---------------------------------*/
 #ifndef _A6_INNO_FAN_H_
 #define _A6_INNO_FAN_H_
 
-/************************************ å¤´æ–‡ä»¶ ***********************************/
+/************************************ Í·ÎÄ¼ş ***********************************/
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -62,22 +62,22 @@
 #define ASIC_INNO_FAN_TEMP_MARGIN_RATE  (5.0f / 100.0f)
 #define ASIC_INNO_FAN_CTLR_FREQ_DIV     (0)
 
-/*--------------------------------- æ¥å£å£°æ˜åŒº --------------------------------*/
+/*--------------------------------- ½Ó¿ÚÉùÃ÷Çø --------------------------------*/
 
-/*********************************** å…¨å±€å˜é‡ **********************************/
+/*********************************** È«¾Ö±äÁ¿ **********************************/
 typedef struct {
-	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* ç”¨äºå­˜æ”¾æ‰€æœ‰é“¾ä¸Šçš„èŠ¯ç‰‡æ¸©åº¦*/
-	bool valid_temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];  //ç”¨äºåˆ¤æ–­è¯¥æ¸©åº¦æ˜¯å¦æœ‰æ•ˆ
-    int index[ASIC_CHAIN_NUM];                  /*å¯¹åº”é“¾ä¸Šçš„chip_id */
+	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* ÓÃÓÚ´æ·ÅËùÓĞÁ´ÉÏµÄĞ¾Æ¬ÎÂ¶È*/
+	bool valid_temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];  //ÓÃÓÚÅĞ¶Ï¸ÃÎÂ¶ÈÊÇ·ñÓĞĞ§
+    int index[ASIC_CHAIN_NUM];                  /*¶ÔÓ¦Á´ÉÏµÄchip_id */
 
-    int speed;                              /* 0 - 100ç”¨äºè®¾ç½®é£æ‰‡è½¬é€Ÿ(å¯èƒ½32æ¡£) */
+    int speed;                              /* 0 - 100ÓÃÓÚÉèÖÃ·çÉÈ×ªËÙ(¿ÉÄÜ32µµ) */
     int last_fan_speed;
 	int auto_ctrl;
 	int pre_warn[4];
 
-    int temp_arvarge[ASIC_CHAIN_NUM];          /*å¯¹åº”é“¾ä¸Šçš„å¹³å‡æ¸©åº¦*/
-    int temp_highest[ASIC_CHAIN_NUM];            /*å¯¹åº”é“¾ä¸Šçš„æœ€é«˜æ¸©åº¦*/
-    int temp_lowest[ASIC_CHAIN_NUM];             /*å¯¹åº”é“¾ä¸Šçš„æœ€ä½æ¸©åº¦*/
+    int temp_arvarge[ASIC_CHAIN_NUM];          /*¶ÔÓ¦Á´ÉÏµÄÆ½¾ùÎÂ¶È*/
+    int temp_highest[ASIC_CHAIN_NUM];            /*¶ÔÓ¦Á´ÉÏµÄ×î¸ßÎÂ¶È*/
+    int temp_lowest[ASIC_CHAIN_NUM];             /*¶ÔÓ¦Á´ÉÏµÄ×îµÍÎÂ¶È*/
 	float temp2float[ASIC_CHAIN_NUM][3];         /*[][0]->highest,[][1]->avg, [][2]->lowest*/
     int last_fan_temp;
 	pthread_mutex_t lock;                       /* lock */
@@ -96,23 +96,16 @@ typedef enum{
 }inno_type_e;
 
 
-/*********************************** æ¥å£å‡½æ•° **********************************/
-void inno_fan_temp_init(inno_fan_temp_s *fan_temp);   /*ä¸»è¦ç”¨äºAxç³»åˆ—åˆå§‹åŒ–é£æ‰‡æ§åˆ¶ä¸æ¸©åº¦æ˜¾ç¤º*/
-
-bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp); /*ç”¨äºå®æ—¶æ›´æ–°ç»Ÿè®¡åˆ°çš„å½“å‰æ¸©åº¦å€¼ï¼Œå¼‚å¸¸è®°å½•*/
-
-void asic_temp_sort(inno_fan_temp_s *fan_temp, int chain_id);   /*å¯¹å•æ¡é“¾ç»Ÿè®¡åˆ°çš„æ‰€æœ‰æ¸©åº¦åšä¸€æ¬¡å‡åºæ’åˆ—*/
-
-int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*æä¾›å½“å‰é“¾ç»Ÿè®¡åˆ°çš„å®æ—¶æœ€é«˜æ¸©åº¦(chip_type)*/
-
-int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*æä¾›å½“å‰é“¾ç»Ÿè®¡åˆ°çš„å®æ—¶æœ€ä½æ¸©ï¼ˆchip_typeï¼‰*/
-
-int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*æä¾›å½“å‰é“¾æ‰€æœ‰èŠ¯ç‰‡ç»Ÿè®¡çš„å®æ—¶å¹³å‡æ¸©åº¦*/
-
-void inno_fan_temp_update(inno_fan_temp_s *fan_temp,int chain_id, inno_type_e inno_type, int *fan_level);  /*ç”¨äºæ›´æ–°é£æ‰‡è½¬é€Ÿä¸æ¸©åº¦æ˜¾ç¤ºæ•°æ®*/
-
-void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed);  /*è®¾ç½®é£æ‰‡è½¬é€Ÿ */
-
+/*********************************** ½Ó¿Úº¯Êı **********************************/
+void inno_fan_temp_init(inno_fan_temp_s *fan_temp);   /*Ö÷ÒªÓÃÓÚAxÏµÁĞ³õÊ¼»¯·çÉÈ¿ØÖÆÓëÎÂ¶ÈÏÔÊ¾*/
+bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp); /*ÓÃÓÚÊµÊ±¸üĞÂÍ³¼Æµ½µÄµ±Ç°ÎÂ¶ÈÖµ£¬Òì³£¼ÇÂ¼*/
+void asic_temp_sort(inno_fan_temp_s *fan_temp, int chain_id);   /*¶Ôµ¥ÌõÁ´Í³¼Æµ½µÄËùÓĞÎÂ¶È×öÒ»´ÎÉıĞòÅÅÁĞ*/
+int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*Ìá¹©µ±Ç°Á´Í³¼Æµ½µÄÊµÊ±×î¸ßÎÂ¶È(chip_type)*/
+int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*Ìá¹©µ±Ç°Á´Í³¼Æµ½µÄÊµÊ±×îµÍÎÂ£¨chip_type£©*/
+int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*Ìá¹©µ±Ç°Á´ËùÓĞĞ¾Æ¬Í³¼ÆµÄÊµÊ±Æ½¾ùÎÂ¶È*/
+void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level);
+void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_type);
+void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed);  /*ÉèÖÃ·çÉÈ×ªËÙ */
 
 #endif // #ifndef _INNO_FAN_TEMP_H_
 

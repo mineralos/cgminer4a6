@@ -501,6 +501,7 @@ static int include_count;
 #define JSON_MAX_DEPTH 10
 #define JSON_MAX_DEPTH_ERR "Too many levels of JSON includes (limit 10) or a loop"
 #define JSON_WEB_ERROR "WEB config err"
+#define TEMP_UPDATE_INT_MS	10000
 
 #if defined(unix) || defined(__APPLE__)
 	static char *opt_stderr_cmd = NULL;
@@ -10595,6 +10596,14 @@ begin_bench:
 	while (42) {
 		int ts, max_staged = max_queue;
 		struct pool *pool;
+		bool lagging = false;
+		static int  last_temp_time = 0;
+
+	   if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
+	   {
+		inno_fan_speed_update(&g_fan_ctrl,fan_level);
+		last_temp_time = get_current_ms();
+	   }
 
 		if(g_reset_delay != 0xffff)
 		{
