@@ -41,8 +41,8 @@
 #define ERR_LOW_TEMP                      (655)
 #define FAN_FIRST_STAGE                   (550)//30
 #define FAN_SECOND_STAGE                  (520)//50
-#define FAN_THIRD_STAGE                   (490)//70
-#define FAN_FOUR_STAGE                    (460)//90
+#define FAN_THIRD_STAGE                   (498)//65
+#define FAN_FOUR_STAGE                    (475)//85
 #define FAN_DELTA                         (23)//15
 #define TEMP_LABEL                        (594)
 #define ACTIVE_STAT                       (6)
