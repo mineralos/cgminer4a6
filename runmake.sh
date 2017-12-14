@@ -12,7 +12,7 @@ CHIP_TYPE=A6
 sed -i "s/#define CHIP_A[0-9]/#define CHIP_A6/g" miner.h
 ./autogen.sh
 LDFLAGS=-L${ROOTFS_DIR}/lib \
-CFLAGS=-I${ROOTFS_DIR}/include \
+CFLAGS="-I${ROOTFS_DIR}/include -Wall " \
 ./configure --prefix=${ROOTFS_DIR} \
 --enable-bitmine_${CHIP_TYPE} --without-curses --host=arm-xilinx-linux-gnueabi --build=x86_64-pc-linux-gnu # --target=arm
 make -j${MAKE_JOBS}
