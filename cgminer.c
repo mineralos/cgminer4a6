@@ -10518,7 +10518,10 @@ int main(int argc, char *argv[])
 				applog(LOG_ERR, "Press any key to exit, or cgminer will wait indefinitely for an alive pool.");
 		}
 		if (!use_curses)
+        {
+            chain_all_exit();
 			early_quit(0, "No servers could be used! Exiting.");
+        }
 #ifdef HAVE_CURSES
 		touchwin(logwin);
 		wrefresh(logwin);
