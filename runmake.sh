@@ -16,6 +16,7 @@ CFLAGS="-I${ROOTFS_DIR}/include -Wall " \
 ./configure --prefix=${ROOTFS_DIR} \
 --enable-bitmine_${CHIP_TYPE} --without-curses --host=arm-xilinx-linux-gnueabi --build=x86_64-pc-linux-gnu # --target=arm
 make -j${MAKE_JOBS}
+arm-xilinx-linux-gnueabi-strip cgminer
 cp cgminer innominer_T2
 
 #cp ./cgminer /home/public/update/cgminer_huwt.$1
