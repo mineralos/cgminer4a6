@@ -292,8 +292,12 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
                     }
                 }
             }
-			fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
-			if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
+            if(stat_hi > 0)
+            {
+                fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
+            }
+            
+            if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
 			{
 				fan_temp->pre_warn[0] = chain_id;
 				// fan_temp->pre_warn[1] = i;
@@ -350,9 +354,12 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
                     }
                 }
             }
-			fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
-			stat_lo = 0;
-
+            if(stat_lo > 0)
+            {
+			 fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
+            }
+             stat_lo = 0;
+    
             break;
 
         case INNO_TYPE_A9:
