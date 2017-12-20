@@ -577,8 +577,8 @@ void inno_preinit(struct spi_ctx *ctx, int chain_id)
 		case 3:prechain_detect(a1, A1Pll4);break;
 		case 4:prechain_detect(a1, A1Pll5);break;
 		case 5:prechain_detect(a1, A1Pll6);break;
-		case 6:prechain_detect(a1, A1Pll6);break;
-		case 7:prechain_detect(a1, A1Pll6);break;
+		case 6:prechain_detect(a1, A1Pll7);break;
+		case 7:prechain_detect(a1, A1Pll8);break;
 		default:;
 	}
 	//add 0929
