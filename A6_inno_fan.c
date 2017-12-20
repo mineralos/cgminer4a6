@@ -82,22 +82,24 @@ static void asic_temp_to_float(inno_fan_temp_s *fan_ctrl, int chain_id)
     int i = 0;
     //printf("pre_warn: %d\n",fan_ctrl->pre_warn[3]);
 
-    for(i=0; i<ASIC_CHAIN_NUM; i++)
-    {
-
-        if((fan_ctrl->temp_highest[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_highest[i] < ERR_HIGH_TEMP) || \
-                (fan_ctrl->temp_arvarge[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_arvarge[i] < ERR_HIGH_TEMP) || \
-                (fan_ctrl->temp_lowest[i] > ERR_LOW_TEMP) || (fan_ctrl->temp_lowest[i] < ERR_HIGH_TEMP) )
+   // for(i=0; i<ASIC_CHAIN_NUM; i++)
+  // {
+        if(fan_ctrl->valid_chain[chain_id])
+			return;
+		
+        if((fan_ctrl->temp_highest[chain_id] > ERR_LOW_TEMP) || (fan_ctrl->temp_highest[chain_id] < ERR_HIGH_TEMP) || \
+                (fan_ctrl->temp_arvarge[chain_id] > ERR_LOW_TEMP) || (fan_ctrl->temp_arvarge[chain_id] < ERR_HIGH_TEMP) || \
+                (fan_ctrl->temp_lowest[chain_id] > ERR_LOW_TEMP) || (fan_ctrl->temp_lowest[chain_id] < ERR_HIGH_TEMP) )
         {
             printf("Notice!!! Error temperature h=%d,l=%d,a=%d for chain %d\n", fan_ctrl->temp_highest[i], fan_ctrl->temp_lowest[i], fan_ctrl->temp_arvarge[i], chain_id);
-            continue ;
+            return ;
         }
 
 
-        fan_ctrl->temp2float[i][0] = (TEMP_LABEL - fan_ctrl->temp_highest[i]) * 5 / 7.5;
-        fan_ctrl->temp2float[i][1] = (TEMP_LABEL - fan_ctrl->temp_arvarge[i]) * 5 / 7.5;
-        fan_ctrl->temp2float[i][2] = (TEMP_LABEL - fan_ctrl->temp_lowest[i]) * 5 / 7.5;
-    }
+        fan_ctrl->temp2float[chain_id][0] = (TEMP_LABEL - fan_ctrl->temp_highest[chain_id]) * 5 / 7.5;
+        fan_ctrl->temp2float[chain_id][1] = (TEMP_LABEL - fan_ctrl->temp_arvarge[chain_id]) * 5 / 7.5;
+        fan_ctrl->temp2float[chain_id][2] = (TEMP_LABEL - fan_ctrl->temp_lowest[chain_id]) * 5 / 7.5;
+    //}
 
 }
 
@@ -132,7 +134,7 @@ void asic_temp_clear(inno_fan_temp_s *fan_temp, int chain_id)
     for(i = 0; i < ASIC_CHIP_NUM; i++)
     {
         fan_temp->temp[chain_id][i] = 0;
-        fan_temp->valid_temp[chain_id][i] = 0;
+//        fan_temp->valid_temp[chain_id][i] = 0;
     }
 }
 
@@ -214,6 +216,8 @@ void inno_fan_temp_init(inno_fan_temp_s *fan_temp)
 
 bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp)
 {
+	pthread_mutex_lock(&fan_temp->lock);
+
     if((temp > ERR_LOW_TEMP) || (temp < ERR_HIGH_TEMP))
     {
         printf("Notice!!! Error temperature %d for chain %d, chip %d\n",temp, chain_id, chip_id);
@@ -236,6 +240,7 @@ bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int 
 
     fan_temp->temp[chain_id][chip_id-1] = temp;
     //printf("chain %d, chip %d, temp %d\n",chain_id, chip_id,fan_temp->temp[chain_id][chip_id-1]);
+    pthread_mutex_unlock(&fan_temp->lock);
     return true;
 }
 
@@ -244,6 +249,7 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
     int i = 0;
     int high_avg = 0;
     static int stat_hi = 0;
+	pthread_mutex_lock(&fan_temp->lock);
 
     switch(inno_type)
     {
@@ -306,6 +312,7 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
             break;
 
     }
+	pthread_mutex_unlock(&fan_temp->lock);
 
     return fan_temp->temp_highest[chain_id];
 }
@@ -315,6 +322,7 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
     int i = 0;
     int low_avg = 0;
     static int stat_lo = 0;
+	pthread_mutex_lock(&fan_temp->lock);
 
     switch(inno_type)
     {
@@ -351,6 +359,7 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
         default:
             break;
     }
+	pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_lowest[chain_id];
 }
 
@@ -359,6 +368,7 @@ int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_
     int i = 0;
     int temp_avg = 0;
     static int stat_avg = 0;
+	pthread_mutex_unlock(&fan_temp->lock);
 
     switch(inno_type)
     {
@@ -390,6 +400,7 @@ int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_
             break;
 
     }
+	pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_arvarge[chain_id];
 }
 
@@ -409,7 +420,7 @@ void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_t
 void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level)
 {
     int i = 0;
-	int temp_hi = fan_temp->temp_highest[0];
+	int temp_hi = DEFAULT_HI_TEMP; //fan_temp->temp_highest[0];
     int delta[4][2]={
         //{FAN_FIRST_STAGE + FAN_DELTA,0},
         {FAN_FIRST_STAGE + FAN_DELTA,FAN_FIRST_STAGE - FAN_DELTA},
@@ -431,7 +442,9 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level)
     
    for(i=0; i<ASIC_CHAIN_NUM; i++)
    {
-     if((fan_temp->temp_highest[i] > ERR_LOW_TEMP) || (fan_temp->temp_highest[i] < ERR_HIGH_TEMP))
+   
+     //im_log(IM_LOG_DEBUG,"hi:%d lo:%d av:%d,valid %d\n",fan_temp->temp_highest[i],fan_temp->temp_lowest[i],fan_temp->temp_arvarge[i],fan_temp->valid_chain[i]);
+     if((fan_temp->temp_highest[i] > ERR_LOW_TEMP) || (fan_temp->temp_highest[i] < ERR_HIGH_TEMP) || fan_temp->valid_chain[i])
 	 	continue;
 
 	 if(temp_hi > fan_temp->temp_highest[i])

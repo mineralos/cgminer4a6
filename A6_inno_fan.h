@@ -50,7 +50,7 @@
 #define PREHEAT_SPEED                     (0)
 #define DANGEROUS_TMP                     (460)//90
 #define PRE_DGR_TEMP                      (456)//92.x
-
+#define DEFAULT_HI_TEMP                   (652) //-40
 
 #define MAGIC_NUM                         (100) 
 
@@ -67,7 +67,7 @@
 /*********************************** 全局变量 **********************************/
 typedef struct {
 	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* 用于存放所有链上的芯片温度*/
-	bool valid_temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];  //用于判断该温度是否有效
+    int valid_chain[ASIC_CHAIN_NUM];           //用于判断该chain是否有效
     int index[ASIC_CHAIN_NUM];                  /*对应链上的chip_id */
 
     int speed;                              /* 0 - 100用于设置风扇转速(可能32档) */

@@ -246,6 +246,27 @@ static void rev(unsigned char *s, size_t l)
 	}
 }
 
+uint32_t get_diff(double diff)
+{
+    uint32_t n_bits;
+	int shift = 31;
+	double f = (double)(0x0000ffff / diff);
+	while(f < (double)0x00008000)
+	{
+	    shift--;
+		f *= 256.0;
+	}
+	while(f >= (double)0x00008000)
+	{
+	    shift++;
+		f /= 256.0;
+	}
+	n_bits = (int) f + (shift << 24);
+
+	return n_bits;
+	
+}
+
 uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 {
 	unsigned char *wdata = work->data;
@@ -253,6 +274,7 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 	uint8_t tmp_buf[JOB_LENGTH];
 	uint16_t crc;
 	uint8_t i;
+	uint32_t nbits;
 			
 	static uint8_t job[JOB_LENGTH] = {
 		/* command */
@@ -288,8 +310,8 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 
 	memcpy(data63to0, wdata, 64);
 	memcpy(data75to64, wdata+64, 12);
-									
 
+/*									
 	if(sdiff > 1048575.0)
 		memcpy(diff, difficult_Tbl[20], 4);								
 	else if(sdiff > 524287.0)
@@ -327,7 +349,14 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
 			memcpy(diff, difficult_Tbl[7], 4);
 		}
 	}
-	
+*/
+
+	nbits = get_diff(sdiff);
+	diff[0] = (uint8_t) (nbits >> 24);
+	diff[1] = (uint8_t) (nbits >> 16);
+	diff[2] = (uint8_t) (nbits >> 8);
+	diff[3] = (uint8_t) (nbits >> 0);
+
 	startnonce[0]=0x00;
 	startnonce[1]=0x00;
 	startnonce[2]=0x00;
