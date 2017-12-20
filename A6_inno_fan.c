@@ -216,7 +216,7 @@ void inno_fan_temp_init(inno_fan_temp_s *fan_temp)
 
 bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp)
 {
-	pthread_mutex_lock(&fan_temp->lock);
+	//pthread_mutex_lock(&fan_temp->lock);
 
     if((temp > ERR_LOW_TEMP) || (temp < ERR_HIGH_TEMP))
     {
@@ -226,6 +226,7 @@ bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int 
 
     //fan_temp->valid_temp[chain_id][chip_id-1] = 1;
 
+	pthread_mutex_lock(&fan_temp->lock);
     if(temp < PRE_DGR_TEMP)
     {
         fan_temp->pre_warn[0] = chain_id;
@@ -377,7 +378,7 @@ int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_
     int i = 0;
     int temp_avg = 0;
     static int stat_avg = 0;
-	pthread_mutex_unlock(&fan_temp->lock);
+	pthread_mutex_lock(&fan_temp->lock);
 
     switch(inno_type)
     {

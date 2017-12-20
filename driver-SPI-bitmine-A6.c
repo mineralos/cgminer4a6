@@ -1093,7 +1093,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		cgpu->core_num = a1->num_cores; 
 		//a1->temp = board_selector->get_temp(0);
 		a1->last_temp_time = get_current_ms();
-		applog(LOG_ERR, "%s n:arv:%5.2f, lest:%5.2f, hest:%d witt", __func__, cgpu->temp, cgpu->temp_min, g_fan_ctrl.temp_highest[a1->chain_id]);
+		applog(LOG_ERR, "%s n cid %d:arv:%5.2f, lest:%5.2f, hest:%d witt", __func__,cid, cgpu->temp, cgpu->temp_min, g_fan_ctrl.temp_highest[a1->chain_id]);
 		if(g_fan_ctrl.temp_highest[a1->chain_id] < DANGEROUS_TMP)
 		{
 			applog(LOG_ERR, "disable chain %d", a1->chain_id);
