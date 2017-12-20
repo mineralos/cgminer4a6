@@ -34,6 +34,7 @@
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
+#define TEMP_UPDATE_INT_MS	10000
 
 /*
 struct Test_bench Test_bench_Array[6]={
@@ -450,7 +451,7 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 {
 	int i,j;
 	uint8_t reg[64];
-	static int cnt = 0;
+	static int last_time = 0;
 	
 	//applog(LOG_ERR, "start read temp cid %d, a1 addr 0x%x\n", chain_id,a1);
 	/* update temp database */
@@ -463,10 +464,11 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 	
 	int cid = a1->chain_id;
 	//struct cgpu_info *cgpu = a1->cgpu;
+	inno_fan_speed_set(&g_fan_ctrl,PREHEAT_SPEED);
 
 	//while(s_fan_ctrl.temp_highest[cid] > 505)//FAN_FIRST_STAGE)
 	do{
-		for (i = a1->num_active_chips; i > 0; i--)
+		for (i = a1->num_active_chips; i > 0; i -= 3)
 		{ 
 			if (!inno_cmd_read_reg(a1, i, reg))
 			{
@@ -475,7 +477,6 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 				continue;
 			}
 			
-
 			temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
 			//applog(LOG_ERR,"cid %d,chip %d,temp %d\n",cid, i, temp);
 			inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
@@ -483,9 +484,15 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 		
 		asic_temp_sort(&g_fan_ctrl, chain_id);
 		inno_fan_temp_highest(&g_fan_ctrl, chain_id,g_type);
-		inno_fan_speed_set(&g_fan_ctrl,PREHEAT_SPEED);
 		a1->pre_heat = 1;
+		
+		if((last_time + 3*TEMP_UPDATE_INT_MS) < get_current_ms())
+		{
+          applog(LOG_WARNING,"chain %d higtest temp %d\n",cid, g_fan_ctrl.temp_highest[cid]);
+          last_time = get_current_ms();
+		}
 
+#if 0
         if(check_net()== -2)
 		{
 		  cnt++;
@@ -497,7 +504,7 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 		 cnt = 0;
 		}
 		
-		if(cnt > 20)
+		if(cnt > 10)
 		{
 		  printf("shutdown spi link\n");
 		  power_down_all_chain();
@@ -506,9 +513,12 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 		    loop_blink_led(spi[j]->led,10);
 		  
 		}
+#endif
+
 		//applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
 	}while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH);
 	a1->pre_heat = 0;
+	applog(LOG_WARNING,"Now chain %d preheat is over\n",cid);
 	return true;
 }
 
@@ -626,6 +636,9 @@ static bool detect_A1_chain(void)
 		sleep(1);
 		asic_gpio_write(spi[i]->start_en, 1);
 		sleep(1);
+		
+		g_fan_ctrl.valid_chain[i] = asic_gpio_read(spi[i]->plug);
+		applog(LOG_ERR, "Plug Status[%d] = %d\n",i,g_fan_ctrl.valid_chain[i]);
 
 		if(asic_gpio_read(spi[i]->plug) != 0)
 		{

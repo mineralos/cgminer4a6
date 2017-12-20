@@ -288,22 +288,22 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
                     }
                     else
                     {
-                        fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
-                        if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
-                        {
-                            fan_temp->pre_warn[0] = chain_id;
-                            // fan_temp->pre_warn[1] = i;
-                            fan_temp->pre_warn[2] = fan_temp->pre_warn[1] - 1;
-                            // fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
-
-                            fan_temp->pre_warn[3] = (TEMP_LABEL -	fan_temp->temp_highest[chain_id]) * 5 / 7.5;
-                            // printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);
-                        }
-                        stat_hi = 0;
                         break;
                     }
                 }
             }
+			fan_temp->temp_highest[chain_id] = (high_avg/stat_hi);
+			if(fan_temp->temp_highest[chain_id] < DANGEROUS_TMP)
+			{
+				fan_temp->pre_warn[0] = chain_id;
+				// fan_temp->pre_warn[1] = i;
+				fan_temp->pre_warn[2] = fan_temp->pre_warn[1] - 1;
+				// fan_temp->pre_warn[3] = fan_temp->temp[chain_id][i];
+
+				fan_temp->pre_warn[3] = (TEMP_LABEL -	fan_temp->temp_highest[chain_id]) * 5 / 7.5;
+				// printf("There maybe some problem in chain %d, chip %d and chip %d,The highest temp %d\n",chain_id,i,i-1,fan_temp->temp_highest[chain_id]);
+			}
+			stat_hi = 0;
 
             break;
         case INNO_TYPE_A9:
@@ -345,12 +345,13 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
                     }
                     else
                     {
-                        fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
-                        stat_lo = 0;
+                       
                         break;
                     }
                 }
             }
+			fan_temp->temp_lowest[chain_id] = (low_avg/stat_lo);
+			stat_lo = 0;
 
             break;
 
@@ -359,6 +360,7 @@ int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e in
         default:
             break;
     }
+	 
 	pthread_mutex_unlock(&fan_temp->lock);
     return fan_temp->temp_lowest[chain_id];
 }
