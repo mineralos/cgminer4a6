@@ -630,6 +630,7 @@ static bool detect_A1_chain(void)
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
+	    sleep(1);
 		asic_gpio_write(spi[i]->power_en, 0);
 		sleep(1);
 		asic_gpio_write(spi[i]->reset, 0);
