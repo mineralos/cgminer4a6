@@ -621,6 +621,11 @@ static bool detect_A1_chain(void)
 		asic_gpio_init(spi[i]->plug, 1);
 		asic_gpio_init(spi[i]->led, 0);
 
+	    sleep(1);
+		asic_gpio_write(spi[i]->power_en, 0);
+		sleep(1);
+		asic_gpio_write(spi[i]->reset, 0);
+		asic_gpio_write(spi[i]->start_en, 0);
 
 		show_log[i] = 0;
 		update_cnt[i] = 0;
@@ -628,14 +633,10 @@ static bool detect_A1_chain(void)
 		check_disbale_flag[i] = 0;
 	}
 
+    sleep(5);
+
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-	    sleep(1);
-		asic_gpio_write(spi[i]->power_en, 0);
-		sleep(1);
-		asic_gpio_write(spi[i]->reset, 0);
-		asic_gpio_write(spi[i]->start_en, 0);
-        sleep(5);
 		asic_gpio_write(spi[i]->power_en, 1);
 		sleep(5);
 		asic_gpio_write(spi[i]->reset, 1);
