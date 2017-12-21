@@ -621,6 +621,7 @@ static bool detect_A1_chain(void)
 		asic_gpio_init(spi[i]->plug, 1);
 		asic_gpio_init(spi[i]->led, 0);
 
+
 		show_log[i] = 0;
 		update_cnt[i] = 0;
 		write_flag[i] = 0;
@@ -629,13 +630,16 @@ static bool detect_A1_chain(void)
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-        sleep(2);
-		asic_gpio_write(spi[i]->power_en, 1);
+		asic_gpio_write(spi[i]->power_en, 0);
 		sleep(1);
+		asic_gpio_write(spi[i]->reset, 0);
+		asic_gpio_write(spi[i]->start_en, 0);
+        sleep(5);
+		asic_gpio_write(spi[i]->power_en, 1);
+		sleep(5);
 		asic_gpio_write(spi[i]->reset, 1);
 		sleep(1);
 		asic_gpio_write(spi[i]->start_en, 1);
-		sleep(1);
 		
 		g_fan_ctrl.valid_chain[i] = asic_gpio_read(spi[i]->plug);
 		applog(LOG_ERR, "Plug Status[%d] = %d\n",i,g_fan_ctrl.valid_chain[i]);
