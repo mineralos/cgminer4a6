@@ -2014,7 +2014,7 @@ static int calculate_num_bits(int num)
 
 uint32_t data_001[16] = {0};
 int date_003[4] = {0};
-char data_002[16][9] = {0}; 
+char data_002[16][9] = {{0}}; 
 
 #ifndef CHIP_A6
 static void func_001(char *bbversion)
@@ -2464,7 +2464,7 @@ static bool show_message(struct pool *pool, json_t *val)
 
 static bool parse_extranonce(struct pool *pool, json_t *val)
 {
-    char s[RBUFSIZE], *nonce1;
+    char *nonce1;
     int n2size;
 
     nonce1 = json_array_string(val, 0);

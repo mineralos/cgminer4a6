@@ -3,11 +3,11 @@
 #make clean
 #make distclean
 
-ROOTFS_DIR=$1
-MAKE_JOBS=$2
+ROOTFS_DIR=/home/public/huwt/cgminer-for-test/rootfs
+MAKE_JOBS=4
 ROOTFS_DIR_G19=$3
 
-# A6
+## A6
 CHIP_TYPE=A6
 sed -i "s/#define CHIP_A[0-9]/#define CHIP_A6/g" miner.h
 ./autogen.sh

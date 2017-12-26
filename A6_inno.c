@@ -301,7 +301,6 @@ uint8_t *create_job(uint8_t chip_id, uint8_t job_id, struct work *work)
         0x00, 0x00
     };
     
-    uint8_t diffIdx;
     uint8_t data63to0[64];
     uint8_t data75to64[12];
     uint8_t diff[4] = {0x1e, 0x03, 0xff, 0xff};
@@ -661,8 +660,6 @@ bool check_chip(struct A1_chain *a1, int i)
 
 void prechain_detect(struct A1_chain *a1, int idxpll)
 {
-    uint8_t buffer[64];
-    int cid = a1->chain_id;
     uint8_t temp_reg[REG_LENGTH];
     int i;
 
@@ -721,7 +718,7 @@ int inno_chain_power_down(struct A1_chain *a1)
 
 
 
-int power_down_all_chain(void)
+void power_down_all_chain(void)
 {
     int i;
 
@@ -739,8 +736,6 @@ int chain_detect(struct A1_chain *a1)
 {   
     uint8_t buffer[64];
     int cid = a1->chain_id;
-    uint8_t temp_reg[REG_LENGTH];
-    int i;
 
     set_spi_speed(3250000);
     sleep(2);
@@ -768,230 +763,136 @@ int chain_detect(struct A1_chain *a1)
 
 }
 
-void test_bench_pll_config(struct A1_chain *a1,uint32_t uiPll)
-{
-    uint8_t buffer[64];
-    int cid = a1->chain_id;
-    uint8_t temp_reg[REG_LENGTH];
-    int i;
-    uint8_t uiCfgA1Pll;
-    uint8_t uiOldA1Pll;
-
-    //add for A6
-    asic_spi_init();
-    
-    set_spi_speed(1500000);
-    
-    inno_cmd_reset(a1, ADDR_BROADCAST);
-    
-    usleep(1000);
-    
-    //printf("test_bench_pll_config uiPll:%d. \n",uiPll);   
-    uiCfgA1Pll = A1_ConfigA1PLLClock(uiPll);
-    //printf("test_bench_pll_config uiCfgA1Pll:%d. \n",uiCfgA1Pll); 
-/*  
-    switch(a1->chain_id){
-        case 0:uiOldA1Pll = A1Pll1;break;
-        case 1:uiOldA1Pll = A1Pll2;break;
-        case 2:uiOldA1Pll = A1Pll3;break;
-        case 3:uiOldA1Pll = A1Pll4;break;
-        case 4:uiOldA1Pll = A1Pll5;break;
-        case 5:uiOldA1Pll = A1Pll6;break;
-        default:;
-    }
-
-    printf("uiOldA1Pll:%d,uiCfgA1Pll:%d. \n",uiOldA1Pll, uiCfgA1Pll);
-    if(uiCfgA1Pll > uiOldA1Pll)
-    {
-        for(i = uiOldA1Pll+1; i < uiCfgA1Pll+1; i++)
-        {
-            memcpy(temp_reg, defau lt_reg[i], REG_LENGTH-2);
-            if(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
-            {
-                applog(LOG_WARNING, "set default PLL fail");
-                return;
-            }
-            applog(LOG_WARNING, "set default %d PLL success", i);
-
-            usleep(200000);
-        }
-    }
-        
-    if(uiCfgA1Pll < uiOldA1Pll)
-    {
-        for(i = uiOldA1Pll-1; i > uiCfgA1Pll-1; i--)
-        {
-            memcpy(temp_reg, default_reg[i], REG_LENGTH-2);
-            if(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
-            {
-                applog(LOG_WARNING, "set default PLL fail");
-                return;
-            }
-            applog(LOG_WARNING, "set default %d PLL success", i);
-
-            usleep(200000);
-        }
-    }
-*/
-
-    for(i=0; i<uiCfgA1Pll+1; i++)
-    {
-        memcpy(temp_reg, default_reg[i], REG_LENGTH-2);
-        if(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
-        {
-            applog(LOG_WARNING, "set default PLL fail");
-            return;
-        }
-        //applog(LOG_WARNING, "set default %d PLL success", i);
-
-        usleep(120000);
-    }
-
-    switch(a1->chain_id){
-        case 0:A1Pll1 = uiCfgA1Pll;break;
-        case 1:A1Pll2 = uiCfgA1Pll;break;
-        case 2:A1Pll3 = uiCfgA1Pll;break;
-        case 3:A1Pll4 = uiCfgA1Pll;break;
-        case 4:A1Pll5 = uiCfgA1Pll;break;
-        case 5:A1Pll6 = uiCfgA1Pll;break;
-        default:;
-    }
-}
 
 void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
 {
- int i;
- unsigned char *tmp_reg = malloc(128);
- unsigned char *src_reg = malloc(128);
- unsigned char *reg = malloc(128);
- inno_cmd_read_reg(a1, 0x01, reg);
+    unsigned char tmp_reg[128];
+    unsigned char src_reg[128];
+    unsigned char reg[128];
+
+    inno_cmd_read_reg(a1, 0x01, reg);
  
- //chip_id = 0;
+    memset(tmp_reg, 0, sizeof(tmp_reg));
+    memset(src_reg, 0, sizeof(src_reg));
+    memset(reg, 0, sizeof(reg));
 
-  memset(tmp_reg, 0, sizeof(tmp_reg));
-  memcpy(src_reg,reg,REG_LENGTH-2);
-  inno_cmd_write_reg(a1,chip_id,src_reg);
-  usleep(200);
+    memcpy(src_reg,reg,REG_LENGTH-2);
+    inno_cmd_write_reg(a1,chip_id,src_reg);
+    usleep(200);
 
- if(is_tsensor)//configure for tsensor
- {
-  //Step1: wait for clock stable
-  //Step2: low the tsdac rst_n and release rst_n after 4 SysClk
-   //hexdump("write reg", reg, REG_LENGTH);
+    if(is_tsensor)//configure for tsensor
+    {
+     //Step1: wait for clock stable
+     //Step2: low the tsdac rst_n and release rst_n after 4 SysClk
+      //hexdump("write reg", reg, REG_LENGTH);
 
 #if DEBUG   
-   printf("Write Reg:");
-   for(i=0; i<20;i++)
-    printf("%x, ",reg[i]);
-
-    printf("\n\n");
+        printf("Write Reg:");
+        for(i=0; i<20;i++)
+            printf("%x, ",reg[i]);
+        printf("\n\n");
 #endif
 
-   reg[7] = (src_reg[7]&0x7f);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
-   //hexdump("write reg", tmp_reg, REG_LENGTH);
-   inno_cmd_write_reg(a1,chip_id,tmp_reg);
-   usleep(200);
-   reg[7] = (src_reg[7]|0x80);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
-   inno_cmd_write_reg(a1,chip_id,tmp_reg);
-   usleep(200);
-   
- #if DEBUG
-   printf("Write Reg:");
-      
-      for(i=0; i<20;i++)
-       printf("%x, ",reg[i]);
-
-    printf("\n\n");
-#endif
-    //Step3: Config tsadc_clk(default match)
-    //Step4: low tsadc_tsen_pd
-    //Step5: high tsadc_ana_reg_2
-
-    reg[6] = (src_reg[6]|0x04);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-
-    //Step6: high tsadc_en
-    reg[7] = (src_reg[7]|0x20);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-
-    //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
-    reg[5] = (src_reg[5]&0xfc);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-    
-    //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
-    reg[6] = (src_reg[6]&0x7d);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-  }else{//configure for vsensor
-     //Step1: wait for clock stable
-  //Step2: low the tsdac rst_n and release rst_n after 4 SysClk
-   //hexdump("write reg", reg, REG_LENGTH);
+        reg[7] = (src_reg[7]&0x7f);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        //hexdump("write reg", tmp_reg, REG_LENGTH);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+        reg[7] = (src_reg[7]|0x80);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
    
 #if DEBUG
-   printf("Write Reg:");
-   
-   for(i=0; i<20;i++)
-    printf("%x, ",reg[i]);
-
-    printf("\n\n");
+        printf("Write Reg:");
+        for(i=0; i<20;i++)
+            printf("%x, ",reg[i]);
+        printf("\n\n");
 #endif
+        //Step3: Config tsadc_clk(default match)
+        //Step4: low tsadc_tsen_pd
+        //Step5: high tsadc_ana_reg_2
 
-   reg[7] = (src_reg[7]&0x7f);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
-   //hexdump("write reg", tmp_reg, REG_LENGTH);
-   inno_cmd_write_reg(a1,chip_id,tmp_reg);
-   usleep(200);
-   reg[7] = (src_reg[7]|0x80);
-   memcpy(tmp_reg,reg,REG_LENGTH-2);
-   inno_cmd_write_reg(a1,chip_id,tmp_reg);
-   usleep(200);
-#if DEBUG
-   printf("Write Reg:");
-      
-      for(i=0; i<20;i++)
-       printf("%x, ",reg[i]);
+        reg[6] = (src_reg[6]|0x04);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
 
-    printf("\n\n");
-#endif
-    //Step3: Config tsadc_clk(default match)
-    //Step4: low tsadc_tsen_pd
-    //Step5: high tsadc_ana_reg_2
+        //Step6: high tsadc_en
+        reg[7] = (src_reg[7]|0x20);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
 
-    reg[6] = (src_reg[6]|0x04);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-
-    //Step6: high tsadc_en
-    reg[7] = (src_reg[7]|0x20);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
-
-    //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
-    reg[5] = ((src_reg[5]|0x01)&0xfd);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
+        //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
+        reg[5] = (src_reg[5]&0xfc);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+        
+        //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
+        reg[6] = (src_reg[6]&0x7d);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+    }
+    else
+    {
+        //configure for vsensor
+        //Step1: wait for clock stable
+        //Step2: low the tsdac rst_n and release rst_n after 4 SysClk
+        //hexdump("write reg", reg, REG_LENGTH);
     
-    //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
-    reg[6] = ((src_reg[6]|0x02)&0x7f);
-    memcpy(tmp_reg,reg,REG_LENGTH-2);
-    inno_cmd_write_reg(a1,chip_id,tmp_reg);
-    usleep(200);
+#if DEBUG
+        printf("Write Reg:");
+        for(i=0; i<20;i++)
+            printf("%x, ",reg[i]);
+        printf("\n\n");
+#endif
 
-  }
-    free(tmp_reg);
-    free(src_reg);
+        reg[7] = (src_reg[7]&0x7f);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        //hexdump("write reg", tmp_reg, REG_LENGTH);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+        reg[7] = (src_reg[7]|0x80);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+#if DEBUG
+        printf("Write Reg:");
+        for(i=0; i<20;i++)
+             printf("%x, ",reg[i]);
+        printf("\n\n");
+#endif
+        //Step3: Config tsadc_clk(default match)
+        //Step4: low tsadc_tsen_pd
+        //Step5: high tsadc_ana_reg_2
+
+        reg[6] = (src_reg[6]|0x04);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+
+        //Step6: high tsadc_en
+        reg[7] = (src_reg[7]|0x20);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+
+        //Step7: tsadc_ana_reg_9 = 0;tsadc_ana_reg_8  = 0
+        reg[5] = ((src_reg[5]|0x01)&0xfd);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+        
+        //Step8: tsadc_ana_reg_7 = 1;tsadc_ana_reg_1 = 0
+        reg[6] = ((src_reg[6]|0x02)&0x7f);
+        memcpy(tmp_reg,reg,REG_LENGTH-2);
+        inno_cmd_write_reg(a1,chip_id,tmp_reg);
+        usleep(200);
+
+    }
 }
 
 
@@ -1047,6 +948,7 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
 
             }           
    }
+   return true;
 }
 
 

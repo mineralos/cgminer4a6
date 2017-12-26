@@ -444,7 +444,7 @@ static struct pool *currentpool = NULL;
 int total_pools, enabled_pools;
 enum pool_strategy pool_strategy = POOL_FAILOVER;
 int opt_rotate_period;
-static int total_urls, total_users, total_passes, total_userpasses, total_extranonce;
+static int total_urls, total_users, total_passes, total_userpasses;
 
 static
 #ifndef HAVE_CURSES
@@ -1051,8 +1051,11 @@ out:
     return pool->rpc_url;
 }
 
+#if LOCK_USER
 static char * s_url1 = "stratum+tcp://stratum.f2pool.com:8888";
 static char * s_url2 = "stratum+tcp://ltc.s.innomining.com:1900";
+static char * s_user = "inno17.000";
+#endif
 
 static char *set_url(char *arg)
 {
@@ -1109,7 +1112,6 @@ static char *set_quota(char *arg)
     return NULL;
 }
 
-static char * s_user = "inno17.000";
 static char *set_user(const char *arg)
 {
     struct pool *pool;
@@ -1175,18 +1177,6 @@ static char *set_userpass(const char *arg)
     if (!pool->rpc_pass)
         pool->rpc_pass = strdup("");
 
-    return NULL;
-}
-
-static char *set_extranonce_subscribe(char *arg)
-{
-    struct pool *pool;
-    total_extranonce++;
-    if (total_extranonce > total_pools)
-        add_pool();
-    pool = pools[total_extranonce - 1];
-    applog(LOG_ERR, "Enable extranonce subscribe on %d", pool->pool_no);
-    opt_set_bool(&pool->extranonce_subscribe);
     return NULL;
 }
 
@@ -10600,7 +10590,7 @@ begin_bench:
     while (42) {
         int ts, max_staged = max_queue;
         struct pool *pool;
-        bool lagging = false;
+        //bool lagging = false;
         static int  last_temp_time = 0;
 
        if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())

@@ -235,158 +235,9 @@ failure:
     return NULL;
 }
 
-bool test_bench_init_chain(struct A1_chain *a1)
-{
-    int i;
-    
-    a1->num_chips = chain_detect(a1);
-    usleep(10000);
-    
-    if (a1->num_chips == 0)
-        return false;
-
-    applog(LOG_WARNING, "spidev%d.%d: %d: Found %d A1 chips",
-           a1->spi_ctx->config.bus, a1->spi_ctx->config.cs_line,
-           a1->chain_id, a1->num_chips);
-
-    a1->num_active_chips = a1->num_chips;
-
-    a1->num_cores = 0;
-    free(a1->chips);
-    a1->chips = NULL;
-    a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
-    assert (a1->chips != NULL);
-
-    if (!inno_cmd_bist_fix(a1, ADDR_BROADCAST))
-        return false;
-
-    usleep(200);
-
-    for (i = 0; i < a1->num_active_chips; i++)
-    {
-        check_chip(a1, i);
-    }
-
-    applog(LOG_WARNING, "%d: found %d chips with total %d active cores",
-           a1->chain_id, a1->num_active_chips, a1->num_cores);  
-}
-
-uint32_t pll_vid_test_bench(uint32_t uiPll, int uiVol)
-{
-    int i;
-    uint32_t uiScore = 0;
-
-    if(opt_voltage1 > 8){
-        for(i=opt_voltage1-1; i>=8; i--){
-            set_vid_value(i);
-            usleep(100000);
-        }
-    }
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        asic_gpio_init(spi[i]->power_en, 0);
-        asic_gpio_init(spi[i]->start_en, 0);
-        asic_gpio_init(spi[i]->reset, 0);
-        asic_gpio_init(spi[i]->led, 0);
-        //asic_gpio_init(spi[i]->plug, 0);
-    }
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        asic_gpio_write(spi[i]->power_en, 1);
-        asic_gpio_write(spi[i]->start_en, 1);
-        asic_gpio_write(spi[i]->reset, 1);
-        usleep(200000);
-        asic_gpio_write(spi[i]->reset, 0);
-        usleep(200000);
-        asic_gpio_write(spi[i]->reset, 1);  
-    }
-    
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {       
-        test_bench_pll_config(chain[i], uiPll);
-    }
-    
-    if(uiVol > 8){
-        for(i=9; i<=uiVol; i++){
-            set_vid_value(i);
-            usleep(100000);
-        }
-    }
-            
-    opt_voltage1 = uiVol;
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        test_bench_init_chain(chain[i]);
-        //usleep(100000);
-    }
-    
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {       
-        uiScore += inno_cmd_test_chip(chain[i]);
-    }
-    return uiScore;
-}
-
-void config_best_pll_vid(uint32_t uiPll, int uiVol)
-{
-    int i;
-
-    if(opt_voltage1 > 8){
-        for(i=opt_voltage1-1; i>=8; i--){
-            set_vid_value(i);
-            usleep(100000);
-        }
-    }
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        asic_gpio_init(spi[i]->power_en, 0);
-        asic_gpio_init(spi[i]->start_en, 0);
-        asic_gpio_init(spi[i]->reset, 0);
-        //asic_gpio_init(spi[i]->plug, 0);
-        //asic_gpio_init(spi[i]->led, 0);
-    }
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        asic_gpio_write(spi[i]->power_en, 1);
-        asic_gpio_write(spi[i]->start_en, 1);
-        asic_gpio_write(spi[i]->reset, 1);
-        usleep(200000);
-        asic_gpio_write(spi[i]->reset, 0);
-        usleep(200000);
-        asic_gpio_write(spi[i]->reset, 1);  
-    }
-    
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {       
-        test_bench_pll_config(chain[i], uiPll);
-    }
-    
-    if(uiVol > 8){
-        for(i=9; i<=uiVol; i++){
-            set_vid_value(i);
-            usleep(100000);
-        }
-    }
-            
-    opt_voltage1 = uiVol;
-
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        test_bench_init_chain(chain[i]);
-    }
-    
-    return;
-}
-
 //add  0928
 int  cfg_tsadc_divider(struct A1_chain *a1,uint32_t pll_clk)
 {
-    uint8_t  cmd_return;
     uint32_t tsadc_divider_tmp;
     uint8_t  tsadc_divider;
     
@@ -407,53 +258,9 @@ int  cfg_tsadc_divider(struct A1_chain *a1,uint32_t pll_clk)
     applog(LOG_WARNING, "#####Write t/v sensor Value Success!\n");
 }
 
-
- #define NET_PORT 53
- #define NET_IP "8.8.8.8" //谷歌DNS
-
- //获取联网状态
-static int check_net(void)
- {
-
-         int fd; 
-         int in_len=0;
-         struct sockaddr_in servaddr;
-         //char buf[128];
- 
-         in_len = sizeof(struct sockaddr_in);
-         fd = socket(AF_INET,SOCK_STREAM,0);
-         if(fd < 0)
-         {   
-                 perror("socket");
-                 return -1; 
-         }   
- 
-         /*设置默认服务器的信息*/
-         servaddr.sin_family = AF_INET;
-         servaddr.sin_port = htons(NET_PORT);
-         servaddr.sin_addr.s_addr = inet_addr(NET_IP);
-         memset(servaddr.sin_zero,0,sizeof(servaddr.sin_zero));
- 
-         /*connect 函数*/
-         if(connect(fd,(struct sockaddr* )&servaddr,in_len) < 0 ) 
-         {   
- 
-               //  printf("not connect to internet!\n ");
-                 close(fd);
-                 return -2; //没有联网成功
-         }   
-         else
-         {   
-              //   printf("=====connect ok!=====\n");
-                 close(fd);
-                 return 1;
-         }   
- }
-
-
 bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 {
-    int i,j;
+    int i;
     uint8_t reg[64];
     static int last_time = 0;
     
@@ -463,7 +270,7 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
 
     if(a1 == NULL)
     {
-        return ;
+        return false;
     }
     
     int cid = a1->chain_id;
@@ -496,29 +303,6 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
           last_time = get_current_ms();
         }
 
-#if 0
-        if(check_net()== -2)
-        {
-          cnt++;
-          //printf("cnt = %d\n",cnt);
-        }
-        else
-        {
-         //printf("ping ok\n");
-         cnt = 0;
-        }
-        
-        if(cnt > 10)
-        {
-          printf("shutdown spi link\n");
-          power_down_all_chain();
-          
-          for(j=0; j<ASIC_CHAIN_NUM; j++)
-            loop_blink_led(spi[j]->led,10);
-          
-        }
-#endif
-
         //applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
     }while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH);
     a1->pre_heat = 0;
@@ -526,44 +310,8 @@ bool init_ReadTemp(struct A1_chain *a1, int chain_id)
     return true;
 }
 
-void init_CheckNet()
-{
-    int j;
-    static int cnt = 0;
-
-    while(cnt <=2){
-        if(check_net() == -2)
-        {
-            cnt++;
-            //printf("cnt = %d\n",cnt);
-            sleep(1);
-        }
-        else
-        {
-            //printf("ping ok\n");
-            cnt = 0;
-            break;
-        }
-    }
-        
-    if(cnt >= 2)
-    {
-        printf("shutdown spi link\n");
-        power_down_all_chain();
-         
-        for(j=0; j<ASIC_CHAIN_NUM; j++)
-        {
-           asic_gpio_write(chain[j]->spi_ctx->led, 1);
-        }
-        exit(1);
-    }
-
-    return;
-}
-
 void inno_preinit(struct spi_ctx *ctx, int chain_id)
 {
-	int i;
 	struct A1_chain *a1 = malloc(sizeof(*a1));
 	assert(a1 != NULL);
 
@@ -594,7 +342,7 @@ void inno_preinit(struct spi_ctx *ctx, int chain_id)
 int chain_flag[ASIC_CHAIN_NUM] = {0};
 static bool detect_A1_chain(void)
 {
-	int i, j, cnt = 0;
+	int i,cnt = 0;
 
 	applog(LOG_WARNING, "A1: checking A1 chain");
 
@@ -845,7 +593,6 @@ static bool detect_A1_chain(void)
 /* Probe SPI channel and register chip chain */
 void A1_detect(bool hotplug)
 {
-    int chainNo;
     /* no hotplug support for SPI */
     if (hotplug)
         return;
@@ -941,7 +688,7 @@ void A1_detect(bool hotplug)
     }   
 }
 
-char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
+char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {{0}};
 #define  LOG_FILE_PREFIX "/tmp/log/analys"
 
 uint8_t cLevelError1[3] = "!";
@@ -1031,7 +778,6 @@ static int64_t  A1_scanwork(struct thr_info *thr)
             }
             /* update temp database */
             uint32_t temp = 0;
-            float    temp_f = 0.0f;
 
             temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
             inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
@@ -1075,7 +821,6 @@ static int64_t  A1_scanwork(struct thr_info *thr)
             }
             /* update temp database */
             uint32_t temp = 0;
-            float    temp_f = 0.0f;
 
             temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
             inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
@@ -1267,8 +1012,6 @@ static bool A1_queue_full(struct cgpu_info *cgpu)
 static void A1_flush_work(struct cgpu_info *cgpu)
 {
 	struct A1_chain *a1 = cgpu->device_data;
-	int cid = a1->chain_id;
-	//board_selector->select(cid);
 	int i;
 
 	mutex_lock(&a1->lock);

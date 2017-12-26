@@ -193,7 +193,6 @@ int A1_ConfigA1PLLClock(int optPll)
 
 void A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx)
 {
-    uint8_t i;
     struct A1_chip *chip;
     uint32_t regPll;
     uint8_t rxbuf[12];
