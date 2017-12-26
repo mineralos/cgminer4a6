@@ -3691,7 +3691,7 @@ static void reject_pool(struct pool *pool)
 	pool->enabled = POOL_REJECTING;
 }
 
-static void restart_threads(void);
+void restart_threads(void);
 
 /* Theoretically threads could race when modifying accepted and
  * rejected values but the chance of two submits completing at the
@@ -5260,7 +5260,7 @@ static void *restart_thread(void __maybe_unused *arg)
 
 /* In order to prevent a deadlock via the various drv->flush_work
  * implementations we send the restart messages via a separate thread. */
-static void restart_threads(void)
+void restart_threads(void)
 {
 	pthread_t rthread;
 
@@ -5279,6 +5279,7 @@ static void signal_work_update(void)
 	rd_lock(&mining_thr_lock);
 	for (i = 0; i < mining_threads; i++)
 		mining_thr[i]->work_update = true;
+	
 	rd_unlock(&mining_thr_lock);
 }
 

@@ -119,7 +119,6 @@ bool spi_send_data(struct spi_ctx *ctx, uint8_t *txbuf, int len)
 	bool ret;
 	int index = 0;
 	uint8_t spi_tx[256];
-	uint8_t spi_rx[256];
 
 	memset(spi_tx, 0, sizeof(spi_tx));
 	memcpy(spi_tx, txbuf, len);
@@ -176,7 +175,6 @@ bool spi_send_command(struct A1_chain *pChain, uint8_t cmd, uint8_t chip_id, uin
 
 bool spi_poll_result(struct A1_chain *pChain, uint8_t cmd, uint8_t chip_id, uint8_t *buff, int len)
 {
-	int ret1, ret2;
 	int tx_len;
 	int tmp_len;
 	int index,ret;
@@ -669,8 +667,6 @@ bool inno_cmd_write_job(struct A1_chain *pChain, uint8_t chip_id, uint8_t *job)
 uint32_t inno_cmd_test_chip(struct A1_chain *pChain)
 {
 	int i, j, k;
-	struct work work1;
-	struct work work2;
 	uint32_t nonce;
 	uint8_t chip_id;
 	uint8_t job_id;

@@ -34,7 +34,12 @@
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
+
 #define TEMP_UPDATE_INT_MS	10000
+#define VOLTAGE_UPDATE_INT  120
+#define WRITE_CONFG_TIME  3
+#define CHECK_DISABLE_TIME  30
+
 
 /*
 struct Test_bench Test_bench_Array[6]={
@@ -583,13 +588,15 @@ void inno_preinit(struct spi_ctx *ctx, int chain_id)
 	}
 	//add 0929
 	cfg_tsadc_divider(a1, 120);
+
+    free(a1);
 }
 
 int chain_flag[ASIC_CHAIN_NUM] = {0};
 static bool detect_A1_chain(void)
 {
 	int i, j, cnt = 0;
-	//board_selector = (struct board_selector*)&dummy_board_selector;
+
 	applog(LOG_WARNING, "A1: checking A1 chain");
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
@@ -692,7 +699,6 @@ static bool detect_A1_chain(void)
 	
 	inno_fan_speed_update(&g_fan_ctrl,fan_level);
 
-	//init_CheckNet();
     //applog(LOG_ERR, "init_ReadTemp...");
 	//for(i = 0; i < ASIC_CHAIN_NUM; i++){
 	//	init_ReadTemp(chain[i],i);
@@ -935,11 +941,6 @@ void A1_detect(bool hotplug)
 		spi_exit(spi[i]);
 	}	
 }
-
-#define TEMP_UPDATE_INT_MS	10000
-#define VOLTAGE_UPDATE_INT  120
-#define WRITE_CONFG_TIME  3
-#define CHECK_DISABLE_TIME  30
 
 char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {0};
 #define  LOG_FILE_PREFIX "/tmp/log/analys"
@@ -1219,7 +1220,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
 	/* in case of no progress, prevent busy looping */
 	if (!work_updated)
-		cgsleep_ms(20);
+		cgsleep_ms(10);
 
 	cgtime(&a1->tvScryptCurr);
 	timersub(&a1->tvScryptCurr, &a1->tvScryptLast, &a1->tvScryptDiff);
@@ -1272,12 +1273,7 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 	int i;
 
 	mutex_lock(&a1->lock);
-	/* stop chips hashing current work */
-	//if (!abort_work(a1)) 
-	//{
-	//	applog(LOG_ERR, "%d: failed to abort work in chip chain!", cid);
-	//}
-	/* flush the work chips were currently hashing */
+
 	for (i = 0; i < a1->num_active_chips; i++) 
 	{
 		int j;
@@ -1303,7 +1299,7 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 	}
 		
 	/* flush queued work */
-	applog(LOG_DEBUG, "%d: flushing queued work...", cid);
+	//applog(LOG_INFO, "%d: flushing queued work...", cid);
 	while (a1->active_wq.num_elems > 0) 
 	{
 		struct work *work = wq_dequeue(&a1->active_wq);

@@ -2237,15 +2237,16 @@ static bool parse_notify(struct pool *pool, json_t *val)
 out_unlock:
 	cg_wunlock(&pool->data_lock);
 
+	applog(LOG_INFO, "recieve notify,we must flush work");
 	if (opt_protocol) {
-		applog(LOG_DEBUG, "job_id: %s", job_id);
-		applog(LOG_DEBUG, "prev_hash: %s", prev_hash);
-		applog(LOG_DEBUG, "coinbase1: %s", coinbase1);
-		applog(LOG_DEBUG, "coinbase2: %s", coinbase2);
-		applog(LOG_DEBUG, "bbversion: %s", bbversion);
-		applog(LOG_DEBUG, "nbit: %s", nbit);
-		applog(LOG_DEBUG, "ntime: %s", ntime);
-		applog(LOG_DEBUG, "clean: %s", clean ? "yes" : "no");
+		applog(LOG_INFO, "job_id: %s", job_id);
+		applog(LOG_INFO, "prev_hash: %s", prev_hash);
+		applog(LOG_INFO, "coinbase1: %s", coinbase1);
+		applog(LOG_INFO, "coinbase2: %s", coinbase2);
+		applog(LOG_INFO, "bbversion: %s", bbversion);
+		applog(LOG_INFO, "nbit: %s", nbit);
+		applog(LOG_INFO, "ntime: %s", ntime);
+		applog(LOG_INFO, "clean: %s", clean ? "yes" : "no");
 	}
 	free(coinbase1);
 	free(coinbase2);
@@ -2254,7 +2255,10 @@ out_unlock:
 	pool->getwork_requested++;
 	total_getworks++;
 	if (pool == current_pool())
+	{
 		opt_work_update = true;
+		restart_threads();
+	}
 out:
 	return ret;
 }
