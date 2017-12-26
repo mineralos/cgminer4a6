@@ -32,27 +32,27 @@
 #define MAX_REGISTER_INDEX  5
 
 typedef struct {
-	uint32_t    gpioIndex;
-	uint32_t    regIndex;
-	uint32_t    data;
+    uint32_t    gpioIndex;
+    uint32_t    regIndex;
+    uint32_t    data;
 } gpio_rq_t;
 
 typedef struct {
-	uint32_t    oe_reg0;
-	uint32_t    out_reg0;
-	uint32_t    in_reg0;
+    uint32_t    oe_reg0;
+    uint32_t    out_reg0;
+    uint32_t    in_reg0;
 
-	uint32_t    oe_reg1;
-	uint32_t    out_reg1;
-	uint32_t    in_reg1;
+    uint32_t    oe_reg1;
+    uint32_t    out_reg1;
+    uint32_t    in_reg1;
 
-	uint32_t    oe_reg2;
-	uint32_t    out_reg2;
-	uint32_t    in_reg2;
+    uint32_t    oe_reg2;
+    uint32_t    out_reg2;
+    uint32_t    in_reg2;
 
-	uint32_t    oe_reg3;
-	uint32_t    out_reg3;
-	uint32_t    in_reg3;
+    uint32_t    oe_reg3;
+    uint32_t    out_reg3;
+    uint32_t    in_reg3;
 } gpio_resp_t;
 
 extern char *gpio_device_name;

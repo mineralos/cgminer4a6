@@ -84,14 +84,14 @@
  * cores        16 bits
  * version      16 bits
  * reserved     60 bits         (Neptune)
- * die_status    4 bits		(Neptune)
+ * die_status    4 bits     (Neptune)
  *               1' pll_locked
- *               1' hash_reset_n	1 if cores have been reset since last report
- *               1' pll_reset_n		1 if PLL have been reset since last report
+ *               1' hash_reset_n    1 if cores have been reset since last report
+ *               1' pll_reset_n     1 if PLL have been reset since last report
  *               1' pll_power_down
  * core_status  cores * 2 bits  (Neptune) rounded up to bytes
  *                              1' want_work 
- *				1' has_report (unreliable)
+ *              1' has_report (unreliable)
  *
  * REPORT
  *
@@ -112,7 +112,7 @@
  * Jupiter only has first nonce entry
  */
 
-// Precalculate first 3 rounds of SHA256 - as much as possible	
+// Precalculate first 3 rounds of SHA256 - as much as possible  
 // Macro routines copied from sha2.c
 static void knc_prepare_neptune_work(unsigned char *out, struct work *work) {
         const uint8_t *midstate = work->midstate;
@@ -120,38 +120,38 @@ static void knc_prepare_neptune_work(unsigned char *out, struct work *work) {
 
 #ifndef GET_ULONG_BE
 #define GET_ULONG_BE(b,i)                             \
-		(( (uint32_t) (b)[(i)    ] << 24 )	\
-                | ( (uint32_t) (b)[(i) + 1] << 16 )	\
-                | ( (uint32_t) (b)[(i) + 2] <<  8 )	\
+        (( (uint32_t) (b)[(i)    ] << 24 )  \
+                | ( (uint32_t) (b)[(i) + 1] << 16 ) \
+                | ( (uint32_t) (b)[(i) + 2] <<  8 ) \
                 | ( (uint32_t) (b)[(i) + 3]       ))
 #endif
 
 #ifndef GET_ULONG_LE
 #define GET_ULONG_LE(b,i)                             \
-		(( (uint32_t) (b)[(i) + 3] << 24 )	\
-                | ( (uint32_t) (b)[(i) + 2] << 16 )	\
-                | ( (uint32_t) (b)[(i) + 1] <<  8 )	\
+        (( (uint32_t) (b)[(i) + 3] << 24 )  \
+                | ( (uint32_t) (b)[(i) + 2] << 16 ) \
+                | ( (uint32_t) (b)[(i) + 1] <<  8 ) \
                 | ( (uint32_t) (b)[(i) + 0]       ))
 #endif
 
 #ifndef PUT_ULONG_BE
 #define PUT_ULONG_BE(n,b,i)                             \
-	{						\
-		(b)[(i)    ] = (unsigned char) ( (n) >> 24 );	\
-		(b)[(i) + 1] = (unsigned char) ( (n) >> 16 );	\
-		(b)[(i) + 2] = (unsigned char) ( (n) >>  8 );	\
-		(b)[(i) + 3] = (unsigned char) ( (n)       );	\
-	}
+    {                       \
+        (b)[(i)    ] = (unsigned char) ( (n) >> 24 );   \
+        (b)[(i) + 1] = (unsigned char) ( (n) >> 16 );   \
+        (b)[(i) + 2] = (unsigned char) ( (n) >>  8 );   \
+        (b)[(i) + 3] = (unsigned char) ( (n)       );   \
+    }
 #endif
 
 #ifndef PUT_ULONG_LE
 #define PUT_ULONG_LE(n,b,i)                             \
-	{						\
-		(b)[(i) + 3] = (unsigned char) ( (n) >> 24 );	\
-		(b)[(i) + 2] = (unsigned char) ( (n) >> 16 );	\
-		(b)[(i) + 1] = (unsigned char) ( (n) >>  8 );	\
-		(b)[(i) + 0] = (unsigned char) ( (n)       );	\
-	}
+    {                       \
+        (b)[(i) + 3] = (unsigned char) ( (n) >> 24 );   \
+        (b)[(i) + 2] = (unsigned char) ( (n) >> 16 );   \
+        (b)[(i) + 1] = (unsigned char) ( (n) >>  8 );   \
+        (b)[(i) + 0] = (unsigned char) ( (n)       );   \
+    }
 #endif
 
 #define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
@@ -173,11 +173,11 @@ static void knc_prepare_neptune_work(unsigned char *out, struct work *work) {
 )
 
 #define P(a,b,c,d,e,f,g,h,x,K)                  \
-	{					\
-		temp1 = h + S3(e) + F1(e,f,g) + K + x;	\
-		temp2 = S2(a) + F0(a,b,c);		\
-		d += temp1; h = temp1 + temp2;		\
-	}
+    {                   \
+        temp1 = h + S3(e) + F1(e,f,g) + K + x;  \
+        temp2 = S2(a) + F0(a,b,c);      \
+        d += temp1; h = temp1 + temp2;      \
+    }
 
     uint32_t temp1, temp2, W[16+3];
     uint32_t A, B, C, D, E, F, G, H;
@@ -247,75 +247,75 @@ static void knc_prepare_jupiter_work(unsigned char *out, struct work *work) {
 
 static void knc_prepare_core_command(uint8_t *request, int command, int die, int core)
 {
-	request[0] = command;
-	request[1] = die;
-	request[2] = core >> 8;
-	request[3] = core & 0xff;
+    request[0] = command;
+    request[1] = die;
+    request[2] = core >> 8;
+    request[3] = core & 0xff;
 }
 
 int knc_prepare_report(uint8_t *request, int die, int core)
 {
-	knc_prepare_core_command(request, KNC_ASIC_CMD_REPORT, die, core);
-	return 4;
+    knc_prepare_core_command(request, KNC_ASIC_CMD_REPORT, die, core);
+    return 4;
 }
 
 int knc_prepare_info(uint8_t *request, int die, struct knc_die_info *die_info, int *response_size)
 {
-	request[0] = KNC_ASIC_CMD_GETINFO;
-	request[1] = die;
-	request[2] = 0;
-	request[3] = 0;
-	switch (die_info->version) {
-	case KNC_VERSION_JUPITER:
-		*response_size = 4;
-		break;
-	default:
-		*response_size = 12 + (KNC_MAX_CORES_PER_DIE*2 + 7) / 8;
-		break;
-	case KNC_VERSION_NEPTUNE:
-		*response_size = 12 + (die_info->cores*2 + 7) / 8;
-		break;
-	}
-	return 4;
+    request[0] = KNC_ASIC_CMD_GETINFO;
+    request[1] = die;
+    request[2] = 0;
+    request[3] = 0;
+    switch (die_info->version) {
+    case KNC_VERSION_JUPITER:
+        *response_size = 4;
+        break;
+    default:
+        *response_size = 12 + (KNC_MAX_CORES_PER_DIE*2 + 7) / 8;
+        break;
+    case KNC_VERSION_NEPTUNE:
+        *response_size = 12 + (die_info->cores*2 + 7) / 8;
+        break;
+    }
+    return 4;
 }
 
 int knc_prepare_neptune_setwork(uint8_t *request, int die, int core, int slot, struct work *work, int clean)
 {
-	if (!clean)
-		knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK, die, core);
-	else
-		knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK_CLEAN, die, core);
-	request[4] = slot | 0xf0;
-	if (work)
-		knc_prepare_neptune_work(request + 4 + 1, work);
-	else
-		memset(request + 4 + 1, 0, 6*4 + 3*4 + 8*4);
-	return 4 + 1 + 6*4 + 3*4 + 8*4;
+    if (!clean)
+        knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK, die, core);
+    else
+        knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK_CLEAN, die, core);
+    request[4] = slot | 0xf0;
+    if (work)
+        knc_prepare_neptune_work(request + 4 + 1, work);
+    else
+        memset(request + 4 + 1, 0, 6*4 + 3*4 + 8*4);
+    return 4 + 1 + 6*4 + 3*4 + 8*4;
 }
 
 int knc_prepare_jupiter_setwork(uint8_t *request, int die, int core, int slot, struct work *work)
 {
-	knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK, die, core);
-	request[4] = slot | 0xf0;
-	if (work)
-		knc_prepare_jupiter_work(request + 4 + 1, work);
-	else
-		memset(request + 4 + 1, 0, 8*4 + 3*4);
-	return 4 + 1 + 8*4 + 3*4;
+    knc_prepare_core_command(request, KNC_ASIC_CMD_SETWORK, die, core);
+    request[4] = slot | 0xf0;
+    if (work)
+        knc_prepare_jupiter_work(request + 4 + 1, work);
+    else
+        memset(request + 4 + 1, 0, 8*4 + 3*4);
+    return 4 + 1 + 8*4 + 3*4;
 }
 
 int knc_prepare_jupiter_halt(uint8_t *request, int die, int core)
 {
-	knc_prepare_core_command(request, KNC_ASIC_CMD_HALT, die, core);
-	return 4;
+    knc_prepare_core_command(request, KNC_ASIC_CMD_HALT, die, core);
+    return 4;
 }
 
 int knc_prepare_neptune_halt(uint8_t *request, int die, int core)
 {
-	knc_prepare_core_command(request, KNC_ASIC_CMD_HALT, die, core);
-	request[4] = 0 | 0xf0;
-	memset(request + 4 + 1, 0, 6*4 + 3*4 + 8*4);
-	return 4 + 1 + 6*4 + 3*4 + 8*4;
+    knc_prepare_core_command(request, KNC_ASIC_CMD_HALT, die, core);
+    request[4] = 0 | 0xf0;
+    memset(request + 4 + 1, 0, 6*4 + 3*4 + 8*4);
+    return 4 + 1 + 6*4 + 3*4 + 8*4;
 }
 
 void knc_prepare_neptune_message(int request_length, const uint8_t *request, uint8_t *buffer)
@@ -330,63 +330,63 @@ void knc_prepare_neptune_message(int request_length, const uint8_t *request, uin
 
 int knc_transfer_length(int request_length, int response_length)
 {
-	/* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
-	return 2 + MAX(request_length, 4 + response_length ) + 4 + 1 + 3;
+    /* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
+    return 2 + MAX(request_length, 4 + response_length ) + 4 + 1 + 3;
 }
 
 int knc_prepare_transfer(uint8_t *txbuf, int offset, int size, int channel, int request_length, const uint8_t *request, int response_length)
 {
-	/* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
+    /* FPGA control, request header, request body/response, CRC(4), ACK(1), EXTRA(3) */
         int msglen = MAX(request_length, 4 + response_length ) + 4 + 1 + 3;
         int len = 2 + msglen;
-	txbuf += offset;
+    txbuf += offset;
 
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = 1 << 7 | (channel+1) << 4 | (msglen * 8) >> 8;
-	txbuf[1] = (msglen * 8);
-	knc_prepare_neptune_message(request_length, request, txbuf+2);
+    if (len + offset > size) {
+        applog(LOG_DEBUG, "KnC SPI buffer full");
+        return -1;
+    }
+    txbuf[0] = 1 << 7 | (channel+1) << 4 | (msglen * 8) >> 8;
+    txbuf[1] = (msglen * 8);
+    knc_prepare_neptune_message(request_length, request, txbuf+2);
 
-	return offset + len;
+    return offset + len;
 }
 
 /* red, green, blue valid range 0 - 15 */
 int knc_prepare_led(uint8_t *txbuf, int offset, int size, int red, int green, int blue)
 {
-	/* 4'h1 4'red 4'green 4'blue */
+    /* 4'h1 4'red 4'green 4'blue */
         int len = 2;
-	txbuf += offset;
+    txbuf += offset;
 
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = 1 << 4 | red;
-	txbuf[1] = green << 4 | blue;
+    if (len + offset > size) {
+        applog(LOG_DEBUG, "KnC SPI buffer full");
+        return -1;
+    }
+    txbuf[0] = 1 << 4 | red;
+    txbuf[1] = green << 4 | blue;
 
-	return offset + len;
-	
+    return offset + len;
+    
 }
 
 /* reset controller */
 int knc_prepare_reset(uint8_t *txbuf, int offset, int size)
 {
-	/* 16'h0002 16'unused */
+    /* 16'h0002 16'unused */
         int len = 4;
-	txbuf += offset;
+    txbuf += offset;
 
-	if (len + offset > size) {
-		applog(LOG_DEBUG, "KnC SPI buffer full");
-		return -1;
-	}
-	txbuf[0] = (0x0002) >> 8;
-	txbuf[1] = (0x0002) & 0xff;
-	txbuf[2] = 0;
-	txbuf[3] = 0;
+    if (len + offset > size) {
+        applog(LOG_DEBUG, "KnC SPI buffer full");
+        return -1;
+    }
+    txbuf[0] = (0x0002) >> 8;
+    txbuf[1] = (0x0002) & 0xff;
+    txbuf[2] = 0;
+    txbuf[3] = 0;
 
-	return offset + len;
+    return offset + len;
 }
 
 /* request_length = 0 disables communication checks, i.e. Jupiter protocol */
@@ -396,23 +396,23 @@ int knc_decode_response(uint8_t *rxbuf, int request_length, uint8_t **response, 
     int len = knc_transfer_length(request_length, response_length);
     if (request_length > 0 && response_length > 0) {
         uint32_t crc, recv_crc;
-	crc = crc32(0, Z_NULL, 0);
+    crc = crc32(0, Z_NULL, 0);
         crc = crc32(crc, rxbuf + 2 + 4, response_length);
-	recv_crc = GET_ULONG_BE(rxbuf + 2 + 4, response_length);
-	if (crc != recv_crc)
+    recv_crc = GET_ULONG_BE(rxbuf + 2 + 4, response_length);
+    if (crc != recv_crc)
                 ret |= KNC_ERR_CRC;
     }
 
     if (response) {
-	if (response_length > 0) {
-	    *response = rxbuf + 2 + 4;
-	} else {
-	    *response = NULL;
-	}
+    if (response_length > 0) {
+        *response = rxbuf + 2 + 4;
+    } else {
+        *response = NULL;
+    }
     }
       
     if (response_length == 0)
-	return 0;
+    return 0;
 
     uint8_t ack = rxbuf[len - 4];
 
@@ -423,7 +423,7 @@ int knc_decode_response(uint8_t *rxbuf, int request_length, uint8_t **response, 
     if ((ack & KNC_ASIC_ACK_ACCEPT))
         ret |= KNC_ACCEPTED;
     if (ret && memcmp(&rxbuf[len-4], "\377\377\377\377", 4) == 0)
-	ret = KNC_ERR_UNAVAIL;
+    ret = KNC_ERR_UNAVAIL;
     return ret;
 }
 
@@ -439,38 +439,38 @@ int knc_syncronous_transfer(void *ctx, int channel, int request_length, const ui
     uint8_t *response_buf;
     int rc = knc_decode_response(rxbuf, request_length, &response_buf, response_length);
     if (response)
-	memcpy(response, response_buf, response_length);
+    memcpy(response, response_buf, response_length);
     return rc;
 }
 
 int knc_decode_info(uint8_t *response, struct knc_die_info *die_info)
 {
-	int cores_in_die = response[0]<<8 | response[1];
-	int version = response[2]<<8 | response[3];
-	if (version == KNC_ASIC_VERSION_JUPITER && cores_in_die <= 48) {
-		die_info->version = KNC_VERSION_JUPITER;
-		die_info->cores = cores_in_die;
-		memset(die_info->want_work, -1, cores_in_die);
-		die_info->pll_power_down = -1;
-		die_info->pll_reset_n = -1;
-		die_info->hash_reset_n = -1;
-		die_info->pll_locked = -1;
-		return 0;
-	} else if (version == KNC_ASIC_VERSION_NEPTUNE && cores_in_die <= KNC_MAX_CORES_PER_DIE) {
-		die_info->version = KNC_VERSION_NEPTUNE;
-		die_info->cores = cores_in_die;
-		int core;
-		for (core = 0; core < cores_in_die; core++)
-			die_info->want_work[core] = ((response[12 + core/4] >> ((3-(core % 4)) * 2)) >> 1) & 1;
-		int die_status = response[11] & 0xf;
-		die_info->pll_power_down = (die_status >> 0) & 1;
-		die_info->pll_reset_n = (die_status >> 1) & 1;
-		die_info->hash_reset_n = (die_status >> 2) & 1;
-		die_info->pll_locked = (die_status >> 3) & 1;
-		return 0;
-	} else {
-		return -1;
-	}
+    int cores_in_die = response[0]<<8 | response[1];
+    int version = response[2]<<8 | response[3];
+    if (version == KNC_ASIC_VERSION_JUPITER && cores_in_die <= 48) {
+        die_info->version = KNC_VERSION_JUPITER;
+        die_info->cores = cores_in_die;
+        memset(die_info->want_work, -1, cores_in_die);
+        die_info->pll_power_down = -1;
+        die_info->pll_reset_n = -1;
+        die_info->hash_reset_n = -1;
+        die_info->pll_locked = -1;
+        return 0;
+    } else if (version == KNC_ASIC_VERSION_NEPTUNE && cores_in_die <= KNC_MAX_CORES_PER_DIE) {
+        die_info->version = KNC_VERSION_NEPTUNE;
+        die_info->cores = cores_in_die;
+        int core;
+        for (core = 0; core < cores_in_die; core++)
+            die_info->want_work[core] = ((response[12 + core/4] >> ((3-(core % 4)) * 2)) >> 1) & 1;
+        int die_status = response[11] & 0xf;
+        die_info->pll_power_down = (die_status >> 0) & 1;
+        die_info->pll_reset_n = (die_status >> 1) & 1;
+        die_info->hash_reset_n = (die_status >> 2) & 1;
+        die_info->pll_locked = (die_status >> 3) & 1;
+        return 0;
+    } else {
+        return -1;
+    }
 }
 
 int knc_decode_report(uint8_t *response, struct knc_report *report, int version)
@@ -489,63 +489,63 @@ int knc_decode_report(uint8_t *response, struct knc_report *report, int version)
  * nonce_slot   4 bits
  * nonce        32 bits
  */
-	report->next_state = (response[0] >> 5) & 1;
-	if (version != KNC_VERSION_JUPITER) {
-		report->state = (response[0] >> 4) & 1;
-		report->next_slot = response[0] & ((1<<4)-1);
-	} else {
-		report->state = -1;
-		report->next_slot = -1;
-	}
-	report->progress = (uint32_t)response[1] << 24;
-	report->active_slot = (response[2] >> 4) & ((1<<4)-1);
-	int n;
-	int n_nonces = version == KNC_VERSION_JUPITER ? 1 : 5;
-	for (n = 0; n < n_nonces; n++) {
-		report->nonce[n].slot = response[2+n*5] & ((1<<4)-1);
-		report->nonce[n].nonce =
-				(uint32_t)response[3+n*5] << 24 |
-				(uint32_t)response[4+n*5] << 16 |
-				(uint32_t)response[5+n*5] << 8 |
-				(uint32_t)response[6+n*5] << 0 |
-				0;
-	}
-	for (; n < KNC_NONCES_PER_REPORT; n++) {
-		report->nonce[n].slot = -1;
-		report->nonce[n].nonce = 0;
-	}
-	return 0;
+    report->next_state = (response[0] >> 5) & 1;
+    if (version != KNC_VERSION_JUPITER) {
+        report->state = (response[0] >> 4) & 1;
+        report->next_slot = response[0] & ((1<<4)-1);
+    } else {
+        report->state = -1;
+        report->next_slot = -1;
+    }
+    report->progress = (uint32_t)response[1] << 24;
+    report->active_slot = (response[2] >> 4) & ((1<<4)-1);
+    int n;
+    int n_nonces = version == KNC_VERSION_JUPITER ? 1 : 5;
+    for (n = 0; n < n_nonces; n++) {
+        report->nonce[n].slot = response[2+n*5] & ((1<<4)-1);
+        report->nonce[n].nonce =
+                (uint32_t)response[3+n*5] << 24 |
+                (uint32_t)response[4+n*5] << 16 |
+                (uint32_t)response[5+n*5] << 8 |
+                (uint32_t)response[6+n*5] << 0 |
+                0;
+    }
+    for (; n < KNC_NONCES_PER_REPORT; n++) {
+        report->nonce[n].slot = -1;
+        report->nonce[n].nonce = 0;
+    }
+    return 0;
 }
 
 int knc_detect_die(void *ctx, int channel, int die, struct knc_die_info *die_info)
 {
-	uint8_t request[4];
-	int response_len = 2 + 2 + 4 + 4 + (KNC_MAX_CORES_PER_DIE*2 + 7) / 8;
-	uint8_t response[response_len];
+    uint8_t request[4];
+    int response_len = 2 + 2 + 4 + 4 + (KNC_MAX_CORES_PER_DIE*2 + 7) / 8;
+    uint8_t response[response_len];
 
-	int request_len = knc_prepare_info(request, die, die_info, &response_len);
-	int status = knc_syncronous_transfer(ctx, channel, request_len, request, response_len, response);
+    int request_len = knc_prepare_info(request, die, die_info, &response_len);
+    int status = knc_syncronous_transfer(ctx, channel, request_len, request, response_len, response);
 
-	/* Workaround for pre-ASIC version */
-	int cores_in_die = response[0]<<8 | response[1];
-	int version = response[2]<<8 | response[3];
-	if (version == KNC_ASIC_VERSION_NEPTUNE && cores_in_die < KNC_MAX_CORES_PER_DIE) {
-		applog(LOG_DEBUG, "KnC %d-%d: Looks like a NEPTUNE die with %d cores", channel, die, cores_in_die);
-		/* Try again with right response size */
-		response_len = 2 + 2 + 4 + 4 + (cores_in_die*2 + 7) / 8;
-		status = knc_syncronous_transfer(ctx, channel, request_len, request, response_len, response);
-	}
-	int rc = -1;
-	if (version == KNC_ASIC_VERSION_JUPITER || status == 0)
-		rc = knc_decode_info(response, die_info);
-	if (rc == 0)
-		applog(LOG_INFO, "KnC %d-%d: Found %s die with %d cores", channel, die,
-			die_info->version == KNC_VERSION_NEPTUNE ? "NEPTUNE" : 
-			die_info->version == KNC_VERSION_JUPITER ? "JUPITER" : 
-			"UNKNOWN",
-			cores_in_die);
-	else
-		applog(LOG_DEBUG, "KnC %d-%d: No KnC chip found", channel, die);
-	return rc;
+    /* Workaround for pre-ASIC version */
+    int cores_in_die = response[0]<<8 | response[1];
+    int version = response[2]<<8 | response[3];
+    if (version == KNC_ASIC_VERSION_NEPTUNE && cores_in_die < KNC_MAX_CORES_PER_DIE) {
+        applog(LOG_DEBUG, "KnC %d-%d: Looks like a NEPTUNE die with %d cores", channel, die, cores_in_die);
+        /* Try again with right response size */
+        response_len = 2 + 2 + 4 + 4 + (cores_in_die*2 + 7) / 8;
+        status = knc_syncronous_transfer(ctx, channel, request_len, request, response_len, response);
+    }
+    int rc = -1;
+    if (version == KNC_ASIC_VERSION_JUPITER || status == 0)
+        rc = knc_decode_info(response, die_info);
+    if (rc == 0)
+        applog(LOG_INFO, "KnC %d-%d: Found %s die with %d cores", channel, die,
+            die_info->version == KNC_VERSION_NEPTUNE ? "NEPTUNE" : 
+            die_info->version == KNC_VERSION_JUPITER ? "JUPITER" : 
+            "UNKNOWN",
+            cores_in_die);
+    else
+        applog(LOG_DEBUG, "KnC %d-%d: No KnC chip found", channel, die);
+    return rc;
 }
 

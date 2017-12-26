@@ -16,126 +16,126 @@
 
 #ifdef USE_AVALON2
 
-#define AVA2_MINER_THREADS	1
+#define AVA2_MINER_THREADS  1
 
-#define AVA2_RESET_FAULT_DECISECONDS	10
-#define AVA2_IO_SPEED		115200
+#define AVA2_RESET_FAULT_DECISECONDS    10
+#define AVA2_IO_SPEED       115200
 
-#define AVA2_DEFAULT_MODULARS	4
+#define AVA2_DEFAULT_MODULARS   4
 
-#define AVA2_PWM_MAX	0x3FF
-#define AVA2_DEFAULT_FAN_PWM	15 /* % */
-#define AVA2_DEFAULT_FAN_MIN	10
-#define AVA2_DEFAULT_FAN_MAX	85
+#define AVA2_PWM_MAX    0x3FF
+#define AVA2_DEFAULT_FAN_PWM    15 /* % */
+#define AVA2_DEFAULT_FAN_MIN    10
+#define AVA2_DEFAULT_FAN_MAX    85
 
-#define AVALON2_TEMP_OVERHEAT	98
-#define AVALON2_DEFAULT_POLLING_DELAY	20 /* ms */
+#define AVALON2_TEMP_OVERHEAT   98
+#define AVALON2_DEFAULT_POLLING_DELAY   20 /* ms */
 
-#define AVA2_DEFAULT_VOLTAGE_MIN	6000
-#define AVA2_DEFAULT_VOLTAGE_MAX	11000
+#define AVA2_DEFAULT_VOLTAGE_MIN    6000
+#define AVA2_DEFAULT_VOLTAGE_MAX    11000
 
-#define AVA2_DEFAULT_FREQUENCY_MIN	300
-#define AVA2_DEFAULT_FREQUENCY_MAX	2000
+#define AVA2_DEFAULT_FREQUENCY_MIN  300
+#define AVA2_DEFAULT_FREQUENCY_MAX  2000
 
 /* Avalon2 default values */
-#define AVA2_DEFAULT_MINERS	10
-#define AVA2_DEFAULT_VOLTAGE	10000 /* v * 10000 */
-#define AVA2_DEFAULT_FREQUENCY	1500 /* In MHs */
+#define AVA2_DEFAULT_MINERS 10
+#define AVA2_DEFAULT_VOLTAGE    10000 /* v * 10000 */
+#define AVA2_DEFAULT_FREQUENCY  1500 /* In MHs */
 
 /* Avalon3 default values */
-#define AVA2_AVA3_MINERS	5
-#define AVA2_AVA3_VOLTAGE	6660 /* 0.666v */
-#define AVA2_AVA3_FREQUENCY	450  /* MHz * 11.8 = MHs: 450MHz means ~5.3GHs */
+#define AVA2_AVA3_MINERS    5
+#define AVA2_AVA3_VOLTAGE   6660 /* 0.666v */
+#define AVA2_AVA3_FREQUENCY 450  /* MHz * 11.8 = MHs: 450MHz means ~5.3GHs */
 
 /* Avalon2 protocol package type */
-#define AVA2_H1	'A'
-#define AVA2_H2	'V'
+#define AVA2_H1 'A'
+#define AVA2_H2 'V'
 
-#define AVA2_P_COINBASE_SIZE	(6 * 1024)
-#define AVA2_P_MERKLES_COUNT	20
+#define AVA2_P_COINBASE_SIZE    (6 * 1024)
+#define AVA2_P_MERKLES_COUNT    20
 
-#define AVA2_P_COUNT	39
-#define AVA2_P_DATA_LEN		(AVA2_P_COUNT - 7)
+#define AVA2_P_COUNT    39
+#define AVA2_P_DATA_LEN     (AVA2_P_COUNT - 7)
 
-#define AVA2_P_DETECT	10
-#define AVA2_P_STATIC	11
-#define AVA2_P_JOB_ID	12
-#define AVA2_P_COINBASE	13
-#define AVA2_P_MERKLES	14
-#define AVA2_P_HEADER	15
+#define AVA2_P_DETECT   10
+#define AVA2_P_STATIC   11
+#define AVA2_P_JOB_ID   12
+#define AVA2_P_COINBASE 13
+#define AVA2_P_MERKLES  14
+#define AVA2_P_HEADER   15
 #define AVA2_P_POLLING  16
-#define AVA2_P_TARGET	17
-#define AVA2_P_REQUIRE	18
-#define AVA2_P_SET	19
-#define AVA2_P_TEST	20
+#define AVA2_P_TARGET   17
+#define AVA2_P_REQUIRE  18
+#define AVA2_P_SET  19
+#define AVA2_P_TEST 20
 
-#define AVA2_P_ACK		21
-#define AVA2_P_NAK		22
-#define AVA2_P_NONCE		23
-#define AVA2_P_STATUS		24
-#define AVA2_P_ACKDETECT	25
-#define AVA2_P_TEST_RET		26
+#define AVA2_P_ACK      21
+#define AVA2_P_NAK      22
+#define AVA2_P_NONCE        23
+#define AVA2_P_STATUS       24
+#define AVA2_P_ACKDETECT    25
+#define AVA2_P_TEST_RET     26
 /* Avalon2 protocol package type */
 
 /* Avalon2/3 firmware prefix */
-#define AVA2_FW2_PREFIXSTR	"20"
-#define AVA2_FW3_PREFIXSTR	"33"
+#define AVA2_FW2_PREFIXSTR  "20"
+#define AVA2_FW3_PREFIXSTR  "33"
 
-#define AVA2_MM_VERNULL		"NONE"
+#define AVA2_MM_VERNULL     "NONE"
 
-#define AVA2_ID_AVA2		3255
-#define AVA2_ID_AVA3		3233
-#define AVA2_ID_AVAX		3200
+#define AVA2_ID_AVA2        3255
+#define AVA2_ID_AVA3        3233
+#define AVA2_ID_AVAX        3200
 
 enum avalon2_fan_fixed {
-	FAN_FIXED,
-	FAN_AUTO,
+    FAN_FIXED,
+    FAN_AUTO,
 };
 
 struct avalon2_pkg {
-	uint8_t head[2];
-	uint8_t type;
-	uint8_t idx;
-	uint8_t cnt;
-	uint8_t data[32];
-	uint8_t crc[2];
+    uint8_t head[2];
+    uint8_t type;
+    uint8_t idx;
+    uint8_t cnt;
+    uint8_t data[32];
+    uint8_t crc[2];
 };
 #define avalon2_ret avalon2_pkg
 
 struct avalon2_info {
-	struct timeval last_stratum;
-	struct pool pool;
-	int pool_no;
+    struct timeval last_stratum;
+    struct pool pool;
+    int pool_no;
 
-	int modulars[AVA2_DEFAULT_MODULARS];
-	char mm_version[AVA2_DEFAULT_MODULARS][16];
-	int dev_type[AVA2_DEFAULT_MODULARS];
-	bool enable[AVA2_DEFAULT_MODULARS];
+    int modulars[AVA2_DEFAULT_MODULARS];
+    char mm_version[AVA2_DEFAULT_MODULARS][16];
+    int dev_type[AVA2_DEFAULT_MODULARS];
+    bool enable[AVA2_DEFAULT_MODULARS];
 
-	int set_frequency;
-	int set_voltage;
+    int set_frequency;
+    int set_voltage;
 
-	int get_voltage[AVA2_DEFAULT_MODULARS];
-	int get_frequency[AVA2_DEFAULT_MODULARS];
-	int power_good[AVA2_DEFAULT_MODULARS];
+    int get_voltage[AVA2_DEFAULT_MODULARS];
+    int get_frequency[AVA2_DEFAULT_MODULARS];
+    int power_good[AVA2_DEFAULT_MODULARS];
 
-	int fan_pwm;
-	int fan_pct;
-	int temp_max;
+    int fan_pwm;
+    int fan_pct;
+    int temp_max;
 
-	int fan[2 * AVA2_DEFAULT_MODULARS];
-	int temp[2 * AVA2_DEFAULT_MODULARS];
+    int fan[2 * AVA2_DEFAULT_MODULARS];
+    int temp[2 * AVA2_DEFAULT_MODULARS];
 
-	int local_works[AVA2_DEFAULT_MODULARS];
-	int hw_works[AVA2_DEFAULT_MODULARS];
+    int local_works[AVA2_DEFAULT_MODULARS];
+    int hw_works[AVA2_DEFAULT_MODULARS];
 
-	int local_work[AVA2_DEFAULT_MODULARS];
-	int hw_work[AVA2_DEFAULT_MODULARS];
-	int matching_work[AVA2_DEFAULT_MINERS * AVA2_DEFAULT_MODULARS];
+    int local_work[AVA2_DEFAULT_MODULARS];
+    int hw_work[AVA2_DEFAULT_MODULARS];
+    int matching_work[AVA2_DEFAULT_MINERS * AVA2_DEFAULT_MODULARS];
 
-	int led_red[AVA2_DEFAULT_MODULARS];
+    int led_red[AVA2_DEFAULT_MODULARS];
 
-	bool failing;
+    bool failing;
 };
 
 #define AVA2_WRITE_SIZE (sizeof(struct avalon2_pkg))
@@ -160,4 +160,4 @@ extern enum avalon2_fan_fixed opt_avalon2_fan_fixed;
 extern int opt_avalon2_overheat;
 extern int opt_avalon2_polling_delay;
 #endif /* USE_AVALON2 */
-#endif	/* _AVALON2_H_ */
+#endif  /* _AVALON2_H_ */

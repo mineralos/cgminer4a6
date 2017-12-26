@@ -66,33 +66,33 @@
 
 /*********************************** 全局变量 **********************************/
 typedef struct {
-	int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* 用于存放所有链上的芯片温度*/
+    int temp[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* 用于存放所有链上的芯片温度*/
     int valid_chain[ASIC_CHAIN_NUM];           //用于判断该chain是否有效
     int index[ASIC_CHAIN_NUM];                  /*对应链上的chip_id */
 
     int speed;                              /* 0 - 100用于设置风扇转速(可能32档) */
     int last_fan_speed;
-	int auto_ctrl;
-	int pre_warn[4];
+    int auto_ctrl;
+    int pre_warn[4];
 
     int temp_arvarge[ASIC_CHAIN_NUM];          /*对应链上的平均温度*/
     int temp_highest[ASIC_CHAIN_NUM];            /*对应链上的最高温度*/
     int temp_lowest[ASIC_CHAIN_NUM];             /*对应链上的最低温度*/
-	float temp2float[ASIC_CHAIN_NUM][3];         /*[][0]->highest,[][1]->avg, [][2]->lowest*/
+    float temp2float[ASIC_CHAIN_NUM][3];         /*[][0]->highest,[][1]->avg, [][2]->lowest*/
     int last_fan_temp;
-	pthread_mutex_t lock;                       /* lock */
+    pthread_mutex_t lock;                       /* lock */
 
 }inno_fan_temp_s;
 
 
 typedef enum{
     INNO_TYPE_NONE = 0x00,
-	INNO_TYPE_A4,
-	INNO_TYPE_A5,
-	INNO_TYPE_A6,
-	INNO_TYPE_A7,
+    INNO_TYPE_A4,
+    INNO_TYPE_A5,
+    INNO_TYPE_A6,
+    INNO_TYPE_A7,
     INNO_TYPE_A8,
-	INNO_TYPE_A9,
+    INNO_TYPE_A9,
 }inno_type_e;
 
 

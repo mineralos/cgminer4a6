@@ -66,7 +66,7 @@ typedef struct {
   uint8_t requester_id;
   uint8_t request_id;
   uint8_t protocol_version;
-	uint8_t mask; // 0x01 = first request, 0x2 = drop old work
+    uint8_t mask; // 0x01 = first request, 0x2 = drop old work
   uint16_t magic;   // 0xcaf4
   uint16_t req_count;
   minergate_do_job_req_sp30 req[MAX_REQUESTS_SP30]; // array of requests

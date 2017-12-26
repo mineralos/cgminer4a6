@@ -17,7 +17,7 @@
 #ifdef USE_HASHRATIO
 char *opt_hashratio_freq;
 
-#define HRTO_MINER_THREADS	1
+#define HRTO_MINER_THREADS  1
 
 #define HRTO_RESET_FAULT_DECISECONDS  10
 #define HRTO_IO_SPEED                 115200
@@ -46,8 +46,8 @@ char *opt_hashratio_freq;
 #define HRTO_P_COINBASE_SIZE  (6 * 1024)
 #define HRTO_P_MERKLES_COUNT  20
 
-#define HRTO_P_COUNT	39
-#define HRTO_P_DATA_LEN		(HRTO_P_COUNT - 7)
+#define HRTO_P_COUNT    39
+#define HRTO_P_DATA_LEN     (HRTO_P_COUNT - 7)
 
 #define HRTO_P_DETECT    10  // 0x0a
 #define HRTO_P_STATIC    11  // 0x0b
@@ -70,44 +70,44 @@ char *opt_hashratio_freq;
 /* Hashratio protocol package type */
 
 struct hashratio_pkg {
-	uint8_t head[2];
-	uint8_t type;
-	uint8_t idx;
-	uint8_t cnt;
-	uint8_t data[32];
-	uint8_t crc[2];
+    uint8_t head[2];
+    uint8_t type;
+    uint8_t idx;
+    uint8_t cnt;
+    uint8_t data[32];
+    uint8_t crc[2];
 };
 #define hashratio_ret hashratio_pkg
 
 struct hashratio_info {
-	int default_freq;
+    int default_freq;
 
-	int fan_pwm;
+    int fan_pwm;
 
-	int     temp;
-	int     fan[HRTO_FAN_COUNT];
-//	uint8_t freq[HRTO_DEFAULT_MINERS];
-	uint8_t target_freq[HRTO_DEFAULT_MINERS];
+    int     temp;
+    int     fan[HRTO_FAN_COUNT];
+//  uint8_t freq[HRTO_DEFAULT_MINERS];
+    uint8_t target_freq[HRTO_DEFAULT_MINERS];
 
-	int temp_max;
-	int temp_history_count;
-	int temp_history_index;
-	int temp_sum;
-	int temp_old;
+    int temp_max;
+    int temp_history_count;
+    int temp_history_index;
+    int temp_sum;
+    int temp_old;
 
-	struct timeval last_stratum;
-	struct pool pool;
-	int pool_no;
+    struct timeval last_stratum;
+    struct pool pool;
+    int pool_no;
 
-	int local_works;
-	int hw_works;
-	int matching_work[HRTO_DEFAULT_MINERS];
-	int local_work;
-	int hw_work;
+    int local_works;
+    int hw_works;
+    int matching_work[HRTO_DEFAULT_MINERS];
+    int local_work;
+    int hw_work;
 
-//	uint32_t get_result_counter;
-	
-	char mm_version[16];
+//  uint32_t get_result_counter;
+    
+    char mm_version[16];
 };
 
 #define HRTO_WRITE_SIZE (sizeof(struct hashratio_pkg))
@@ -128,4 +128,4 @@ extern char *set_hashratio_fan(char *arg);
 extern char *set_hashratio_freq(char *arg);
 
 #endif /* USE_HASHRATIO */
-#endif	/* _HASHRATIO_H_ */
+#endif  /* _HASHRATIO_H_ */

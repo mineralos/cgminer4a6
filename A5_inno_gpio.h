@@ -14,18 +14,18 @@
 
 #define SYSFS_VID_DEV "/dev/vidgen0.0"
 
-#define SYSFS_GPIO_EXPORT	"/sys/class/gpio/export"
-#define SYSFS_GPIO_DIR_STR	"/sys/class/gpio/gpio%d/direction"
-#define SYSFS_GPIO_VAL_STR	"/sys/class/gpio/gpio%d/value"
+#define SYSFS_GPIO_EXPORT   "/sys/class/gpio/export"
+#define SYSFS_GPIO_DIR_STR  "/sys/class/gpio/gpio%d/direction"
+#define SYSFS_GPIO_VAL_STR  "/sys/class/gpio/gpio%d/value"
 
 #define SYSFS_SPI_EXPORT "/sys/devices/soc0/amba/f8007000.devcfg/fclk_export"
 #define SYSFS_SPI_VAL_STR "/sys/devices/soc0/amba/f8007000.devcfg/fclk/fclk1/set_rate"
 
-#define SYSFS_GPIO_DIR_OUT	"out"
-#define SYSFS_GPIO_DIR_IN	"in"
+#define SYSFS_GPIO_DIR_OUT  "out"
+#define SYSFS_GPIO_DIR_IN   "in"
 
-#define SYSFS_GPIO_VAL_LOW	"0"
-#define SYSFS_GPIO_VAL_HIGH	"1"
+#define SYSFS_GPIO_VAL_LOW  "0"
+#define SYSFS_GPIO_VAL_HIGH "1"
 
 extern int SPI_PIN_POWER_EN[];
 extern int SPI_PIN_START_EN[];
