@@ -5275,20 +5275,12 @@ static void signal_work_update(void)
 
     applog(LOG_INFO, "Work update message received");
 
-<<<<<<< HEAD
 	cgtime(&update_tv_start);
 	rd_lock(&mining_thr_lock);
 	for (i = 0; i < mining_threads; i++)
 		mining_thr[i]->work_update = true;
 	
 	rd_unlock(&mining_thr_lock);
-=======
-    cgtime(&update_tv_start);
-    rd_lock(&mining_thr_lock);
-    for (i = 0; i < mining_threads; i++)
-        mining_thr[i]->work_update = true;
-    rd_unlock(&mining_thr_lock);
->>>>>>> 7ddee66e8eafc1c91733f6ee4ab758857fac15c3
 }
 
 static void set_curblock(const char *hexstr, const unsigned char *bedata)
