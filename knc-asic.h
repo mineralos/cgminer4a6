@@ -4,7 +4,7 @@
 #include "miner.h"
 
 /* ASIC Command codes */
-#define	KNC_ASIC_CMD_GETINFO             0x80
+#define KNC_ASIC_CMD_GETINFO             0x80
 #define KNC_ASIC_CMD_SETWORK             0x81
 #define KNC_ASIC_CMD_SETWORK_CLEAN       0x83        /* Neptune */
 #define KNC_ASIC_CMD_HALT                0x83        /* Jupiter */
@@ -21,35 +21,35 @@
 #define KNC_ASIC_VERSION_NEPTUNE            0xa002
 
 /* Limits of current chips & I/O board */
-#define KNC_MAX_CORES_PER_DIE	360
+#define KNC_MAX_CORES_PER_DIE   360
 #define KNC_MAX_ASICS 6
 
 struct knc_die_info {
-	enum {
-		KNC_VERSION_UNKNOWN = 0,
-		KNC_VERSION_JUPITER,
-		KNC_VERSION_NEPTUNE
-	} version;
-	char want_work[KNC_MAX_CORES_PER_DIE];
-	int cores;
-	int pll_locked;
-	int hash_reset_n;
-	int pll_reset_n;
-	int pll_power_down;
+    enum {
+        KNC_VERSION_UNKNOWN = 0,
+        KNC_VERSION_JUPITER,
+        KNC_VERSION_NEPTUNE
+    } version;
+    char want_work[KNC_MAX_CORES_PER_DIE];
+    int cores;
+    int pll_locked;
+    int hash_reset_n;
+    int pll_reset_n;
+    int pll_power_down;
 };
 
 #define KNC_NONCES_PER_REPORT 5
 
 struct knc_report {
-	int next_state;
-	int state;
-	int next_slot;
-	int active_slot;
-	uint32_t progress;
-	struct {
-		int slot;
-		uint32_t nonce;
-	} nonce[KNC_NONCES_PER_REPORT];
+    int next_state;
+    int state;
+    int next_slot;
+    int active_slot;
+    uint32_t progress;
+    struct {
+        int slot;
+        uint32_t nonce;
+    } nonce[KNC_NONCES_PER_REPORT];
 };
 
 int knc_prepare_info(uint8_t *request, int die, struct knc_die_info *die_info, int *response_size);
@@ -69,7 +69,7 @@ void knc_prepare_neptune_message(int request_length, const uint8_t *request, uin
 #define KNC_ERR_ACK     (1<<2)
 #define KNC_ERR_CRCACK  (1<<3)
 #define KNC_ERR_UNAVAIL (1<<4)
-#define KNC_ERR_MASK	(~(KNC_ACCEPTED))
+#define KNC_ERR_MASK    (~(KNC_ACCEPTED))
 #define KNC_IS_ERROR(x) (((x) & KNC_ERR_MASK) != 0)
 
 int knc_prepare_transfer(uint8_t *txbuf, int offset, int size, int channel, int request_length, const uint8_t *request, int response_length);

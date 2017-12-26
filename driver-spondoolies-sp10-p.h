@@ -38,22 +38,22 @@
 #define MINERGATE_SOCKET_FILE "/tmp/connection_pipe"
 
 typedef enum {
-	//MINERGATE_DATA_ID_CONNECT = 1,
-	MINERGATE_DATA_ID_DO_JOB_REQ = 2,
-	MINERGATE_DATA_ID_DO_JOB_RSP = 3, 
+    //MINERGATE_DATA_ID_CONNECT = 1,
+    MINERGATE_DATA_ID_DO_JOB_REQ = 2,
+    MINERGATE_DATA_ID_DO_JOB_RSP = 3, 
 
 } MINERGATE_DATA_ID;
 
 typedef struct {
-	uint32_t work_id_in_sw;
-	uint32_t difficulty;
-	uint32_t timestamp;
-	uint32_t mrkle_root;
-	uint32_t midstate[8];
-	uint8_t leading_zeroes;
-	uint8_t ntime_limit;
-	uint8_t ntime_offset;
-	uint8_t resr1;
+    uint32_t work_id_in_sw;
+    uint32_t difficulty;
+    uint32_t timestamp;
+    uint32_t mrkle_root;
+    uint32_t midstate[8];
+    uint8_t leading_zeroes;
+    uint8_t ntime_limit;
+    uint8_t ntime_offset;
+    uint8_t resr1;
 } minergate_do_job_req;
 
 #define MAX_REQUESTS 100
@@ -61,34 +61,34 @@ typedef struct {
 #define MINERGATE_TOTAL_QUEUE 300
 
 typedef struct {
-	uint32_t work_id_in_sw;
-	uint32_t mrkle_root;     // to validate
-	uint32_t winner_nonce[2];
-	uint8_t  ntime_offset;
-	uint8_t  res;            // 0 = done, 1 = overflow, 2 = dropped bist
-	uint8_t  resrv1;
-	uint8_t  resrv2;
+    uint32_t work_id_in_sw;
+    uint32_t mrkle_root;     // to validate
+    uint32_t winner_nonce[2];
+    uint8_t  ntime_offset;
+    uint8_t  res;            // 0 = done, 1 = overflow, 2 = dropped bist
+    uint8_t  resrv1;
+    uint8_t  resrv2;
 } minergate_do_job_rsp;
 
 
 typedef struct {
-	uint8_t requester_id;
-	uint8_t request_id;
-	uint8_t protocol_version;
-	uint8_t mask; // 0x01 = first request, 0x2 = drop old work
-	uint16_t magic; // 0xcafe
-	uint16_t req_count;
-	minergate_do_job_req req[MAX_REQUESTS]; // array of requests
+    uint8_t requester_id;
+    uint8_t request_id;
+    uint8_t protocol_version;
+    uint8_t mask; // 0x01 = first request, 0x2 = drop old work
+    uint16_t magic; // 0xcafe
+    uint16_t req_count;
+    minergate_do_job_req req[MAX_REQUESTS]; // array of requests
 } minergate_req_packet;
 
 typedef struct {
-	uint8_t requester_id;
-	uint8_t request_id;
-	uint8_t protocol_version;
-	uint8_t gh_div_10_rate; // == 
-	uint16_t magic; // 0xcafe
-	uint16_t rsp_count;
-	minergate_do_job_rsp rsp[MAX_RESPONDS]; // array of responce
+    uint8_t requester_id;
+    uint8_t request_id;
+    uint8_t protocol_version;
+    uint8_t gh_div_10_rate; // == 
+    uint16_t magic; // 0xcafe
+    uint16_t rsp_count;
+    minergate_do_job_rsp rsp[MAX_RESPONDS]; // array of responce
 } minergate_rsp_packet;
 
 minergate_req_packet *allocate_minergate_packet_req(uint8_t requester_id, uint8_t request_id);

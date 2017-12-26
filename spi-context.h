@@ -7,41 +7,41 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#define SPI_DEVICE_TEMPLATE		"/dev/spidev%d.%d"
-#define DEFAULT_SPI_BUS			1
-#define DEFAULT_SPI_CS_LINE		0
-#define DEFAULT_SPI_MODE		SPI_MODE_1
-#define DEFAULT_SPI_BITS_PER_WORD	8
-#define DEFAULT_SPI_SPEED		1500000
-#define DEFAULT_SPI_DELAY_USECS		0
+#define SPI_DEVICE_TEMPLATE     "/dev/spidev%d.%d"
+#define DEFAULT_SPI_BUS         1
+#define DEFAULT_SPI_CS_LINE     0
+#define DEFAULT_SPI_MODE        SPI_MODE_1
+#define DEFAULT_SPI_BITS_PER_WORD   8
+#define DEFAULT_SPI_SPEED       1500000
+#define DEFAULT_SPI_DELAY_USECS     0
 
 struct spi_config {
-	int bus;
-	int cs_line;
-	uint8_t mode;
-	uint32_t speed;
-	uint8_t bits;
-	uint16_t delay;
+    int bus;
+    int cs_line;
+    uint8_t mode;
+    uint32_t speed;
+    uint8_t bits;
+    uint16_t delay;
 };
 
 static const struct spi_config default_spi_config = {
-	.bus		= DEFAULT_SPI_BUS,
-	.cs_line	= DEFAULT_SPI_CS_LINE,
-	.mode		= DEFAULT_SPI_MODE,
-	.speed		= DEFAULT_SPI_SPEED,
-	.bits		= DEFAULT_SPI_BITS_PER_WORD,
-	.delay		= DEFAULT_SPI_DELAY_USECS,
+    .bus        = DEFAULT_SPI_BUS,
+    .cs_line    = DEFAULT_SPI_CS_LINE,
+    .mode       = DEFAULT_SPI_MODE,
+    .speed      = DEFAULT_SPI_SPEED,
+    .bits       = DEFAULT_SPI_BITS_PER_WORD,
+    .delay      = DEFAULT_SPI_DELAY_USECS,
 };
 
 struct spi_ctx {
-	int fd;
-	int power_en;
-	int start_en;
-	int reset;
-	int led;
-	int plug;
-	pthread_mutex_t spi_lock;
-	struct spi_config config;
+    int fd;
+    int power_en;
+    int start_en;
+    int reset;
+    int led;
+    int plug;
+    pthread_mutex_t spi_lock;
+    struct spi_config config;
 };
 
 /* create SPI context with given configuration, returns NULL on failure */

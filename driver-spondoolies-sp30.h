@@ -17,13 +17,13 @@
 
 
 typedef enum adapter_state {
-	ADAPTER_STATE_INIT,
-	ADAPTER_STATE_OPERATIONAL,
+    ADAPTER_STATE_INIT,
+    ADAPTER_STATE_OPERATIONAL,
 } ADAPTER_STATE;
 
 typedef enum spond_work_state {
-	SPONDWORK_STATE_EMPTY,
-	SPONDWORK_STATE_IN_BUSY,
+    SPONDWORK_STATE_EMPTY,
+    SPONDWORK_STATE_IN_BUSY,
 } SPONDWORK_STATE;
 
 #define MAX_JOBS_PENDING_IN_MINERGATE_SP30 30
@@ -31,46 +31,46 @@ typedef enum spond_work_state {
 
 
 typedef struct {
-	struct work      *cgminer_work;
-	SPONDWORK_STATE  state;
-	uint32_t         merkle_root;
-	time_t           start_time;
-	int              job_id;
+    struct work      *cgminer_work;
+    SPONDWORK_STATE  state;
+    uint32_t         merkle_root;
+    time_t           start_time;
+    int              job_id;
 } spond_driver_work_sp30;
 
 
 
 struct spond_adapter {
-	pthread_mutex_t lock;
-	ADAPTER_STATE adapter_state;
-	void *cgpu;
+    pthread_mutex_t lock;
+    ADAPTER_STATE adapter_state;
+    void *cgpu;
 
-	// Statistics
-	int wins;
-	int good;
-	int empty;
-	int bad;
-	int overflow;
-	// state
-	int works_in_driver;
-	int works_in_minergate_and_pending_tx;
-	int works_pending_tx;
-	int socket_fd;
-	int reset_mg_queue;  // 3=reset, 2=fast send 1 job, 1=fast send 10 jobs, 0=nada
-	int current_job_id;
-	int parse_resp;
-	minergate_req_packet_sp30* mp_next_req;
-	minergate_rsp_packet_sp30* mp_last_rsp;
-	spond_driver_work_sp30 my_jobs[MAX_JOBS_PENDING_IN_MINERGATE_SP30];
+    // Statistics
+    int wins;
+    int good;
+    int empty;
+    int bad;
+    int overflow;
+    // state
+    int works_in_driver;
+    int works_in_minergate_and_pending_tx;
+    int works_pending_tx;
+    int socket_fd;
+    int reset_mg_queue;  // 3=reset, 2=fast send 1 job, 1=fast send 10 jobs, 0=nada
+    int current_job_id;
+    int parse_resp;
+    minergate_req_packet_sp30* mp_next_req;
+    minergate_rsp_packet_sp30* mp_last_rsp;
+    spond_driver_work_sp30 my_jobs[MAX_JOBS_PENDING_IN_MINERGATE_SP30];
 
-	// Temperature statistics
-	int temp_rate;
-	int front_temp;
-	int rear_temp_top;
-	int rear_temp_bot;
+    // Temperature statistics
+    int temp_rate;
+    int front_temp;
+    int rear_temp_top;
+    int rear_temp_bot;
 
-	// Last second we polled stats
-	time_t last_stats;
+    // Last second we polled stats
+    time_t last_stats;
 };
 
 // returns non-zero if needs to change ASICs.

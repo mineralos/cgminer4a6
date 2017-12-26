@@ -4,69 +4,69 @@
 #include <semaphore.h>
 
 #if defined(unix) || defined(__APPLE__)
-	#include <errno.h>
-	#include <sys/socket.h>
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
+    #include <errno.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
 
-	#define SOCKETTYPE long
-	#define SOCKETFAIL(a) ((a) < 0)
-	#define INVSOCK -1
-	#define INVINETADDR -1
-	#define CLOSESOCKET close
-	#define INET_PTON inet_pton
+    #define SOCKETTYPE long
+    #define SOCKETFAIL(a) ((a) < 0)
+    #define INVSOCK -1
+    #define INVINETADDR -1
+    #define CLOSESOCKET close
+    #define INET_PTON inet_pton
 
-	#define SOCKERRMSG strerror(errno)
-	static inline bool sock_blocks(void)
-	{
-		return (errno == EAGAIN || errno == EWOULDBLOCK);
-	}
-	static inline bool sock_timeout(void)
-	{
-		return (errno == ETIMEDOUT);
-	}
-	static inline bool interrupted(void)
-	{
-		return (errno == EINTR);
-	}
+    #define SOCKERRMSG strerror(errno)
+    static inline bool sock_blocks(void)
+    {
+        return (errno == EAGAIN || errno == EWOULDBLOCK);
+    }
+    static inline bool sock_timeout(void)
+    {
+        return (errno == ETIMEDOUT);
+    }
+    static inline bool interrupted(void)
+    {
+        return (errno == EINTR);
+    }
 #elif defined WIN32
-	#include <winsock2.h>
-	#include <windows.h>
-	#include <ws2tcpip.h>
+    #include <winsock2.h>
+    #include <windows.h>
+    #include <ws2tcpip.h>
 
-	#define SOCKETTYPE SOCKET
-	#define SOCKETFAIL(a) ((int)(a) == SOCKET_ERROR)
-	#define INVSOCK INVALID_SOCKET
-	#define INVINETADDR INADDR_NONE
-	#define CLOSESOCKET closesocket
+    #define SOCKETTYPE SOCKET
+    #define SOCKETFAIL(a) ((int)(a) == SOCKET_ERROR)
+    #define INVSOCK INVALID_SOCKET
+    #define INVINETADDR INADDR_NONE
+    #define CLOSESOCKET closesocket
 
-	int Inet_Pton(int af, const char *src, void *dst);
-	#define INET_PTON Inet_Pton
+    int Inet_Pton(int af, const char *src, void *dst);
+    #define INET_PTON Inet_Pton
 
-	extern char *WSAErrorMsg(void);
-	#define SOCKERRMSG WSAErrorMsg()
+    extern char *WSAErrorMsg(void);
+    #define SOCKERRMSG WSAErrorMsg()
 
-	/* Check for windows variants of the errors as well as when ming
-	 * decides to wrap the error into the errno equivalent. */
-	static inline bool sock_blocks(void)
-	{
-		return (WSAGetLastError() == WSAEWOULDBLOCK || errno == EAGAIN);
-	}
-	static inline bool sock_timeout(void)
-	{
-		return (WSAGetLastError() == WSAETIMEDOUT || errno == ETIMEDOUT);
-	}
-	static inline bool interrupted(void)
-	{
-		return (WSAGetLastError() == WSAEINTR || errno == EINTR);
-	}
-	#ifndef SHUT_RDWR
-	#define SHUT_RDWR SD_BOTH
-	#endif
+    /* Check for windows variants of the errors as well as when ming
+     * decides to wrap the error into the errno equivalent. */
+    static inline bool sock_blocks(void)
+    {
+        return (WSAGetLastError() == WSAEWOULDBLOCK || errno == EAGAIN);
+    }
+    static inline bool sock_timeout(void)
+    {
+        return (WSAGetLastError() == WSAETIMEDOUT || errno == ETIMEDOUT);
+    }
+    static inline bool interrupted(void)
+    {
+        return (WSAGetLastError() == WSAEINTR || errno == EINTR);
+    }
+    #ifndef SHUT_RDWR
+    #define SHUT_RDWR SD_BOTH
+    #endif
 
-	#ifndef in_addr_t
-	#define in_addr_t uint32_t
-	#endif
+    #ifndef in_addr_t
+    #define in_addr_t uint32_t
+    #endif
 #endif
 
 #define JSON_LOADS(str, err_ptr) json_loads((str), 0, (err_ptr))
@@ -80,8 +80,8 @@ typedef int proxytypes_t;
 
 /* cgminer locks, a write biased variant of rwlocks */
 struct cglock {
-	pthread_mutex_t mutex;
-	pthread_rwlock_t rwlock;
+    pthread_mutex_t mutex;
+    pthread_rwlock_t rwlock;
 };
 
 typedef struct cglock cglock_t;
@@ -90,7 +90,7 @@ typedef struct cglock cglock_t;
  * implementing them. */
 #ifdef __APPLE__
 struct cgsem {
-	int pipefd[2];
+    int pipefd[2];
 };
 
 typedef struct cgsem cgsem_t;

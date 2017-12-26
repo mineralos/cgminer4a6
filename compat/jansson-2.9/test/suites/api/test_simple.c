@@ -234,7 +234,7 @@ static void run_tests()
             fail("value type check failed");
     }
     if(value->refcount != 1)
-	fail("automatic decrement failed");
+    fail("automatic decrement failed");
     json_decref(value);
 #endif
 }

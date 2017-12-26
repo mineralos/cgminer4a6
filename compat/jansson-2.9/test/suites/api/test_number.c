@@ -25,7 +25,7 @@ static void test_inifity()
 
     real = json_real(1.0);
     if (json_real_set(real, INFINITY) != -1)
-	    fail("could set a real to Inf");
+        fail("could set a real to Inf");
 
     if (json_real_value(real) != 1.0)
        fail("real value changed unexpectedly");

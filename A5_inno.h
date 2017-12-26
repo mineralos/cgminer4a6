@@ -4,11 +4,11 @@
 #include "A5_inno_cmd.h"
 #include "A5_inno_fan.h"
 
-#define WEAK_CHIP_THRESHOLD	5
+#define WEAK_CHIP_THRESHOLD 5
 #define BROKEN_CHIP_THRESHOLD 5
 
-#define INNO_MINER_TYPE_FILE			"/tmp/type"
-#define INNO_HARDWARE_VERSION_FILE		"/tmp/hwver"
+#define INNO_MINER_TYPE_FILE            "/tmp/type"
+#define INNO_HARDWARE_VERSION_FILE      "/tmp/hwver"
 
 typedef enum{
 HARDWARE_VERSION_NONE = 0x00,

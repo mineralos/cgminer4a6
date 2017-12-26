@@ -20,4 +20,4 @@
 
 unsigned short crc16(const unsigned char *buffer, int len);
 
-#endif	/* _CRC_H_ */
+#endif  /* _CRC_H_ */
