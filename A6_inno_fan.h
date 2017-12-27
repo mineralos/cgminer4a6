@@ -31,8 +31,8 @@
 
 #define ASIC_INNO_FAN_PWM_STEP            (5)
 #define ASIC_INNO_FAN_PWM_DUTY_MAX        (100)
-#define ASIC_INNO_FAN_PWM_FREQ_TARGET     (7000)
-#define ASIC_INNO_FAN_PWM_FREQ            (50000000 / ASIC_INNO_FAN_PWM_FREQ_TARGET)
+#define ASIC_INNO_FAN_PWM_FREQ_TARGET     (20000)
+#define ASIC_INNO_FAN_PWM_FREQ            (20000)
 #define FAN_CNT                           ( 2 )
 #define ASIC_INNO_FAN_TEMP_MAX_THRESHOLD  (100)
 #define ASIC_INNO_FAN_TEMP_UP_THRESHOLD   (55)

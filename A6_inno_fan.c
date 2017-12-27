@@ -143,7 +143,7 @@ void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed)
     int fd = 0;
     int fan_id;
     int duty_driver = 0;
-    duty_driver = ASIC_INNO_FAN_PWM_FREQ_TARGET / 100 * (100 - speed);
+    duty_driver = ASIC_INNO_FAN_PWM_FREQ_TARGET * (100 - speed) / 100;
     pthread_mutex_lock(&fan_temp->lock);
 
     /* 开启风扇结点 */
