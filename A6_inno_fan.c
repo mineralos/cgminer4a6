@@ -23,8 +23,7 @@
 //extern inno_fan_temp_s g_fan_ctrl;
 int g_auto_fan = 1;  //风扇自动/手动控制句柄
 int g_fan_speed = 1; //风扇分位句柄
-int fan_speed[4]={30,50,80,100}; //风扇分档
-
+int fan_speed[8]={30,40,50,60,70,80,90,100}; //风扇分档
 
 /********************************** 函数声明区 *********************************/
 static int asic_temp_compare(const void *a, const void *b);   /*对统计到的两个温度做一次比较，a>b输出正数，a<b输出负数，a=b,输出0 */
@@ -433,13 +432,19 @@ void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_t
 void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
 {
     int i = 0;
-    int temp_hi = DEFAULT_HI_TEMP; //fan_temp->temp_highest[0];
-    int delta[4][2]={
+
+	int temp_hi = DEFAULT_HI_TEMP; //fan_temp->temp_highest[0];
+    int delta[8][2]={
+
         //{FAN_FIRST_STAGE + FAN_DELTA,0},
-        {FAN_FIRST_STAGE + FAN_DELTA,FAN_FIRST_STAGE - FAN_DELTA},
-        {FAN_SECOND_STAGE + FAN_DELTA,FAN_SECOND_STAGE - FAN_DELTA},
-        {FAN_THIRD_STAGE + FAN_DELTA,FAN_THIRD_STAGE - FAN_DELTA},
-        {FAN_FOUR_STAGE + FAN_DELTA,FAN_FOUR_STAGE - FAN_DELTA}
+        {FAN_FIRST_STAGE + FAN_DELTA1, FAN_FIRST_STAGE - FAN_DELTA1},
+        {FAN_SECOND_STAGE + FAN_DELTA1,FAN_SECOND_STAGE - FAN_DELTA1},
+        {FAN_THIRD_STAGE + FAN_DELTA1, FAN_THIRD_STAGE - FAN_DELTA2},
+        {FAN_FOUR_STAGE + FAN_DELTA2,  FAN_FOUR_STAGE - FAN_DELTA2},
+        {FAN_FIVE_STAGE + FAN_DELTA2,  FAN_FIVE_STAGE - FAN_DELTA2,},
+        {FAN_SIX_STAGE + FAN_DELTA2,   FAN_SIX_STAGE - FAN_DELTA2, },
+        {FAN_SEVEN_STAGE + FAN_DELTA2, FAN_SEVEN_STAGE - FAN_DELTA2, },
+        {FAN_EIGHT_STAGE + FAN_DELTA2, FAN_EIGHT_STAGE - FAN_DELTA2, },
     };
 
     //printf("fan_speed %d, %d, %d, %d\n",fan_level[0],fan_level[1],fan_level[2],fan_level[3]);
@@ -470,7 +475,7 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
             //applog(LOG_ERR, "%s +:arv:%5.2f, lest:%5.2f, hest:%5.2f, speed:%d%%", __func__, arvarge_f, lowest_f, highest_f, 100 - fan_ctrl->duty);
         }else if (temp_hi < delta[fan_temp->last_fan_temp][1])
         {
-            if(fan_temp->last_fan_temp < 3)
+            if(fan_temp->last_fan_temp < 7)
             {
                 fan_temp->last_fan_temp += 1;
             }

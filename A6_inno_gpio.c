@@ -124,16 +124,12 @@ void set_vid_value_g19(int level, int chainNum)
     return;
 }
 
-void set_vid_value(int level)
+void set_vid_value(int level, int cid)
 {
-    int i;
     if(HARDWARE_VERSION_G9 == g_hwver){
         set_vid_value_g9(level);
     }else if(HARDWARE_VERSION_G19 == g_hwver){
-        for(i = 0; i < ASIC_CHAIN_NUM; i++)
-        {
-            set_vid_value_g19(level, i);
-        }   
+        set_vid_value_g19(level, cid); 
     }else{
         fprintf(stderr, "Set vid but hardware version is unknown!!!");
     }

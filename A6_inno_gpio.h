@@ -49,6 +49,6 @@ uint32_t set_spi_speed(uint32_t speed);
 
 uint32_t get_spi_speed(void);
 
-void set_vid_value(int level);
+void set_vid_value(int level, int cid);
 
 #endif

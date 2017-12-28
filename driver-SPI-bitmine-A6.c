@@ -446,6 +446,7 @@ static bool detect_A1_chain(void)
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
+		int iVid;
 		if(spi[i]->disable == true)
 			continue;
 		
@@ -459,6 +460,19 @@ static bool detect_A1_chain(void)
 			chain_flag[i] = 1;
 			applog(LOG_WARNING, "Detected the %d A1 chain with %d chips", i, chain[i]->num_active_chips);
 		}
+
+		switch(i)
+		{
+			 case 0: iVid = opt_voltage1; break;
+			 case 1: iVid = opt_voltage2; break;
+			 case 2: iVid = opt_voltage3; break;
+			 case 3: iVid = opt_voltage4; break;
+			 case 4: iVid = opt_voltage5; break;
+			 case 5: iVid = opt_voltage6; break;
+			 case 6: iVid = opt_voltage7; break;
+			 case 7: iVid = opt_voltage8; break;
+		}
+		set_vid_value(iVid,i);
 	}
 
 	//for pre-heat
@@ -550,10 +564,6 @@ void A1_detect(bool hotplug)
     g_hwver = inno_get_hwver();
     g_type = inno_get_miner_type();
     
-   // inno_fan_init(&s_fan_ctrl);
-    
-    set_vid_value(opt_voltage1);
-    
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
     memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
     
@@ -570,9 +580,7 @@ void A1_detect(bool hotplug)
     
          usleep(500000);
     }
-
-
-        
+      
     A1Pll1 = A1_ConfigA1PLLClock(opt_A1Pll1);
     A1Pll2 = A1_ConfigA1PLLClock(opt_A1Pll2);
     A1Pll3 = A1_ConfigA1PLLClock(opt_A1Pll3);
