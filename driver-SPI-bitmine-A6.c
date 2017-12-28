@@ -344,6 +344,7 @@ static void inc_pll(void)
 			while(!prechain_detect_yex(chain[j], A1_ConfigA1PLLClock(i),A1_ConfigA1PLLClock(last_pll)))
 			{
 				applog(LOG_INFO, "Fail in prechian_detect_yex");
+				sleep(10);
 				if((g_fan_ctrl.temp_highest[j] > DANGEROUS_TMP) && (g_fan_ctrl.temp_lowest[j] < START_FAN_TH))
 				{
 					rep_cnt++;
@@ -351,18 +352,18 @@ static void inc_pll(void)
 				else
 				{
 					spi[j]->disable = 1;
-				    goto out_cfgpll;
+				    goto failure;
 				}
 				
 				if(rep_cnt > 5)
 				{
 					spi[j]->disable = 1;
-					goto out_cfgpll;
+					goto failure;
 				}
 			}	
 	    }
 		
-out_cfgpll:
+failure:
 	    inno_fan_speed_update(&g_fan_ctrl);
         last_pll = i;
     }
