@@ -441,10 +441,10 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
         {FAN_SECOND_STAGE + FAN_DELTA1,FAN_SECOND_STAGE - FAN_DELTA1},
         {FAN_THIRD_STAGE + FAN_DELTA1, FAN_THIRD_STAGE - FAN_DELTA2},
         {FAN_FOUR_STAGE + FAN_DELTA2,  FAN_FOUR_STAGE - FAN_DELTA2},
-        {FAN_FIVE_STAGE + FAN_DELTA2,  FAN_FIVE_STAGE - FAN_DELTA2,},
-        {FAN_SIX_STAGE + FAN_DELTA2,   FAN_SIX_STAGE - FAN_DELTA2, },
-        {FAN_SEVEN_STAGE + FAN_DELTA2, FAN_SEVEN_STAGE - FAN_DELTA2, },
-        {FAN_EIGHT_STAGE + FAN_DELTA2, FAN_EIGHT_STAGE - FAN_DELTA2, },
+        {FAN_FIVE_STAGE + FAN_DELTA2,  FAN_FIVE_STAGE - FAN_DELTA2},
+        {FAN_SIX_STAGE + FAN_DELTA2,   FAN_SIX_STAGE - FAN_DELTA2 },
+        {FAN_SEVEN_STAGE + FAN_DELTA2, FAN_SEVEN_STAGE - FAN_DELTA2},
+        {FAN_EIGHT_STAGE + FAN_DELTA2, FAN_EIGHT_STAGE - FAN_DELTA2},
     };
 
     //printf("fan_speed %d, %d, %d, %d\n",fan_level[0],fan_level[1],fan_level[2],fan_level[3]);
@@ -455,9 +455,9 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
    for(i=0; i<ASIC_CHAIN_NUM; i++)
    {
    
-     //im_log(IM_LOG_DEBUG,"hi:%d lo:%d av:%d,valid %d\n",fan_temp->temp_highest[i],fan_temp->temp_lowest[i],fan_temp->temp_arvarge[i],fan_temp->valid_chain[i]);
      if((fan_temp->temp_highest[i] > ERR_LOW_TEMP) || (fan_temp->temp_highest[i] < ERR_HIGH_TEMP) || fan_temp->valid_chain[i])
         continue;
+     printf("hi:%d lo:%d av:%d,valid %d\n",fan_temp->temp_highest[i],fan_temp->temp_lowest[i],fan_temp->temp_arvarge[i],fan_temp->valid_chain[i]);
 
      if(temp_hi > fan_temp->temp_highest[i])
         temp_hi = fan_temp->temp_highest[i];
@@ -493,7 +493,7 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
         inno_fan_speed_set(fan_temp,fan_temp->speed);
     }
 
-  //  printf("hi %d,spd %d,lid: %d,md %d,list: %d, %d, %d, %d\n",temp_hi,fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp,fan_temp->auto_ctrl,fan_level[0],fan_level[1],fan_level[2],fan_level[3]);
+    printf("hi %d,spd %d,lid: %d,md %d\n",temp_hi,fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp,fan_temp->auto_ctrl);
 }
 
 

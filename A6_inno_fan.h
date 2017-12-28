@@ -47,8 +47,8 @@
 #define FAN_SIX_STAGE                     (483)//75
 #define FAN_SEVEN_STAGE                   (475)//80
 #define FAN_EIGHT_STAGE                   (468)//85
-#define FAN_DELTA1                        (10)//15
-#define FAN_DELTA2                        (5)//15
+#define FAN_DELTA1                        (10)//6
+#define FAN_DELTA2                        (5) //33
 #define TEMP_LABEL                        (594)
 #define ACTIVE_STAT                       (6)
 #define START_FAN_TH                      (550)//30
