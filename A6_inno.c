@@ -672,12 +672,12 @@ bool prechain_detect_yex(struct A1_chain *a1, int idxpll, int lastidx)
         memcpy(temp_reg, default_reg[i], REG_LENGTH);
 		while(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
 		{
-		    usleep(200000);
+		    usleep(120000);
             nCount++;
 			if(nCount > 5) return false;
 		}
 
-        usleep(200000);
+        usleep(120000);
     }
 	
     return true;
