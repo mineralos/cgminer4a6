@@ -91,7 +91,7 @@ static void asic_temp_to_float(inno_fan_temp_s *fan_ctrl, int chain_id)
                 (fan_ctrl->temp_arvarge[chain_id] > ERR_LOW_TEMP) || (fan_ctrl->temp_arvarge[chain_id] < ERR_HIGH_TEMP) || \
                 (fan_ctrl->temp_lowest[chain_id] > ERR_LOW_TEMP) || (fan_ctrl->temp_lowest[chain_id] < ERR_HIGH_TEMP) )
         {
-            printf("Notice!!! Error temperature h=%d,l=%d,a=%d for chain %d\n", fan_ctrl->temp_highest[i], fan_ctrl->temp_lowest[i], fan_ctrl->temp_arvarge[i], chain_id);
+            printf("Notice Witt!!! Error temperature h=%d,l=%d,a=%d for chain %d\n", fan_ctrl->temp_highest[i], fan_ctrl->temp_lowest[i], fan_ctrl->temp_arvarge[i], chain_id);
             return ;
         }
 
@@ -174,14 +174,12 @@ void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed)
     }
     close(fd);
 
-    printf("----------------duty %d \r\n", duty_driver);
-    
     pthread_mutex_unlock(&fan_temp->lock);
 
     return;
 }
 
-void inno_fan_temp_init(inno_fan_temp_s *fan_temp)
+void inno_fan_temp_init(inno_fan_temp_s *fan_temp, int *fan_level)
 {
     int chain_id = 0;
     int speed = 80;
@@ -189,6 +187,11 @@ void inno_fan_temp_init(inno_fan_temp_s *fan_temp)
 
     fan_temp->auto_ctrl = g_auto_fan;
     fan_temp->speed = speed;
+
+    if(fan_level != NULL){
+         // printf("size %d, %d\n",sizeof(fan_speed),sizeof(fan_speed[0]));
+         memcpy(fan_speed, fan_level,sizeof(fan_speed));
+    }
 
     if(g_auto_fan)
     {
@@ -427,7 +430,7 @@ void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_t
   return; 
 }
 
-void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level)
+void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
 {
     int i = 0;
     int temp_hi = DEFAULT_HI_TEMP; //fan_temp->temp_highest[0];
@@ -440,12 +443,6 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level)
     };
 
     //printf("fan_speed %d, %d, %d, %d\n",fan_level[0],fan_level[1],fan_level[2],fan_level[3]);
-
-    if(fan_level != NULL){
-        // printf("size %d, %d\n",sizeof(fan_speed),sizeof(fan_speed[0]));
-        memcpy(fan_speed, fan_level,sizeof(fan_speed));
-    }
-
     //printf("level_speed %d, %d, %d, %d\n",fan_level[0],fan_level[1],fan_level[2],fan_level[3]);
     //printf("after fan_speed %d, %d, %d, %d\n",fan_speed[0],fan_speed[1],fan_speed[2],fan_speed[3]);
     fan_temp->auto_ctrl = g_auto_fan;

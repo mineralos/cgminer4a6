@@ -10595,7 +10595,7 @@ begin_bench:
 
        if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
        {
-        inno_fan_speed_update(&g_fan_ctrl,fan_level);
+        inno_fan_speed_update(&g_fan_ctrl);
         last_temp_time = get_current_ms();
        }
 

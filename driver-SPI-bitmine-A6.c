@@ -81,7 +81,7 @@ static inno_reg_ctrl_t s_reg_ctrl;
 
 #define STD_V          0.84
 int spi_plug_status[ASIC_CHAIN_NUM] = {0};
-int fan_level[4]={60,70,80,100};
+int fan_level[8]={30, 40, 50, 60, 70, 80, 90, 100};
 hardware_version_e g_hwver;
 inno_type_e g_type;
 int g_reset_delay = 0xffff;
@@ -145,20 +145,23 @@ void exit_A1_chain(struct A1_chain *a1)
     free(a1);
 }
 
-struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
+struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
 {
     int i;
-    struct A1_chain *a1 = malloc(sizeof(*a1));
+    struct A1_chain *a1 = malloc(sizeof(struct A1_chain));
     if (a1 == NULL){
         goto failure;
     }
 
-    applog(LOG_DEBUG, "%d: A1 init chain", chain_id);
+    applog(LOG_INFO, "pre %d: A1 init chain", chain_id);
     
-    memset(a1, 0, sizeof(*a1));
+    memset(a1, 0, sizeof(struct A1_chain));
     a1->spi_ctx = ctx;
     a1->chain_id = chain_id;
-    
+
+    inno_cmd_reset(a1, ADDR_BROADCAST);
+	sleep(1);
+	
     a1->num_chips =  chain_detect(a1);
     usleep(10000);
     
@@ -168,11 +171,49 @@ struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
     applog(LOG_WARNING, "spidev%d.%d: %d: Found %d A1 chips",
            a1->spi_ctx->config.bus, a1->spi_ctx->config.cs_line,
            a1->chain_id, a1->num_chips);
-/*
-    if (!set_pll_config(a1, 0, A1_config_options.ref_clk_khz,
-                A1_config_options.sys_clk_khz))
+
+    /* override max number of active chips if requested */
+    a1->num_active_chips = a1->num_chips;
+    if (A1_config_options.override_chip_num > 0 &&
+        a1->num_chips > A1_config_options.override_chip_num) 
+    {
+        a1->num_active_chips = A1_config_options.override_chip_num;
+        applog(LOG_WARNING, "%d: limiting chain to %d chips",
+               a1->chain_id, a1->num_active_chips);
+    }
+
+    a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
+    if (a1->chips == NULL){
         goto failure;
-*/
+    }
+
+    return a1;
+
+failure:
+    exit_A1_chain(a1);
+    return NULL;
+}
+
+static bool init_A1_chain(struct A1_chain *a1)
+{
+    int i;
+	int chain_id = a1->chain_id;
+
+    applog(LOG_INFO, "%d: A1 init chain", chain_id);
+
+	inno_cmd_resetbist(a1, ADDR_BROADCAST);
+	sleep(1);
+	
+    a1->num_chips =  chain_detect(a1);
+    usleep(10000);
+    
+    if (a1->num_chips <= 0)
+        goto failure;
+
+    applog(LOG_WARNING, "spidev%d.%d: %d: Found %d A1 chips",
+           a1->spi_ctx->config.bus, a1->spi_ctx->config.cs_line,
+           a1->chain_id, a1->num_chips);
+	
     /* override max number of active chips if requested */
     a1->num_active_chips = a1->num_chips;
     if (A1_config_options.override_chip_num > 0 &&
@@ -192,28 +233,16 @@ struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
         goto failure;
 
     usleep(200);
-    //configure for vsensor
-    inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
-
-    for (i = 0; i < a1->num_active_chips; i++)
-    {
-        inno_check_voltage(a1, i+1, &s_reg_ctrl);
-    }
-    
-    //configure for tsensor
-    inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
 
     for (i = 0; i < a1->num_active_chips; i++)
     {
         check_chip(a1, i);
-
         inno_fan_temp_add(&g_fan_ctrl, chain_id, i+1, a1->chips[i].temp);
     }
-   chain_temp_update(&g_fan_ctrl, chain_id, g_type);
-  // inno_fan_temp_update(&g_fan_ctrl,chain_id, g_type,fan_level);
+    chain_temp_update(&g_fan_ctrl, chain_id, g_type);
        
-       applog(LOG_WARNING, "[chain_ID:%d]: Found %d Chips With Total %d Active Cores",a1->chain_id, a1->num_active_chips, a1->num_cores);
-       applog(LOG_WARNING, "[chain_ID]: Temp:%d\n",g_fan_ctrl.temp_highest[chain_id]);
+    applog(LOG_WARNING, "[chain_ID:%d]: Found %d Chips With Total %d Active Cores",a1->chain_id, a1->num_active_chips, a1->num_cores);
+    applog(LOG_WARNING, "[chain_ID]: Temp:%d",g_fan_ctrl.temp_highest[chain_id]);
    
 #if 1
        if(g_fan_ctrl.temp_highest[chain_id] < DANGEROUS_TMP){
@@ -224,15 +253,15 @@ struct A1_chain *init_A1_chain(struct spi_ctx *ctx, int chain_id)
        }
 #endif
    
-    
+   
     mutex_init(&a1->lock);
     INIT_LIST_HEAD(&a1->active_wq.head);
 
-    return a1;
+	return true;
 
 failure:
     exit_A1_chain(a1);
-    return NULL;
+    return false;
 }
 
 //add  0928
@@ -253,91 +282,92 @@ int  cfg_tsadc_divider(struct A1_chain *a1,uint32_t pll_clk)
     buffer[5] = 0x00 | tsadc_divider;
 
     if(!inno_cmd_write_sec_reg(a1,ADDR_BROADCAST,buffer)){
-        applog(LOG_WARNING, "#####Write t/v sensor Value Failed!\n");
+        applog(LOG_WARNING, "#####Write t/v sensor Value Failed!");
     }
-    applog(LOG_WARNING, "#####Write t/v sensor Value Success!\n");
+	else
+	{
+	    applog(LOG_WARNING, "#####Write t/v sensor Value Success!");
+	}
 }
 
-bool init_ReadTemp(struct A1_chain *a1, int chain_id)
+static void prepll_chip_temp(struct A1_chain *a1, int cid)
 {
-    int i;
+    int i,temp;
     uint8_t reg[64];
-    static int last_time = 0;
-    
-    //applog(LOG_ERR, "start read temp cid %d, a1 addr 0x%x\n", chain_id,a1);
-    /* update temp database */
-    uint32_t temp = 0;
 
-    if(a1 == NULL)
+	applog(LOG_ERR,"start to read temp");
+
+    memset(reg,0,sizeof(reg));
+    for (i = a1->num_active_chips; i > 0; i--)
     {
-        return false;
-    }
-    
-    int cid = a1->chain_id;
-    //struct cgpu_info *cgpu = a1->cgpu;
-    inno_fan_speed_set(&g_fan_ctrl,PREHEAT_SPEED);
-
-    //while(s_fan_ctrl.temp_highest[cid] > 505)//FAN_FIRST_STAGE)
-    do{
-        for (i = a1->num_active_chips; i > 0; i -= 3)
-        { 
-            if (!inno_cmd_read_reg(a1, i, reg))
-            {
-                applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
-                
-                continue;
-            }
-            
-            temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-            //applog(LOG_ERR,"cid %d,chip %d,temp %d\n",cid, i, temp);
-            inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
-        } 
-        
-        asic_temp_sort(&g_fan_ctrl, chain_id);
-        inno_fan_temp_highest(&g_fan_ctrl, chain_id,g_type);
-        a1->pre_heat = 1;
-        
-        if((last_time + 3*TEMP_UPDATE_INT_MS) < get_current_ms())
+        if (!inno_cmd_read_reg(a1, i, reg))
         {
-          applog(LOG_WARNING,"chain %d higtest temp %d\n",cid, g_fan_ctrl.temp_highest[cid]);
-          last_time = get_current_ms();
+            applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
+            continue;
         }
 
-        //applog(LOG_ERR,"higtest temp %d\n",g_fan_ctrl.temp_highest[cid]);
-    }while(g_fan_ctrl.temp_highest[cid] > START_FAN_TH);
-    a1->pre_heat = 0;
-    applog(LOG_WARNING,"Now chain %d preheat is over\n",cid);
-    return true;
+        temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
+		//applog(LOG_ERR,"cid %d,chip %d,temp %d",cid, i, temp);
+        inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
+    }
+
+    chain_temp_update(&g_fan_ctrl,cid,g_type);
+
 }
 
-void inno_preinit(struct spi_ctx *ctx, int chain_id)
+#if 1
+static void inc_pll(void)
 {
-	struct A1_chain *a1 = malloc(sizeof(*a1));
-	assert(a1 != NULL);
+    int i = 0,j = 0;
+	int rep_cnt = 0;
+    int ret[ASIC_CHAIN_NUM];
+	int disable_chain[ASIC_CHAIN_NUM];
+    static uint32_t last_pll;
+  
+    for(i = PLL_Clk_12Mhz[0].speedMHz; i<(opt_A1Pll1+200); i=i+200)
+    {
+    	if(i >= opt_A1Pll1) i = opt_A1Pll1;
+		
+    	applog(LOG_INFO,"start to configure all chain from %d to %d", last_pll, i);
+        for(j=0; j<ASIC_CHAIN_NUM; j++)
+	    {
+	        if(spi[j]->disable == 1)
+			{
+	            applog(LOG_INFO, "chain %d has been disable", j);
+	            continue;
+	        }
 
-	applog(LOG_DEBUG, "%d: A1 init chain", chain_id);
-	
-	memset(a1, 0, sizeof(*a1));
-	a1->spi_ctx = ctx;
-	a1->chain_id = chain_id;
-	
-	applog(LOG_INFO,"chain_id:%d", chain_id);
-	switch(chain_id){
-		case 0:prechain_detect(a1, A1Pll1);break;
-		case 1:prechain_detect(a1, A1Pll2);break;
-		case 2:prechain_detect(a1, A1Pll3);break;
-		case 3:prechain_detect(a1, A1Pll4);break;
-		case 4:prechain_detect(a1, A1Pll5);break;
-		case 5:prechain_detect(a1, A1Pll6);break;
-		case 6:prechain_detect(a1, A1Pll7);break;
-		case 7:prechain_detect(a1, A1Pll8);break;
-		default:;
-	}
-	//add 0929
-	cfg_tsadc_divider(a1, 120);
-
-    free(a1);
+			prepll_chip_temp(chain[j], j);
+			usleep(200000);
+			rep_cnt = 0;
+			applog(LOG_INFO,"start to configure chain %d", j);
+			while(!prechain_detect_yex(chain[j], A1_ConfigA1PLLClock(i),A1_ConfigA1PLLClock(last_pll)))
+			{
+				applog(LOG_INFO, "Fail in prechian_detect_yex");
+				if((g_fan_ctrl.temp_highest[j] > DANGEROUS_TMP) && (g_fan_ctrl.temp_lowest[j] < START_FAN_TH))
+				{
+					rep_cnt++;
+				}
+				else
+				{
+					spi[j]->disable = 1;
+				    goto out_cfgpll;
+				}
+				
+				if(rep_cnt > 5)
+				{
+					spi[j]->disable = 1;
+					goto out_cfgpll;
+				}
+			}	
+	    }
+		
+out_cfgpll:
+	    inno_fan_speed_update(&g_fan_ctrl);
+        last_pll = i;
+    }
 }
+#endif
 
 int chain_flag[ASIC_CHAIN_NUM] = {0};
 static bool detect_A1_chain(void)
@@ -367,6 +397,7 @@ static bool detect_A1_chain(void)
 		spi[i]->reset = SPI_PIN_RESET[i];
 		spi[i]->plug  = SPI_PIN_PLUG[i];
 		spi[i]->led   = SPI_PIN_LED[i];
+		spi[i]->disable = false;
 		
 
 		asic_gpio_init(spi[i]->power_en, 0);
@@ -398,28 +429,52 @@ static bool detect_A1_chain(void)
 		asic_gpio_write(spi[i]->start_en, 1);
 		
 		g_fan_ctrl.valid_chain[i] = asic_gpio_read(spi[i]->plug);
-		applog(LOG_ERR, "Plug Status[%d] = %d\n",i,g_fan_ctrl.valid_chain[i]);
+		applog(LOG_ERR, "Plug Status[%d] = %d",i,g_fan_ctrl.valid_chain[i]);
 
 		if(asic_gpio_read(spi[i]->plug) != 0)
 		{
 			applog(LOG_ERR, "chain:%d the plat is not inserted", i);
+			spi[i]->disable = true;
 			continue;
 		}
 	}
 
-	
-	for(i = 0; i < ASIC_CHAIN_NUM; i++)
-	{		
-	    inno_preinit(spi[i], i);
-	}
+	//init spi hardware
+    asic_spi_init();
+    set_spi_speed(1500000);
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-		chain[i] = init_A1_chain(spi[i], i);
+		if(spi[i]->disable == true)
+			continue;
+		
+		chain[i] = pre_init_A1_chain(spi[i], i);
 		if (chain[i] == NULL){
 			applog(LOG_ERR, "init %d A1 chain fail", i);
 			continue;
-		}else{
+		}
+        else
+        {
+			chain_flag[i] = 1;
+			applog(LOG_WARNING, "Detected the %d A1 chain with %d chips", i, chain[i]->num_active_chips);
+		}
+	}
+
+	//for pre-heat
+    inc_pll();
+
+	for(i = 0; i < ASIC_CHAIN_NUM; i++)
+	{
+		if(spi[i]->disable == true || chain[i] == NULL)
+			continue;
+		
+		if(!init_A1_chain(chain[i]))
+		{
+			applog(LOG_ERR, "init %d A1 chain fail", i);
+			continue;
+		}
+        else
+        {
 			cnt++;
 			chain_flag[i] = 1;
 			applog(LOG_WARNING, "Detected the %d A1 chain with %d chips", i, chain[i]->num_active_chips);
@@ -443,148 +498,9 @@ static bool detect_A1_chain(void)
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
-	
-	inno_fan_speed_update(&g_fan_ctrl,fan_level);
 
-    //applog(LOG_ERR, "init_ReadTemp...");
-    //for(i = 0; i < ASIC_CHAIN_NUM; i++){
-    //  init_ReadTemp(chain[i],i);
-    //}
-    
-
-
-#if 0
-    Test_bench_Array[0].uiVol = opt_voltage1;
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {
-        if(chain_flag[i] != 1)
-        {
-            continue;
-        }
-        Test_bench_Array[0].uiScore += inno_cmd_test_chip(chain[i]);
-        Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
-    }
-
-    for(i = 1; i < 3; i++)
-    {
-        if(Test_bench_Array[0].uiVol - i < 1)
-        {
-            continue;
-        }
-        sleep(1);
-        set_vid_value(Test_bench_Array[0].uiVol - i);
-        Test_bench_Array[i].uiVol = Test_bench_Array[0].uiVol - i;
-        sleep(1);
-        for(j = 0; j < ASIC_CHAIN_NUM; j++)
-        {   
-            if(chain_flag[j] != 1)
-            {
-                continue;
-            }
-            Test_bench_Array[i].uiScore += inno_cmd_test_chip(chain[j]);
-            Test_bench_Array[i].uiCoreNum += chain[j]->num_cores;
-        }
-    }
-
-    for(i = 1; i >= 0; i--)
-    {
-        set_vid_value(Test_bench_Array[0].uiVol - i);
-        sleep(1);
-    }
-    
-    for(i = 3; i < 5; i++)
-    {
-        if(Test_bench_Array[0].uiVol + i - 2 > 31)
-        {
-            continue;
-        }
-        sleep(1);
-        set_vid_value(Test_bench_Array[0].uiVol + i - 2);
-        Test_bench_Array[i].uiVol = Test_bench_Array[0].uiVol + i - 2;
-        sleep(1);
-        for(j = 0; j < ASIC_CHAIN_NUM; j++)
-        {
-            if(chain_flag[j] != 1)
-            {
-                continue;
-            }
-            Test_bench_Array[i].uiScore += inno_cmd_test_chip(chain[j]);
-            Test_bench_Array[i].uiCoreNum += chain[j]->num_cores;
-        }
-    }
-
-    for(j = 0; j < 5; j++)
-    {
-        printf("after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
-    }
-
-    int index = 0;
-    uint32_t cur= 0;
-    for(j = 1; j < 5; j++)
-    {
-        cur = Test_bench_Array[j].uiScore + 5 * (Test_bench_Array[j].uiVol - Test_bench_Array[index].uiVol);
-        
-        if(cur > Test_bench_Array[index].uiScore)
-        {
-            index = j;
-        }
-
-        if((cur == Test_bench_Array[index].uiScore) && (Test_bench_Array[j].uiVol > Test_bench_Array[index].uiVol))
-        {
-            index = j;
-        }
-    }
-
-    printf("The best group is %d. vid is %d! \t \n", index, Test_bench_Array[index].uiVol);
-    
-    for(i=Test_bench_Array[0].uiVol + 2; i>=Test_bench_Array[index].uiVol; i--){
-        set_vid_value(i);
-        usleep(500000);
-    }
-#endif
-
-#if 0
-    for(i = 0; i < ASIC_CHAIN_NUM; i++)
-    {       
-        Test_bench_Array[0].uiScore += inno_cmd_test_chip(chain[i]);
-        Test_bench_Array[0].uiCoreNum += chain[i]->num_cores;
-    }
-    
-    for(j = 1; j < 3; j++)
-    {
-        //printf("pll_vid_test_bench Test_bench_Array[%d].uiPll =%d. \n", j, Test_bench_Array[j].uiPll);
-        //printf("pll_vid_test_bench Test_bench_Array[%d].uiVol =%d. \n", j, Test_bench_Array[j].uiVol);
-        Test_bench_Array[j].uiScore += pll_vid_test_bench(Test_bench_Array[j].uiPll, Test_bench_Array[j].uiVol);
-        //printf("Test_bench_Array[%d].uiScore=%d. \n", j, Test_bench_Array[j].uiScore);
-        for(i = 0; i < ASIC_CHAIN_NUM; i++)
-        {       
-            Test_bench_Array[j].uiCoreNum += chain[i]->num_cores;
-        }
-    }
-
-    for(j = 0; j < 3; j++)
-    {
-        printf("after pll_vid_test_bench Test_bench_Array[%d].uiScore=%d,Test_bench_Array[%d].uiCoreNum=%d. \n", j, Test_bench_Array[j].uiScore, j, Test_bench_Array[j].uiCoreNum);
-    }
-
-    int index = 0;
-    double cur= 0;
-    double max = ((double)(Test_bench_Array[0].uiPll * Test_bench_Array[0].uiCoreNum)) /((double)(Test_bench_Array[0].uiVol)) * ((double)(Test_bench_Array[0].uiScore) / (double)1134);
-    printf("max value:%lf. \n", max);
-    for(j = 1; j < 3; j++)
-    {
-        cur = ((double)(Test_bench_Array[j].uiPll * Test_bench_Array[j].uiCoreNum)) /((double)(Test_bench_Array[j].uiVol)) * ((double)(Test_bench_Array[j].uiScore) / (double)1134);
-        printf("OutputData[%d]=%lf. \n", j, cur);
-        if(cur >= max)
-        {
-            index = j;
-            max = cur;
-        }
-    }
-
-    printf("The best group is %d!!! \t \n", index);
-    config_best_pll_vid(Test_bench_Array[index].uiPll, Test_bench_Array[index].uiVol);
-#endif
+	set_spi_speed(3250000);
+	inno_fan_speed_update(&g_fan_ctrl);
 
     return (cnt == 0) ? false : true;
 }
@@ -640,7 +556,7 @@ void A1_detect(bool hotplug)
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
     memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
     
-    inno_fan_temp_init(&g_fan_ctrl);
+    inno_fan_temp_init(&g_fan_ctrl, fan_level);
 
      // update time
     for(j = 0; j < 100; j++)

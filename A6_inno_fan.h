@@ -97,13 +97,13 @@ typedef enum{
 
 
 /*********************************** 接口函数 **********************************/
-void inno_fan_temp_init(inno_fan_temp_s *fan_temp);   /*主要用于Ax系列初始化风扇控制与温度显示*/
+void inno_fan_temp_init(inno_fan_temp_s *fan_temp, int *fanlevel);   /*主要用于Ax系列初始化风扇控制与温度显示*/
 bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp); /*用于实时更新统计到的当前温度值，异常记录*/
 void asic_temp_sort(inno_fan_temp_s *fan_temp, int chain_id);   /*对单条链统计到的所有温度做一次升序排列*/
 int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链统计到的实时最高温度(chip_type)*/
 int inno_fan_temp_lowest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链统计到的实时最低温（chip_type）*/
 int inno_fan_temp_avg(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e inno_type); /*提供当前链所有芯片统计的实时平均温度*/
-void inno_fan_speed_update(inno_fan_temp_s *fan_temp, int *fan_level);
+void inno_fan_speed_update(inno_fan_temp_s *fan_temp);
 void chain_temp_update(inno_fan_temp_s *fan_temp,int chain_id,inno_type_e inno_type);
 void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed);  /*设置风扇转速 */
 

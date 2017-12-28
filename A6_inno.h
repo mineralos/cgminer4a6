@@ -44,6 +44,8 @@ void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor);
 
 bool check_chip(struct A1_chain *a1, int i);
 void prechain_detect(struct A1_chain *a1, int idxpll);
+bool prechain_detect_yex(struct A1_chain *a1, int idxpll, int lastidx);
+
 int chain_detect(struct A1_chain *a1);
 bool abort_work(struct A1_chain *a1);
 

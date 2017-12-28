@@ -498,9 +498,12 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
             sleep(1);
             asic_gpio_write(ctx->start_en, 1);
             sleep(2);
-            
-            inno_preinit(ctx, cid);
-            
+
+			inno_cmd_reset(a1, ADDR_BROADCAST);
+			sleep(1);
+
+			prechain_detect_yex(a1, opt_A1Pll1, 120);
+			sleep(1);
             a1->num_chips =  chain_detect(a1);
             a1->num_cores = 0;
             usleep(10000);
@@ -658,33 +661,26 @@ bool check_chip(struct A1_chain *a1, int i)
     return true;
 }
 
-void prechain_detect(struct A1_chain *a1, int idxpll)
+bool prechain_detect_yex(struct A1_chain *a1, int idxpll, int lastidx)
 {
     uint8_t temp_reg[REG_LENGTH];
-    int i;
+    int i,nCount = 0;
 
-    //add for A6
-    asic_spi_init();
-
-    set_spi_speed(1500000);
-
-    inno_cmd_reset(a1, ADDR_BROADCAST);
-
-    usleep(1000);
-
-    for(i=0; i<idxpll+1; i++)
+    for(i=lastidx; i<idxpll+1; i++)
     {
-        memcpy(temp_reg, default_reg[i], REG_LENGTH-2);
-        if(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
-        {
-            applog(LOG_WARNING, "set default PLL fail");
-            return;
-        }
-        //applog(LOG_WARNING, "set default %d PLL success", i);
+    	nCount = 0;
+        memcpy(temp_reg, default_reg[i], REG_LENGTH);
+		while(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
+		{
+		    usleep(200000);
+            nCount++;
+			if(nCount > 5) return false;
+		}
 
-        usleep(120000);
+        usleep(200000);
     }
-
+	
+    return true;
 }
 
 bool zynq_spi_exit(void)
@@ -737,16 +733,15 @@ int chain_detect(struct A1_chain *a1)
     uint8_t buffer[64];
     int cid = a1->chain_id;
 
-    set_spi_speed(3250000);
-    sleep(2);
-
     memset(buffer, 0, sizeof(buffer));
     if(!inno_cmd_bist_start(a1, 0, buffer))
     {
         applog(LOG_WARNING, "bist start fail");
         return -1;
     }
-    a1->num_chips = buffer[3]; 
+
+ 	if(buffer[3] != 0)
+        a1->num_chips = buffer[3]; 
     applog(LOG_WARNING, "%d: detected %d chips", cid, a1->num_chips);
 
     usleep(10000);

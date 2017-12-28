@@ -215,6 +215,34 @@ bool spi_poll_result(struct A1_chain *pChain, uint8_t cmd, uint8_t chip_id, uint
 	return false;
 }
 
+bool inno_cmd_resetbist(struct A1_chain *pChain, uint8_t chip_id)
+{
+    uint8_t spi_tx[MAX_CMD_LENGTH];
+    uint8_t spi_rx[MAX_CMD_LENGTH];
+
+    memset(spi_tx, 0, sizeof(spi_tx));
+    memset(spi_rx, 0, sizeof(spi_rx));
+
+    spi_tx[0] = CMD_RESET;
+    spi_tx[1] = chip_id;
+    spi_tx[2] = 0xfb;
+    spi_tx[3] = 0xfb;
+
+    if(!spi_write_data(pChain->spi_ctx, spi_tx, 6))
+    {
+        applog(LOG_WARNING, "send command fail !");
+        return false;
+    }
+
+    memset(spi_rx, 0, sizeof(spi_rx));
+    if(!spi_poll_result(pChain, CMD_RESET, chip_id, spi_rx, 4))
+    {
+        applog(LOG_WARNING, "cmd reset: poll fail !");
+        return false;
+    }
+
+    return true;
+}
 
 bool inno_cmd_reset(struct A1_chain *pChain, uint8_t chip_id)
 {
@@ -258,15 +286,6 @@ bool inno_cmd_resetjob(struct A1_chain *pChain, uint8_t chip_id)
         applog(LOG_WARNING, "send command fail !");
         return false;
     }
-
-/*
-    memset(spi_rx, 0, sizeof(spi_rx));
-    if(!spi_poll_result(pChain, CMD_RESET, chip_id, spi_rx, 4))
-    {
-        applog(LOG_WARNING, "cmd reset: poll fail !");
-        return false;
-    }
-*/
 
     memset(spi_rx, 0, sizeof(spi_rx));
     if(!spi_poll_result(pChain, CMD_RESET, chip_id, spi_rx, 4))
@@ -397,7 +416,7 @@ bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
     uint16_t clc_crc;
     uint8_t j;
     
-    //printf("send command [write_reg] \n");
+    //applog(LOG_INFO, "send command [write_reg]", pChain->spi_ctx->fd);
     assert(reg != NULL);
 
     memset(spi_tx, 0, sizeof(spi_tx));

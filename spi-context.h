@@ -40,6 +40,7 @@ struct spi_ctx {
     int reset;
     int led;
     int plug;
+	bool disable;
     pthread_mutex_t spi_lock;
     struct spi_config config;
 };

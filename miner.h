@@ -23,7 +23,7 @@
 extern int g_auto_fan;
 extern int g_fan_speed;
 extern int g_reset_delay;
-extern int fan_level[4];
+extern int fan_level[8];
 extern inno_fan_temp_s g_fan_ctrl;
 
 
