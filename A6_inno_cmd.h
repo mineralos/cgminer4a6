@@ -52,6 +52,12 @@
 #define WORK_BUSY 0
 #define WORK_FREE 1
 
+#define BIN1_CORE_THR  620
+#define BIN2_CORE_THR  550
+
+#define TYPE_A4  0
+#define TYPE_A4R 1
+
 
 struct work_ent {
     struct work *work;

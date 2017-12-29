@@ -85,9 +85,7 @@ int fan_level[8]={30, 40, 50, 60, 70, 80, 90, 100};
 hardware_version_e g_hwver;
 inno_type_e g_type;
 int g_reset_delay = 0xffff;
-/* one global board_selector and spi context is enough */
-//static struct board_selector *board_selector;
-//static struct spi_ctx *spi;
+int miner_type;
 
 /********** work queue */
 static bool wq_enqueue(struct work_queue *wq, struct work *work)
@@ -374,6 +372,7 @@ int chain_flag[ASIC_CHAIN_NUM] = {0};
 static bool detect_A1_chain(void)
 {
 	int i,cnt = 0;
+	int type_score = 0;
 
 	applog(LOG_WARNING, "A1: checking A1 chain");
 
@@ -510,9 +509,17 @@ static bool detect_A1_chain(void)
 
 		asic_gpio_write(chain[i]->spi_ctx->led, 0);
 
+        if(chain[i]->num_cores > BIN1_CORE_THR)
+        {
+            type_score++;
+        }
+
 		applog(LOG_WARNING, "Detected the %d A1 chain with %d chips / %d cores",
 		       i, chain[i]->num_active_chips, chain[i]->num_cores);
 	}
+
+    if(type_score == 0) miner_type = TYPE_A4R;
+    else miner_type = TYPE_A4;
 
 	set_spi_speed(3250000);
 	inno_fan_speed_update(&g_fan_ctrl);
@@ -908,8 +915,10 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		default:;
 	}
 
-    // core*freq(system)*16/33811
-    return (int64_t)(2214663.87 * A1Pll / 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
+    if(miner_type == TYPE_A4)
+        return (int64_t)(2214663.87 * A1Pll / 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
+	else
+        return (int64_t)(2214663.87 * A1Pll / 1000 * (548/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
 
 }
 
