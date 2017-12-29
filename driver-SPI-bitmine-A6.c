@@ -912,13 +912,13 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		case 5:A1Pll = PLL_Clk_12Mhz[A1Pll6].speedMHz;break;
 		case 6:A1Pll = PLL_Clk_12Mhz[A1Pll7].speedMHz;break;
 		case 7:A1Pll = PLL_Clk_12Mhz[A1Pll8].speedMHz;break;
-		default:;
+		default:;	
 	}
 
     if(miner_type == TYPE_A4)
-        return (int64_t)(2214663.87 * A1Pll / 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
+        return (int64_t)(2214663.87 * opt_A1Pll1/ 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
 	else
-        return (int64_t)(2214663.87 * A1Pll / 1000 * (548/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
+        return (int64_t)(2214663.87 * opt_A1Pll1 / 1000 * (576/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
 
 }
 

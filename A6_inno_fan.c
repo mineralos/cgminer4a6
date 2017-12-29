@@ -457,7 +457,7 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
    
      if((fan_temp->temp_highest[i] > ERR_LOW_TEMP) || (fan_temp->temp_highest[i] < ERR_HIGH_TEMP) || fan_temp->valid_chain[i])
         continue;
-     printf("hi:%d lo:%d av:%d,valid %d\n",fan_temp->temp_highest[i],fan_temp->temp_lowest[i],fan_temp->temp_arvarge[i],fan_temp->valid_chain[i]);
+     //printf("hi:%d lo:%d av:%d,valid %d\n",fan_temp->temp_highest[i],fan_temp->temp_lowest[i],fan_temp->temp_arvarge[i],fan_temp->valid_chain[i]);
 
      if(temp_hi > fan_temp->temp_highest[i])
         temp_hi = fan_temp->temp_highest[i];
@@ -493,7 +493,7 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
         inno_fan_speed_set(fan_temp,fan_temp->speed);
     }
 
-    printf("hi %d,spd %d,lid: %d,md %d\n",temp_hi,fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp,fan_temp->auto_ctrl);
+    //printf("hi %d,spd %d,lid: %d,md %d\n",temp_hi,fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp,fan_temp->auto_ctrl);
 }
 
 
