@@ -329,7 +329,7 @@ static void inc_pll(void)
     	applog(LOG_INFO,"start to configure all chain from %d to %d", last_pll, i);
         for(j=0; j<ASIC_CHAIN_NUM; j++)
 	    {
-	        if(spi[j]->disable == 1)
+	        if(spi[j]->disable == 1 || chain[j] == NULL)
 			{
 	            applog(LOG_INFO, "chain %d has been disable", j);
 	            continue;
