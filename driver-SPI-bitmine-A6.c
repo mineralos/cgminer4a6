@@ -195,12 +195,22 @@ failure:
 static bool init_A1_chain(struct A1_chain *a1)
 {
     int i;
+    uint8_t src_reg[128];
+    uint8_t reg[128];
 	int chain_id = a1->chain_id;
 
     applog(LOG_INFO, "%d: A1 init chain", chain_id);
 
 	inno_cmd_resetbist(a1, ADDR_BROADCAST);
 	sleep(1);
+
+	//bist mask
+	inno_cmd_read_reg(a1, 0x01, reg);
+    memset(src_reg, 0, sizeof(src_reg));
+    memcpy(src_reg,reg,REG_LENGTH-2);
+	src_reg[7] = src_reg[7] | 0x10;
+    inno_cmd_write_reg(a1,ADDR_BROADCAST,src_reg);
+    usleep(200);
 	
     a1->num_chips =  chain_detect(a1);
     usleep(10000);
@@ -231,6 +241,16 @@ static bool init_A1_chain(struct A1_chain *a1)
         goto failure;
 
     usleep(200);
+	//configure for vsensor
+	inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
+
+	for (i = 0; i < a1->num_active_chips; i++)
+    {
+		inno_check_voltage(a1, i+1, &s_reg_ctrl);
+    }
+	
+	//configure for tsensor
+	inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
 
     for (i = 0; i < a1->num_active_chips; i++)
     {
@@ -896,7 +916,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
 	/* in case of no progress, prevent busy looping */
 	if (!work_updated)
-		cgsleep_ms(10);
+		cgsleep_ms(15);
 
 	cgtime(&a1->tvScryptCurr);
 	timersub(&a1->tvScryptCurr, &a1->tvScryptLast, &a1->tvScryptDiff);

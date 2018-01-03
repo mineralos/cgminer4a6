@@ -758,18 +758,17 @@ int chain_detect(struct A1_chain *a1)
 
 }
 
-
 void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
 {
     unsigned char tmp_reg[128];
     unsigned char src_reg[128];
     unsigned char reg[128];
+    unsigned int i;
 
     inno_cmd_read_reg(a1, 0x01, reg);
  
     memset(tmp_reg, 0, sizeof(tmp_reg));
     memset(src_reg, 0, sizeof(src_reg));
-    memset(reg, 0, sizeof(reg));
 
     memcpy(src_reg,reg,REG_LENGTH-2);
     inno_cmd_write_reg(a1,chip_id,src_reg);
@@ -779,7 +778,7 @@ void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
     {
      //Step1: wait for clock stable
      //Step2: low the tsdac rst_n and release rst_n after 4 SysClk
-      //hexdump("write reg", reg, REG_LENGTH);
+     //hexdump("write reg", reg, REG_LENGTH);
 
 #if DEBUG   
         printf("Write Reg:");
@@ -886,7 +885,6 @@ void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor)
         memcpy(tmp_reg,reg,REG_LENGTH-2);
         inno_cmd_write_reg(a1,chip_id,tmp_reg);
         usleep(200);
-
     }
 }
 
@@ -903,45 +901,46 @@ bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg
         a1->chips[chip_id].num_cores = 0;
         a1->chips[chip_id].disabled = 1;
         return false;
-    }else{
-        //hexdump("check chip:", reg, REG_LENGTH);
-    
+    }
+    else
+    {
         usleep(2000);
-        //printf("after set tvsensor\n");
-            /* update temp database */
-            uint32_t rd_v = 0;
-            rd_v = 0x000003ff & ((reg[7] << 8) | reg[8]);
-            float tmp_v = (float)(rd_v * MUL_COEF)/1024;
-            a1->chips[chip_id-1].nVol = tmp_v *1000;
-            //printf("[Read VOL %s:%d]rd_v = %d, tmp_v = %f\n",__FUNCTION__,__LINE__,rd_v,tmp_v);
-            
+        /* update temp database */
+        uint32_t rd_v = 0;
+        rd_v = 0x000003ff & ((reg[7] << 8) | reg[8]);
+        float tmp_v = (float)(rd_v * MUL_COEF)/1024;
+        a1->chips[chip_id-1].nVol = tmp_v *1000;
+        //printf("[Read VOL %s:%d]rd_v = %d, tmp_v = %f\n",__FUNCTION__,__LINE__,rd_v,tmp_v);
+
+		/*
             s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]++;
+             
+            if(s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1] == 1)
+            {
+              s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
+              s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
+              s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = tmp_v;
+            }else{
+                if(s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] < tmp_v){
+                    s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
+                }
+                if(s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] > tmp_v){
+                    s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
+                }
+                s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = (s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] * (s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1] - 1) + tmp_v)/s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1];
+            }
+           
+            printf("read tmp %f/%d form chain %d,chip %d h:%f,l:%f,av:%f,cnt:%d\n",tmp_v,rd_v,a1->chain_id, chip_id,s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1],s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]);
             
-           if(s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1] == 1)
-           {
-             s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
-             s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
-             s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = tmp_v;
-           }else{
-             if(s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] < tmp_v){
-                s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1] = tmp_v;
-               }
-            if(s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] > tmp_v){
-                s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1] = tmp_v;
-               }
-            s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] = (s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1] * (s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1] - 1) + tmp_v)/s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1];
-           }
-       
-            //printf("read tmp %f/%d form chain %d,chip %d h:%f,l:%f,av:%f,cnt:%d\n",tmp_v,rd_v,a1->chain_id, chip_id,s_reg_ctrl->highest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->lowest_vol[a1->chain_id][chip_id-1],s_reg_ctrl->avarge_vol[a1->chain_id][chip_id-1],s_reg_ctrl->stat_cnt[a1->chain_id][chip_id-1]);
-        
             //if read valtage higher than standard 8% or less than 8%,we think the chain has some problem
             if((tmp_v > (1.08 * inno_vsadc_table[opt_voltage1])) || (tmp_v < (0.92 * inno_vsadc_table[opt_voltage1]))){ 
                 applog(LOG_ERR,"Notice chain %d maybe has some promble in voltage\n",a1->chain_id);
                 //asic_gpio_write(a1->spi_ctx->power_en, 0);
                 //asic_gpio_write(GPIO_RED, 1);
                 //early_quit(1,"Notice chain %d maybe has some promble in voltage\n",a1->chain_id);
-
-            }           
+    
+            }         
+            */
    }
    return true;
 }
