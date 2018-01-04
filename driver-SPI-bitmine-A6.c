@@ -442,12 +442,6 @@ static bool detect_A1_chain(void)
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-		asic_gpio_write(spi[i]->power_en, 1);
-		sleep(5);
-		asic_gpio_write(spi[i]->reset, 1);
-		sleep(1);
-		asic_gpio_write(spi[i]->start_en, 1);
-		
 		g_fan_ctrl.valid_chain[i] = asic_gpio_read(spi[i]->plug);
 		applog(LOG_ERR, "Plug Status[%d] = %d",i,g_fan_ctrl.valid_chain[i]);
 
@@ -457,6 +451,12 @@ static bool detect_A1_chain(void)
 			spi[i]->disable = true;
 			continue;
 		}
+
+		asic_gpio_write(spi[i]->power_en, 1);
+		sleep(5);
+		asic_gpio_write(spi[i]->reset, 1);
+		sleep(1);
+		asic_gpio_write(spi[i]->start_en, 1);	
 	}
 
 	//init spi hardware
