@@ -518,6 +518,7 @@ struct cgpu_info {
     int chip_num;
     int core_num;
     int fan_duty;
+	int chainNum;
 #ifndef CHIP_A6
     double mhs_av;
 #endif

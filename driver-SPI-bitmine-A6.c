@@ -466,20 +466,10 @@ static bool detect_A1_chain(void)
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
 		int iVid;
+		
 		if(spi[i]->disable == true)
 			continue;
 		
-		chain[i] = pre_init_A1_chain(spi[i], i);
-		if (chain[i] == NULL){
-			applog(LOG_ERR, "init %d A1 chain fail", i);
-			continue;
-		}
-        else
-        {
-			chain_flag[i] = 1;
-			applog(LOG_WARNING, "Detected the %d A1 chain with %d chips", i, chain[i]->num_active_chips);
-		}
-
 		switch(i)
 		{
 			 case 0: iVid = opt_voltage1; break;
@@ -490,8 +480,21 @@ static bool detect_A1_chain(void)
 			 case 5: iVid = opt_voltage6; break;
 			 case 6: iVid = opt_voltage7; break;
 			 case 7: iVid = opt_voltage8; break;
+			 default:break;
 		}
 		set_vid_value(iVid,i);
+		
+		chain[i] = pre_init_A1_chain(spi[i], i);
+		if (chain[i] == NULL){
+			applog(LOG_ERR, "init %d A1 chain fail", i);
+			spi[i]->disable = true;
+			continue;
+		}
+        else
+        {
+			chain_flag[i] = 1;
+			applog(LOG_WARNING, "Detected the %d A1 chain with %d chips", i, chain[i]->num_active_chips);
+		}
 	}
 
 	//for pre-heat
@@ -505,6 +508,7 @@ static bool detect_A1_chain(void)
 		if(!init_A1_chain(chain[i]))
 		{
 			applog(LOG_ERR, "init %d A1 chain fail", i);
+			spi[i]->disable = true;
 			continue;
 		}
         else
@@ -521,6 +525,7 @@ static bool detect_A1_chain(void)
 		cgpu->drv = &bitmineA1_drv;
 		cgpu->name = "BitmineA1.SingleChain";
 		cgpu->threads = 1;
+		cgpu->chainNum = i;
 
 		cgpu->device_data = chain[i];
 

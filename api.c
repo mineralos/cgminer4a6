@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "miner.h"
 #include "util.h"
+#include "spi-context.h"
 #include "klist.h"
 
 #if defined(USE_BFLSC) || defined(USE_AVALON) || defined(USE_AVALON2) || defined(USE_AVALON4) || \
@@ -46,6 +47,7 @@
 // Number of requests to queue - normally would be small
 // However lots of PGA's may mean more
 #define QUEUE   100
+extern struct spi_ctx *spi[ASIC_CHAIN_NUM];
 
 #if defined WIN32
 static char WSAbuf[1024];
@@ -2025,12 +2027,12 @@ static void ascstatus(struct io_data *io_data, int asc, bool isjson, bool precom
         status = (char *)status2str(cgpu->status);
 
          root = api_add_int(root, "PREHT", &(cgpu->pre_heat), false);
-         root = api_add_int(root, "CID", &(cgpu->temp_prewarn[0]), false);
+         root = api_add_int(root, "CID", &(cgpu->chainNum), false);
          root = api_add_int(root, "CPIDA", &(cgpu->temp_prewarn[1]), false);
          root = api_add_int(root, "CPIDB", &(cgpu->temp_prewarn[2]), false);
          root = api_add_int(root, "TEMPH", &(cgpu->temp_prewarn[3]), false);
         
-        root = api_add_int(root, "ASC", &asc, false);
+        root = api_add_int(root, "ASC", &(cgpu->chainNum), false);
         root = api_add_string(root, "Name", cgpu->drv->name, false);
         root = api_add_int(root, "ID", &(cgpu->device_id), false);
         root = api_add_string(root, "Enabled", enabled, false);
@@ -2089,7 +2091,7 @@ static void pgastatus(struct io_data *io_data, int pga, bool isjson, bool precom
     struct api_data *root = NULL;
     char *enabled;
     char *status;
-    int numpga = numpgas();
+    int numpga = numascs();
 
     if (numpga > 0 && pga >= 0 && pga < numpga) {
         int dev = pgadevice(pga);
@@ -2201,7 +2203,6 @@ static void devstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __ma
     if (numasc > 0) {
         for (i = 0; i < numasc; i++) {
             ascstatus(io_data, i, isjson, isjson && devcount > 0);
-
             devcount++;
         }
     }
