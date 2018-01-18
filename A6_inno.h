@@ -33,14 +33,16 @@ MINER_TYPE_SUM,
 */
 
 typedef struct{
-   float highest_vol[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* chip temp bits */;
-   float lowest_vol[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* chip temp bits */;
-   float avarge_vol[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];    /* chip temp bits */; 
+   float highest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   float lowest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   float avarge_vol[ASIC_CHAIN_NUM];    /* chip temp bits */; 
+   int stat_val[ASIC_CHAIN_NUM][ASIC_CHIP_NUM]; 
    int stat_cnt[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];
 }inno_reg_ctrl_t;
 
 bool inno_check_voltage(struct A1_chain *a1, int chip_id, inno_reg_ctrl_t *s_reg_ctrl);
 void inno_configure_tvsensor(struct A1_chain *a1, int chip_id,bool is_tsensor);
+int inno_get_voltage_stats(struct A1_chain *a1, inno_reg_ctrl_t *s_reg_ctrl);
 
 bool check_chip(struct A1_chain *a1, int i);
 void prechain_detect(struct A1_chain *a1, int idxpll);

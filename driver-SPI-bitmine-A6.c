@@ -87,6 +87,36 @@ inno_type_e g_type;
 int g_reset_delay = 0xffff;
 int miner_type;
 
+char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {{0}};
+char volShowLog[ASIC_CHAIN_NUM][256] = {0};
+#define  LOG_FILE_PREFIX "/tmp/log/analys"
+#define  LOG_VOL_PREFIX "/tmp/log/volAnalys"
+
+uint8_t cLevelError1[3] = "!";
+uint8_t cLevelError2[3] = "#";
+uint8_t cLevelError3[3] = "$";
+uint8_t cLevelError4[3] = "%";
+uint8_t cLevelError5[3] = "*";
+uint8_t cLevelNormal[3] = "+";
+
+void inno_log_record(int cid, void* log, int len)
+{
+    FILE* fd;
+    char fileName[128] = {0};
+
+    sprintf(fileName, "%s%d.log", LOG_VOL_PREFIX, cid);
+    fd = fopen(fileName, "w+");
+    if(fd == NULL){
+        //applog(LOG_ERR, "Open log File%d Failed!%d", cid, errno);
+        applog(LOG_ERR, "Open log File%d Failed!%s", cid, strerror(errno));
+        return;
+    }
+
+    fwrite(log, len, 1, fd);
+    fflush(fd);
+    fclose(fd);
+}
+
 /********** work queue */
 static bool wq_enqueue(struct work_queue *wq, struct work *work)
 {
@@ -251,6 +281,11 @@ static bool init_A1_chain(struct A1_chain *a1)
 	
 	//configure for tsensor
 	inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
+
+    inno_get_voltage_stats(a1, &s_reg_ctrl);
+    sprintf(volShowLog[a1->chain_id], "+         %2d  |  %8f  |  %8f  |  %8f  |\n",a1->chain_id,   \
+                  s_reg_ctrl.highest_vol[a1->chain_id],s_reg_ctrl.avarge_vol[a1->chain_id],s_reg_ctrl.lowest_vol[a1->chain_id]);
+    inno_log_record(a1->chain_id, volShowLog[a1->chain_id], sizeof(volShowLog[0]));
 
     for (i = 0; i < a1->num_active_chips; i++)
     {
@@ -645,15 +680,6 @@ void A1_detect(bool hotplug)
     }   
 }
 
-char szShowLog[ASIC_CHAIN_NUM][ASIC_CHIP_NUM][256] = {{0}};
-#define  LOG_FILE_PREFIX "/tmp/log/analys"
-
-uint8_t cLevelError1[3] = "!";
-uint8_t cLevelError2[3] = "#";
-uint8_t cLevelError3[3] = "$";
-uint8_t cLevelError4[3] = "%";
-uint8_t cLevelError5[3] = "*";
-uint8_t cLevelNormal[3] = "+";
 
 void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
 {
