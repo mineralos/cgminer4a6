@@ -34,8 +34,8 @@ int SPI_PIN_START_EN[] = {
 860,
 862,
 864,
-866,
-868,
+890,
+892,
 };
 
 int SPI_PIN_RESET[] = {
@@ -45,8 +45,8 @@ int SPI_PIN_RESET[] = {
 861,
 863,
 865,
-867,
-869,
+891,
+893,
 };
 
 int SPI_PIN_LED[] = {
