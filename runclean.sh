@@ -11,4 +11,4 @@ git co compat
 
 rm -rf compat/jansson-2.9/jansson_private_config.h.in
 rm -rf compat/jansson-2.9/test-driver
-rm -rf cgminer_A5 cgminer_A6
+rm -rf cgminer_A5 cgminer_A6 innominer_*
