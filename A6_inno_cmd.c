@@ -278,8 +278,8 @@ bool inno_cmd_resetjob(struct A1_chain *pChain, uint8_t chip_id)
 
     spi_tx[0] = CMD_RESET;
     spi_tx[1] = chip_id;
-    spi_tx[2] = 0xed;
-    spi_tx[3] = 0xed;
+    spi_tx[2] = 0xe5;
+    spi_tx[3] = 0xe5;
 
     if(!spi_write_data(pChain->spi_ctx, spi_tx, 6))
     {

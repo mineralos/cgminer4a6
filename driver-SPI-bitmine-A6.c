@@ -747,6 +747,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 
     mutex_lock(&a1->lock);
     int cid = a1->chain_id;
+    static uint8_t last_chip_id,last_cid;
+    static uint8_t same_err_cnt = 0;
 
     if (first_flag[cid] != 1)
     {
@@ -869,10 +871,28 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 		if (!submit_nonce(thr, work, nonce)) 
 		{
-			applog(LOG_WARNING, "%d: chip %d: invalid nonce 0x%08x", cid, chip_id, nonce);
+			applog(LOG_WARNING, "%d: chip %d: invalid nonce 0x%08x !", cid, chip_id, nonce);
 			chip->hw_errors++;
 			/* add a penalty of a full nonce range on HW errors */
 			nonce_ranges_processed--;
+
+            if(last_chip_id == chip_id && last_cid == cid)
+            {
+                same_err_cnt++;
+                if(same_err_cnt > 10)
+                {
+                    inno_cmd_resetjob(a1, chip_id);
+                    applog(LOG_WARNING, "%d: reset chip %d due to it went to mad,loooool", cid, chip_id);
+                }
+            }
+            else
+            {
+                same_err_cnt = 0;
+            }
+
+            last_chip_id = chip_id;
+            last_cid = cid;
+
 			continue;
 		}
 		applog(LOG_INFO, "YEAH: %d: chip %d / job_id %d: nonce 0x%08x", cid, chip_id, job_id, nonce);
