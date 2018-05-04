@@ -489,7 +489,8 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
             applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
             applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
             applog(LOG_WARNING, "****core:%d*start to reset the chain:%d******************", a1->num_cores, cid);
-            
+
+			#if  0  //add by lzl 20180504
             asic_gpio_write(ctx->power_en, 0);
             sleep(3);
             asic_gpio_write(ctx->power_en, 1);
@@ -498,6 +499,19 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
             sleep(1);
             asic_gpio_write(ctx->start_en, 1);
             sleep(2);
+
+			#else
+			asic_gpio_write(ctx->reset, 1);
+			sleep(1);
+			asic_gpio_write(ctx->power_en, 1);
+			sleep(1);
+			asic_gpio_write(ctx->reset, 0);
+			sleep(1);
+			asic_gpio_write(ctx->start_en, 1);
+			sleep(1);
+			asic_gpio_write(ctx->reset, 1);
+			sleep(1);
+			#endif
 
 			inno_cmd_reset(a1, ADDR_BROADCAST);
 			sleep(1);

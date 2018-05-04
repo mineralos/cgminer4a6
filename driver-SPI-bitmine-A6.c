@@ -487,11 +487,24 @@ static bool detect_A1_chain(void)
 			continue;
 		}
 
+		#if   0   //add by lzl 20180504
 		asic_gpio_write(spi[i]->power_en, 1);
 		sleep(5);
 		asic_gpio_write(spi[i]->reset, 1);
 		sleep(1);
-		asic_gpio_write(spi[i]->start_en, 1);	
+		asic_gpio_write(spi[i]->start_en, 1);
+		#else
+		asic_gpio_write(spi[i]->reset, 1);
+		sleep(1);
+		asic_gpio_write(spi[i]->power_en, 1);
+		sleep(1);
+		asic_gpio_write(spi[i]->reset, 0);
+		sleep(1);
+		asic_gpio_write(spi[i]->start_en, 1);
+		sleep(1);
+		asic_gpio_write(spi[i]->reset, 1);
+		sleep(1);
+		#endif
 	}
 
 	//init spi hardware
