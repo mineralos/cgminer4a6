@@ -30,6 +30,12 @@
 #include "A6_inno_gpio.h"
 
 #include "A6_inno_fan.h"
+#include "dm_fan_ctrl.h"
+
+
+#define A6_FANSPEED_INIT	(100)
+#define A6_TEMP_TARGET_INIT	(60)
+#define A6_TEMP_TARGET_RUN	(75)
 
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
@@ -176,6 +182,9 @@ void exit_A1_chain(struct A1_chain *a1)
 struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
 {
     int i;
+	uint8_t src_reg[REG_LENGTH] = {0};
+	uint8_t reg[REG_LENGTH] = {0};
+	
     struct A1_chain *a1 = malloc(sizeof(struct A1_chain));
     if (a1 == NULL){
         goto failure;
@@ -187,7 +196,8 @@ struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
     a1->spi_ctx = ctx;
     a1->chain_id = chain_id;
 
-    inno_cmd_reset(a1, ADDR_BROADCAST);
+    //inno_cmd_reset(a1, ADDR_BROADCAST);
+    dm_cmd_resetbist(chain_id, CMD_ADDR_BROADCAST, reg);
 	sleep(1);
 	
     a1->num_chips =  chain_detect(a1);
@@ -429,44 +439,17 @@ static bool detect_A1_chain(void)
 	int i,cnt = 0;
 	int type_score = 0;
 
-	applog(LOG_WARNING, "A1: checking A1 chain");
+	applog(LOG_WARNING, "A6: checking A6 chain");
 
+    /*先将每条链的电都关掉*/
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-		cfg[i].bus     = i;
-		cfg[i].cs_line = 0;
-		cfg[i].mode    = SPI_MODE_1;
-		cfg[i].speed   = DEFAULT_SPI_SPEED;
-		cfg[i].bits    = DEFAULT_SPI_BITS_PER_WORD;
-		cfg[i].delay   = DEFAULT_SPI_DELAY_USECS;
-
-		spi[i] = spi_init(&cfg[i]);
-		if(spi[i] == NULL)
-		{
-			applog(LOG_ERR, "spi init fail");
-			return false;
-		}
-
-		spi[i]->power_en = SPI_PIN_POWER_EN[i];		
-		spi[i]->start_en = SPI_PIN_START_EN[i];		
-		spi[i]->reset = SPI_PIN_RESET[i];
-		spi[i]->plug  = SPI_PIN_PLUG[i];
-		spi[i]->led   = SPI_PIN_LED[i];
-		spi[i]->disable = false;
-		
-
-		asic_gpio_init(spi[i]->power_en, 0);
-		asic_gpio_init(spi[i]->start_en, 0);
-		asic_gpio_init(spi[i]->reset, 0);
-		asic_gpio_init(spi[i]->plug, 1);
-		asic_gpio_init(spi[i]->led, 0);
-
-	    sleep(1);
-		asic_gpio_write(spi[i]->power_en, 0);
+    	mcompat_set_power_en(i, 0);
 		sleep(1);
-		asic_gpio_write(spi[i]->reset, 0);
-		asic_gpio_write(spi[i]->start_en, 0);
-
+		mcompat_set_reset(i, 0);
+		sleep(1);
+		mcompat_set_start_en(i, 0);
+	    sleep(1);
 		show_log[i] = 0;
 		update_cnt[i] = 0;
 		write_flag[i] = 0;
@@ -474,42 +457,31 @@ static bool detect_A1_chain(void)
 	}
 
     sleep(5);
-
+    
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
-		g_fan_ctrl.valid_chain[i] = asic_gpio_read(spi[i]->plug);
+		g_fan_ctrl.valid_chain[i] = mcompat_get_plug(i);
 		applog(LOG_ERR, "Plug Status[%d] = %d",i,g_fan_ctrl.valid_chain[i]);
 
-		if(asic_gpio_read(spi[i]->plug) != 0)
+		if(mcompat_get_plug(i) != 0)
 		{
 			applog(LOG_ERR, "chain:%d the plat is not inserted", i);
 			spi[i]->disable = true;
 			continue;
 		}
-
-		#if   0   //add by lzl 20180504
-		asic_gpio_write(spi[i]->power_en, 1);
-		sleep(5);
-		asic_gpio_write(spi[i]->reset, 1);
+		mcompat_set_reset(i, 1);
 		sleep(1);
-		asic_gpio_write(spi[i]->start_en, 1);
-		#else
-		asic_gpio_write(spi[i]->reset, 1);
+		mcompat_set_power_en(i, 1);
 		sleep(1);
-		asic_gpio_write(spi[i]->power_en, 1);
+		mcompat_set_reset(i, 0);
 		sleep(1);
-		asic_gpio_write(spi[i]->reset, 0);
+		mcompat_set_start_en(i, 1);
 		sleep(1);
-		asic_gpio_write(spi[i]->start_en, 1);
+		mcompat_set_reset(i, 1);
 		sleep(1);
-		asic_gpio_write(spi[i]->reset, 1);
-		sleep(1);
-		#endif
+		mcompat_set_spi_speed(i, SPI_SPEED_1562K);
 	}
 
-	//init spi hardware
-    asic_spi_init();
-    set_spi_speed(1500000);
 
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
@@ -530,7 +502,8 @@ static bool detect_A1_chain(void)
 			 case 7: iVid = opt_voltage8; break;
 			 default:break;
 		}
-		set_vid_value(iVid,i);
+		//set_vid_value(iVid,i);
+		mcompat_set_vid(i,iVid);
 		
 		chain[i] = pre_init_A1_chain(spi[i], i);
 		if (chain[i] == NULL){
@@ -643,11 +616,18 @@ void A1_detect(bool hotplug)
 
     g_hwver = inno_get_hwver();
     g_type = inno_get_miner_type();
+
+	// FIXME: get correct hwver and chain num to init platform
+	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
+	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, 8, MAX_CHIP_NUM);
+	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
     
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
     memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
     
-    inno_fan_temp_init(&g_fan_ctrl, fan_level);
+	// set fan speed high to get to a lower startup temperature
+	dm_fanctrl_set_fan_speed(A6_FANSPEED_INIT);
+	//inno_fan_temp_init(&g_fan_ctrl, fan_level);
 
      // update time
     for(j = 0; j < 100; j++)
@@ -689,7 +669,7 @@ void A1_detect(bool hotplug)
     /* release SPI context if no A1 products found */
     for(i = 0; i < ASIC_CHAIN_NUM; i++)
     {
-        spi_exit(spi[i]);
+        //spi_exit(spi[i]);   //add by lzl 20180508
     }   
 }
 
