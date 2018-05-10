@@ -245,7 +245,7 @@ static inline int fsync (int fd)
 #define FPGA_PARSE_COMMANDS(DRIVER_ADD_COMMAND) \
     DRIVER_ADD_COMMAND(bitforce) \
     DRIVER_ADD_COMMAND(modminer)
-
+//dragonmintT1
 #define ASIC_PARSE_COMMANDS(DRIVER_ADD_COMMAND) \
     DRIVER_ADD_COMMAND(ants1) \
     DRIVER_ADD_COMMAND(ants2) \
@@ -265,12 +265,12 @@ static inline int fsync (int fd)
     DRIVER_ADD_COMMAND(icarus) \
     DRIVER_ADD_COMMAND(klondike) \
     DRIVER_ADD_COMMAND(knc) \
-    DRIVER_ADD_COMMAND(bitmineA1) \
     DRIVER_ADD_COMMAND(drillbit) \
     DRIVER_ADD_COMMAND(bab) \
     DRIVER_ADD_COMMAND(minion) \
     DRIVER_ADD_COMMAND(sp10) \
-    DRIVER_ADD_COMMAND(sp30)
+    DRIVER_ADD_COMMAND(sp30)  \
+    DRIVER_ADD_COMMAND(bitmineA1)
 
 #define DRIVER_PARSE_COMMANDS(DRIVER_ADD_COMMAND) \
     FPGA_PARSE_COMMANDS(DRIVER_ADD_COMMAND) \

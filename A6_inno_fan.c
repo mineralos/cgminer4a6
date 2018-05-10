@@ -14,6 +14,8 @@
 /************************************ 头文件 ***********************************/
 #include "A6_inno_fan.h"
 #include <stdlib.h>
+#include "dm_fan_ctrl.h"
+
 /************************************ 宏定义 ***********************************/
 
 
@@ -142,9 +144,10 @@ void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed)
     int fd = 0;
     int fan_id;
     int duty_driver = 0;
-    duty_driver = ASIC_INNO_FAN_PWM_FREQ_TARGET * (100 - speed) / 100;
+    //duty_driver = ASIC_INNO_FAN_PWM_FREQ_TARGET * (100 - speed) / 100;
     pthread_mutex_lock(&fan_temp->lock);
 
+	#if  0   //add by lzl 20180509
     /* 开启风扇结点 */
     fd = open(ASIC_INNO_FAN_PWM0_DEVICE_NAME, O_RDWR);
     if(fd < 0)
@@ -172,6 +175,10 @@ void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed)
         }
     }
     close(fd);
+	#else
+	mcompat_fan_speed_set(0, int speed);  //风扇数量是4，每2个受一个控制；
+	
+	#endif
 
     pthread_mutex_unlock(&fan_temp->lock);
 
@@ -490,7 +497,7 @@ void inno_fan_speed_update(inno_fan_temp_s *fan_temp)
     if(fan_temp->speed != fan_temp->last_fan_speed)
     {
         fan_temp->last_fan_speed = fan_temp->speed;
-        inno_fan_speed_set(fan_temp,fan_temp->speed);
+        inno_fan_speed_set(fan_temp,fan_temp->speed);   //内部已经更正
     }
 
     //printf("hi %d,spd %d,lid: %d,md %d\n",temp_hi,fan_speed[fan_temp->last_fan_temp],fan_temp->last_fan_temp,fan_temp->auto_ctrl);

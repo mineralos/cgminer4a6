@@ -304,6 +304,7 @@ static int chain_detect(struct T1_chain *t1)
 	return n_chips;
 }
 
+
 static struct T1_chain *pre_init_T1_chain(int chain_id)
 {
 	uint8_t buffer[4] = {0};

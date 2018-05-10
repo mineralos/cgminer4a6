@@ -217,6 +217,7 @@ bool spi_poll_result(struct A1_chain *pChain, uint8_t cmd, uint8_t chip_id, uint
 
 bool inno_cmd_resetbist(struct A1_chain *pChain, uint8_t chip_id)
 {
+    #if  0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
 
@@ -242,10 +243,17 @@ bool inno_cmd_resetbist(struct A1_chain *pChain, uint8_t chip_id)
     }
 
     return true;
+	#else
+	return 
+	uint8_t reg[REG_LENGTH] = {0};
+	return dm_cmd_resetbist(pChain->chain_id, chip_id,reg);
+	
+	#endif
 }
 
 bool inno_cmd_reset(struct A1_chain *pChain, uint8_t chip_id)
 {
+    #if   0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     
@@ -266,10 +274,16 @@ bool inno_cmd_reset(struct A1_chain *pChain, uint8_t chip_id)
     }
 
     return true;
+	#else
+	uint8_t reg[REG_LENGTH] = {0};
+	dm_cmd_resetbist(pChain->chain_id, chip_id, reg);
+	
+	#endif
 }
 
 bool inno_cmd_resetjob(struct A1_chain *pChain, uint8_t chip_id)
 {
+    #if   0  //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
 
@@ -295,12 +309,18 @@ bool inno_cmd_resetjob(struct A1_chain *pChain, uint8_t chip_id)
     }
 
     return true;
+	#else
+	uint8_t cmd[2] = {0xed, 0xed};//需要确认是0xed还是0xe5
+	uint8_t reg[REG_LENGTH] = {0};
+    return mcompat_cmd_reset(pChain->chain_id, chip_id, cmd, reg);
+	#endif
 }
 
 
 
 bool inno_cmd_bist_start(struct A1_chain *pChain, uint8_t chip_id, uint8_t *num)
 {
+    #if  0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     
@@ -321,10 +341,15 @@ bool inno_cmd_bist_start(struct A1_chain *pChain, uint8_t chip_id, uint8_t *num)
     }
 
     return true;
+	#else
+	return mcompat_cmd_bist_start(pChain->chain_id,chip_id);
+	#endif
 }
 
 bool inno_cmd_bist_collect(struct A1_chain *pChain, uint8_t chip_id)
 {
+
+    #if  0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     
@@ -343,11 +368,16 @@ bool inno_cmd_bist_collect(struct A1_chain *pChain, uint8_t chip_id)
     }
 
     return true;
+	#else
+	return mcompat_cmd_bist_collect(pChain->chain_id,chip_id);
+	#endif
+	
 }
 
 
 bool inno_cmd_bist_fix(struct A1_chain *pChain, uint8_t chip_id)
 {
+    #if 0  //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     
@@ -366,11 +396,15 @@ bool inno_cmd_bist_fix(struct A1_chain *pChain, uint8_t chip_id)
     }
 
     return true;
+	#else
+	return mcompat_cmd_bist_fix(pChain->chain_id,chip_id);
+	#endif
 }
 
 //add  0929
 bool inno_cmd_write_sec_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 {
+    #if  0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     uint8_t tmp_buf[MAX_CMD_LENGTH];
@@ -406,10 +440,16 @@ bool inno_cmd_write_sec_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *r
     }
     
     return true;
+    
+	#else
+	unsigned char  readbuf[32] = {0};
+	mcompat_cmd_read_write_reg0d(pChain->chain_id, chip_id, reg, REG_LENGTH, readbuf);
+	#endif
 }
 
 bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 {
+    #if   0  //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
     uint8_t tmp_buf[MAX_CMD_LENGTH];
@@ -451,11 +491,16 @@ bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
     }
 
     return true;
+	#else
+	return  mcompat_cmd_write_register(pChain->chain_id, chip_id, reg, REG_LENGTH);
+	
+	#endif
 }
 
 
 bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 {
+    #if  0   //add by lzl 20180509
     int i,j;
     int tx_len;
     int ret,index; 
@@ -528,10 +573,15 @@ bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
     }
     
     return false;
+	#else
+	return mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);
+	
+	#endif
 }
 
 bool inno_cmd_read_result(struct A1_chain *pChain, uint8_t chip_id, uint8_t *res)
 {
+    #if   0    //add by lzl 20180509
     int i,j;
     int tx_len,index,ret;       
     uint16_t clc_crc; 
@@ -600,6 +650,10 @@ bool inno_cmd_read_result(struct A1_chain *pChain, uint8_t chip_id, uint8_t *res
 
     return false;
 
+	#else
+	return mcompat_cmd_read_result(pChain->chain_id,chip_id, unsigned char *res, NONCE_LEN);
+	#endif
+
 }
 
 uint8_t inno_cmd_isBusy(struct A1_chain *pChain, uint8_t chip_id)
@@ -607,7 +661,7 @@ uint8_t inno_cmd_isBusy(struct A1_chain *pChain, uint8_t chip_id)
     uint8_t buffer[REG_LENGTH];
 
       
-    if(!inno_cmd_read_reg(pChain, chip_id, buffer))
+    if(!inno_cmd_read_reg(pChain, chip_id, buffer))  //已经更正
     {
         applog(LOG_WARNING, "read chip %d busy status error", chip_id);
         return -1;
@@ -630,6 +684,7 @@ uint8_t inno_cmd_isBusy(struct A1_chain *pChain, uint8_t chip_id)
 
 bool inno_cmd_write_job(struct A1_chain *pChain, uint8_t chip_id, uint8_t *job)
 {
+    #if  0   //add by lzl 20180509
     uint8_t spi_tx[MAX_CMD_LENGTH];
     struct spi_ctx *ctx = pChain->spi_ctx;
     
@@ -673,6 +728,10 @@ bool inno_cmd_write_job(struct A1_chain *pChain, uint8_t chip_id, uint8_t *job)
     //}
 
     return true;
+
+    #else
+	return mcompat_cmd_write_job(pChain->chain_id, chip_id,job,JOB_LENGTH);
+	#endif
 
 }
 

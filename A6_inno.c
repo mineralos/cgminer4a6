@@ -458,7 +458,7 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
         if (chip->cooldown_begin + COOLDOWN_MS > get_current_ms())
             continue;
         
-        if (!inno_cmd_read_reg(a1, chip_id, reg)) 
+        if (!inno_cmd_read_reg(a1, chip_id, reg)) //内部接口已经更正
         {
             chip->fail_count++;
             applog(LOG_WARNING, "%d: chip %d not yet working - %d",
@@ -481,8 +481,9 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
         chip->fail_reset = 0;
     }
 
-    //if the core in chain least than 600, reinit this chain    
-    if(asic_gpio_read(ctx->plug) == 0)
+    //if the core in chain least than 600, reinit this chain   mcompat_get_plug(i)   
+    //if(asic_gpio_read(ctx->plug) == 0)
+    if(mcompat_get_plug(i) == 0)
     {
         if(a1->num_cores <= LEAST_CORE_ONE_CHAIN)
         {
@@ -501,6 +502,7 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
             sleep(2);
 
 			#else
+			/*
 			asic_gpio_write(ctx->reset, 1);
 			sleep(1);
 			asic_gpio_write(ctx->power_en, 1);
@@ -511,21 +513,32 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
 			sleep(1);
 			asic_gpio_write(ctx->reset, 1);
 			sleep(1);
+			*/
+			mcompat_set_reset(i, 1);
+			sleep(1);
+			mcompat_set_power_en(i, 1);
+			sleep(1);
+			mcompat_set_reset(i, 0);
+			sleep(1);
+			mcompat_set_start_en(i, 1);
+			sleep(1);
+			mcompat_set_reset(i, 1);
+			sleep(1);
 			#endif
 
-			inno_cmd_reset(a1, ADDR_BROADCAST);
+			inno_cmd_reset(a1, ADDR_BROADCAST);//内部已经更正
 			sleep(1);
 
-			prechain_detect_yex(a1, opt_A1Pll1, 120);
+			prechain_detect_yex(a1, opt_A1Pll1, 120);//内部已经更正
 			sleep(1);
-            a1->num_chips =  chain_detect(a1);
+            a1->num_chips =  chain_detect(a1);//内部已经更正
             a1->num_cores = 0;
             usleep(10000);
             
             if (a1->num_chips <= 0)
                 goto failure;
 
-            inno_cmd_bist_fix(a1, ADDR_BROADCAST);
+            inno_cmd_bist_fix(a1, ADDR_BROADCAST);   //内部已经更正
 
             for (i = 0; i < a1->num_active_chips; i++)
             {
@@ -536,9 +549,15 @@ void check_disabled_chips(struct A1_chain *a1, int pllnum)
     else
     {
         applog(LOG_WARNING, "chain %d not insert,change all gpio to zero****", cid);
+		#if   0   //add by lzl 20180509
         asic_gpio_write(ctx->power_en, 0);
         asic_gpio_write(ctx->reset, 0);
         asic_gpio_write(ctx->start_en, 0);
+		#else
+		mcompat_set_power_en(i, 0);
+		mcompat_set_reset(i, 0);
+		mcompat_set_start_en(i, 0);
+		#endif
     }
     
     return;
@@ -572,7 +591,7 @@ bool set_work(struct A1_chain *a1, uint8_t chip_id, struct work *work, uint8_t q
     }
     
     uint8_t *jobdata = create_job(chip_id, job_id, work);
-    if (!inno_cmd_write_job(a1, chip_id, jobdata)) 
+    if (!inno_cmd_write_job(a1, chip_id, jobdata)) //内部已经更正
     {
         /* give back work */
         work_completed(a1->cgpu, work);
@@ -684,7 +703,11 @@ bool prechain_detect_yex(struct A1_chain *a1, int idxpll, int lastidx)
     {
     	nCount = 0;
         memcpy(temp_reg, default_reg[i], REG_LENGTH);
+		#if  1   //add by lzl 20180509
 		while(!inno_cmd_write_reg(a1, ADDR_BROADCAST, temp_reg))
+		#else
+		//while(!mcompat_cmd_write_register(a1, ADDR_BROADCAST, temp_reg, REG_LENGTH))
+		#endif
 		{
 		    usleep(120000);
             nCount++;
@@ -720,8 +743,12 @@ bool zynq_spi_exit(void)
 
 int inno_chain_power_down(struct A1_chain *a1)
 {
+    #if 0  //add by lzl 20180509
     asic_gpio_write(a1->spi_ctx->power_en, 0);
     asic_gpio_write(a1->spi_ctx->start_en, 0);
+	#else
+	mcompat_chain_power_down(a1->chain_id);
+	#endif
 
     return 0;
 }
@@ -730,12 +757,16 @@ int inno_chain_power_down(struct A1_chain *a1)
 
 void power_down_all_chain(void)
 {
+    #if 0  //add by lzl 20180509
     int i;
 
     for(i = 0; i < ASIC_CHAIN_NUM; i++)
     {
         inno_chain_power_down(chain[i]);
     }
+	#else
+	mcompat_chain_power_on_all();
+	#endif
 }
 
 /*
@@ -743,7 +774,8 @@ void power_down_all_chain(void)
  * returns 0 as number of chips.
  */
 int chain_detect(struct A1_chain *a1)
-{   
+{  
+    #if  0   //add by lzl 20180509
     uint8_t buffer[64];
     int cid = a1->chain_id;
 
@@ -769,6 +801,31 @@ int chain_detect(struct A1_chain *a1)
     applog(LOG_WARNING, "collect core success");
     applog(LOG_WARNING, "%d: no A1 chip-chain detected", cid);
     return a1->num_chips;
+	#else
+	int cid = a1->chain_id;
+	uint8_t n_chips = mcompat_cmd_bist_start(cid, CMD_ADDR_BROADCAST);
+
+	if (unlikely(n_chips == 0 || n_chips > MAX_CHIP_NUM)){
+		write_miner_ageing_status(AGEING_BIST_START_FAILED);
+		applog(LOG_ERR, "%d: detected %d chips", cid, n_chips);
+		return 0;
+	}
+
+	applog(LOG_WARNING, "%d: detected %d chips", cid, n_chips);
+
+	cgsleep_ms(10);
+/*
+	if (!mcompat_cmd_bist_collect(cid, CMD_ADDR_BROADCAST))
+	{
+		applog(LOG_WARNING, "bist collect fail");
+		return 0;
+	}
+*/
+
+	applog(LOG_WARNING, "collect core success");
+
+	return n_chips;
+	#endif
 
 }
 
@@ -1036,8 +1093,13 @@ void chain_all_exit(void)
         if (chain[i] == NULL)
             continue;
         free(chain[i]->chips);
+		#if 0  //add by lzl 20180509
         asic_gpio_write(chain[i]->spi_ctx->led, 1);
         asic_gpio_write(chain[i]->spi_ctx->power_en, 0);
+		#else
+		mcompat_set_led(i, 1);
+		mcompat_set_power_en(i, 0);
+		#endif
         chain[i]->chips = NULL;
         chain[i]->spi_ctx = NULL;
         free(chain[i]);

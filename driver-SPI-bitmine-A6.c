@@ -172,8 +172,14 @@ void exit_A1_chain(struct A1_chain *a1)
     if (a1 == NULL)
         return;
     free(a1->chips);
+    #if  0  //add by lzl 20180509
     asic_gpio_write(a1->spi_ctx->led, 1);
     asic_gpio_write(a1->spi_ctx->power_en, 0);
+	#else
+	mcompat_set_led(a1->chain_id, 1);
+	mcompat_set_power_en(a1->chain_id, 0);
+	
+	#endif
     a1->chips = NULL;
     a1->spi_ctx = NULL;
     free(a1);
@@ -196,8 +202,8 @@ struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
     a1->spi_ctx = ctx;
     a1->chain_id = chain_id;
 
-    //inno_cmd_reset(a1, ADDR_BROADCAST);
-    dm_cmd_resetbist(chain_id, CMD_ADDR_BROADCAST, reg);
+    inno_cmd_reset(a1, ADDR_BROADCAST);  //内部已经更正
+    //dm_cmd_resetbist(chain_id, CMD_ADDR_BROADCAST, reg);
 	sleep(1);
 	
     a1->num_chips =  chain_detect(a1);
@@ -228,7 +234,7 @@ struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
     return a1;
 
 failure:
-    exit_A1_chain(a1);
+    //exit_A1_chain(a1);
     return NULL;
 }
 
@@ -241,15 +247,15 @@ static bool init_A1_chain(struct A1_chain *a1)
 
     applog(LOG_INFO, "%d: A1 init chain", chain_id);
 
-	inno_cmd_resetbist(a1, ADDR_BROADCAST);
+	inno_cmd_resetbist(a1, ADDR_BROADCAST);//内部接口已经更正
 	sleep(1);
 
 	//bist mask
-	inno_cmd_read_reg(a1, 0x01, reg);
+	inno_cmd_read_reg(a1, 0x01, reg);//内部接口已经更正
     memset(src_reg, 0, sizeof(src_reg));
     memcpy(src_reg,reg,REG_LENGTH-2);
 	src_reg[7] = src_reg[7] | 0x10;
-    inno_cmd_write_reg(a1,ADDR_BROADCAST,src_reg);
+    inno_cmd_write_reg(a1,ADDR_BROADCAST,src_reg);//内部接口已经更正
     usleep(200);
 	
     a1->num_chips =  chain_detect(a1);
@@ -277,20 +283,20 @@ static bool init_A1_chain(struct A1_chain *a1)
         goto failure;
     }
 
-    if (!inno_cmd_bist_fix(a1, ADDR_BROADCAST))
+    if (!inno_cmd_bist_fix(a1, ADDR_BROADCAST))    //内部接口已经更正
         goto failure;
 
     usleep(200);
 	//configure for vsensor
-	inno_configure_tvsensor(a1,ADDR_BROADCAST,0);
+	inno_configure_tvsensor(a1,ADDR_BROADCAST,0);   //内部接口已经更正
 
 	for (i = 0; i < a1->num_active_chips; i++)
     {
-		inno_check_voltage(a1, i+1, &s_reg_ctrl);
+		inno_check_voltage(a1, i+1, &s_reg_ctrl);   //内部接口已经更正
     }
 	
 	//configure for tsensor
-	inno_configure_tvsensor(a1,ADDR_BROADCAST,1);
+	inno_configure_tvsensor(a1,ADDR_BROADCAST,1);  //内部接口已经更正
 
     inno_get_voltage_stats(a1, &s_reg_ctrl);
     sprintf(volShowLog[a1->chain_id], "+         %2d  |  %8f  |  %8f  |  %8f  |\n",a1->chain_id,   \
@@ -323,7 +329,7 @@ static bool init_A1_chain(struct A1_chain *a1)
 	return true;
 
 failure:
-    exit_A1_chain(a1);
+    //exit_A1_chain(a1);
     return false;
 }
 
@@ -362,15 +368,19 @@ static void prepll_chip_temp(struct A1_chain *a1, int cid)
 
     memset(reg,0,sizeof(reg));
     for (i = a1->num_active_chips; i > 0; i--)
-    {
+    {   
+        #if  0   //add by lzl 20180509
         if (!inno_cmd_read_reg(a1, i, reg))
+		#else
+		if(!mcompat_cmd_read_register(a1, i, reg,sizeof(reg)))
+		#endif
         {
             applog(LOG_ERR, "%d: Failed to read temperature sensor register for chip %d ", a1->chain_id, i);
             continue;
         }
 
         temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-		//applog(LOG_ERR,"cid %d,chip %d,temp %d",cid, i, temp);
+		applog(LOG_INFO,"cid %d,chip %d,temp %d",cid, i, temp);
         inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
     }
 
@@ -427,7 +437,7 @@ static void inc_pll(void)
 	    }
 		
 failure:
-	    inno_fan_speed_update(&g_fan_ctrl);
+	    inno_fan_speed_update(&g_fan_ctrl);//内部函数中已经更正
         last_pll = i;
     }
 }
@@ -482,7 +492,7 @@ static bool detect_A1_chain(void)
 		mcompat_set_spi_speed(i, SPI_SPEED_1562K);
 	}
 
-
+       
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
 		int iVid;
@@ -553,7 +563,11 @@ static bool detect_A1_chain(void)
 		chain[i]->cgpu = cgpu;
 		add_cgpu(cgpu);
 
+		#if  0   //add by lzl 20180509
 		asic_gpio_write(chain[i]->spi_ctx->led, 0);
+		#else
+		mcompat_set_led(i, 0);
+		#endif
 
         if(chain[i]->num_cores > BIN1_CORE_THR)
         {
@@ -567,9 +581,13 @@ static bool detect_A1_chain(void)
     if(type_score == 0) miner_type = TYPE_A4R;
     else miner_type = TYPE_A4;
 
+	#if  0  //add by lzl 20180509
 	set_spi_speed(3250000);
-	inno_fan_speed_update(&g_fan_ctrl);
-
+	#else
+	mcompat_set_spi_speed(i, SPI_SPEED_3125K);
+	#endif
+	inno_fan_speed_update(&g_fan_ctrl); //内部已经更正
+	
     return (cnt == 0) ? false : true;
 }
 
@@ -626,8 +644,8 @@ void A1_detect(bool hotplug)
     memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
     
 	// set fan speed high to get to a lower startup temperature
-	dm_fanctrl_set_fan_speed(A6_FANSPEED_INIT);
-	//inno_fan_temp_init(&g_fan_ctrl, fan_level);
+	//dm_fanctrl_set_fan_speed(A6_FANSPEED_INIT);
+	inno_fan_temp_init(&g_fan_ctrl, fan_level);
 
      // update time
     for(j = 0; j < 100; j++)
@@ -826,8 +844,13 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		if(g_fan_ctrl.temp_highest[a1->chain_id] < DANGEROUS_TMP)
 		{
 			applog(LOG_ERR, "disable chain %d", a1->chain_id);
+			#if 0   //add by lzl 20180509
 	   		asic_gpio_write(spi[a1->chain_id]->power_en, 0);
 			loop_blink_led(spi[a1->chain_id]->led, 10);
+			#else
+			mcompat_set_power_en(a1->chain_id, 0);
+			loop_blink_led(a1->chain_id, 10);
+			#endif
 	   		//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
 		}
 	}		
@@ -849,7 +872,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		if (job_id < 1 && job_id > 4) 
 		{
 			applog(LOG_WARNING, "%d: chip %d: result has wrong ""job_id %d", cid, chip_id, job_id);
-			flush_spi(a1);
+			//flush_spi(a1);  //add by lzl 20180509
 			continue;
 		}
 
@@ -874,7 +897,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
                 same_err_cnt++;
                 if(same_err_cnt > 10)
                 {
-                    inno_cmd_resetjob(a1, chip_id);
+                    inno_cmd_resetjob(a1, chip_id);//内部已经更正
                     applog(LOG_WARNING, "%d: reset chip %d due to it went to mad,loooool", cid, chip_id);
                 }
             }
@@ -900,7 +923,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 	}
 	else
 	{
-		if (inno_cmd_read_reg(a1, 25, reg)) 
+		if (inno_cmd_read_reg(a1, 25, reg)) //内部已经更正
 		{
 			uint8_t qstate = reg[9] & 0x01;
 
