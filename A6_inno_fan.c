@@ -14,7 +14,7 @@
 /************************************ 头文件 ***********************************/
 #include "A6_inno_fan.h"
 #include <stdlib.h>
-#include "dm_fan_ctrl.h"
+//#include "dm_fan_ctrl.h"
 
 /************************************ 宏定义 ***********************************/
 
@@ -176,7 +176,7 @@ void inno_fan_speed_set(inno_fan_temp_s *fan_temp, int speed)
     }
     close(fd);
 	#else
-	mcompat_fan_speed_set(0, int speed);  //风扇数量是4，每2个受一个控制；
+	mcompat_fan_speed_set(0, speed);  //风扇数量是4，每2个受一个控制；
 	
 	#endif
 
@@ -323,6 +323,7 @@ int inno_fan_temp_highest(inno_fan_temp_s *fan_temp, int chain_id, inno_type_e i
         case INNO_TYPE_A9:
             printf("Sorry do not have such type named INNO_TYPE_A9\n");
         default:
+			printf("Sorry do not have such type:%d ! func:%s;line:%d\n",inno_type,__func__,__LINE__);
             break;
 
     }

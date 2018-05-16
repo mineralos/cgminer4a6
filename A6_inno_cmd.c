@@ -244,9 +244,10 @@ bool inno_cmd_resetbist(struct A1_chain *pChain, uint8_t chip_id)
 
     return true;
 	#else
-	return 
 	uint8_t reg[REG_LENGTH] = {0};
-	return dm_cmd_resetbist(pChain->chain_id, chip_id,reg);
+	uint8_t cmd[2] = {0x20, 0x20};
+    return mcompat_cmd_reset(pChain->chain_id, chip_id, cmd, reg);
+	//return dm_cmd_resetbist(pChain->chain_id, chip_id,reg);
 	
 	#endif
 }
@@ -276,8 +277,10 @@ bool inno_cmd_reset(struct A1_chain *pChain, uint8_t chip_id)
     return true;
 	#else
 	uint8_t reg[REG_LENGTH] = {0};
-	dm_cmd_resetbist(pChain->chain_id, chip_id, reg);
+	uint8_t cmd[2] = {0x20, 0x20};
 	
+    return mcompat_cmd_reset(pChain->chain_id, chip_id, cmd, reg);
+	//dm_cmd_resetbist(pChain->chain_id, chip_id, reg);
 	#endif
 }
 
@@ -574,7 +577,7 @@ bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
     
     return false;
 	#else
-	return mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);
+	return mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);  //寄存器的长度必须传对
 	
 	#endif
 }
@@ -651,7 +654,7 @@ bool inno_cmd_read_result(struct A1_chain *pChain, uint8_t chip_id, uint8_t *res
     return false;
 
 	#else
-	return mcompat_cmd_read_result(pChain->chain_id,chip_id, unsigned char *res, NONCE_LEN);
+	return mcompat_cmd_read_result(pChain->chain_id,chip_id, res, NONCE_LEN);
 	#endif
 
 }

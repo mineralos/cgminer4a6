@@ -21,12 +21,13 @@
 
 struct spi_ctx *spi_init(struct spi_config *config)
 {
+    #if  0   //add by lzl 20180510
     char dev_fname[PATH_MAX];
     struct spi_ctx *ctx;
 
     if (config == NULL)
         return NULL;
-
+    
     memset(dev_fname, 0, sizeof(dev_fname));
     sprintf(dev_fname, SPI_DEVICE_TEMPLATE, config->bus, config->cs_line);
 
@@ -60,6 +61,18 @@ struct spi_ctx *spi_init(struct spi_config *config)
            dev_fname, ctx->config.mode, ctx->config.bits,
            ctx->config.speed);
     return ctx;
+	#else
+    struct spi_ctx *ctx;
+
+    if (config == NULL)
+        return NULL;
+	
+    ctx = malloc(sizeof(*ctx));
+    assert(ctx != NULL);
+ 
+    mutex_init(&ctx->spi_lock);
+    return ctx;
+	#endif
 }
 
 

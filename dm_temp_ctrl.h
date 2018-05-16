@@ -10,7 +10,7 @@
 #ifndef _DM_TEMP_CTRL_H_
 #define _DM_TEMP_CTRL_H_
 
-#include "dragonmint_t1.h"
+//#include "dragonmint_t1.h"
 
 #define TEMP_INVALID				(-1)
 #define TEMP_NORMAL				(0)
@@ -32,7 +32,7 @@ typedef struct _c_temp_cfg
 } c_temp_cfg;
 
 extern volatile c_temp_cfg	g_tmp_cfg;					// configs of temperature control
-extern volatile c_temp		g_chain_tmp[MAX_CHAIN_NUM];	// current temperature for each chain
+//extern volatile c_temp		g_chain_tmp[MAX_CHAIN_NUM];	// current temperature for each chain
 
 void		dm_tempctrl_get_defcfg(c_temp_cfg *p_cfg);
 void		dm_tempctrl_set(c_temp_cfg *p_cfg);

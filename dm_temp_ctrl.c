@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "dragonmint_t1.h"
+//#include "dragonmint_t1.h"
 
 #include "dm_temp_ctrl.h"
 
@@ -24,7 +24,7 @@
  * Global variables
  ******************************************************************************/
 volatile c_temp_cfg	g_tmp_cfg;			// configs of temperature control
-volatile c_temp		g_chain_tmp[MAX_CHAIN_NUM];	// current temperature per chain
+//volatile c_temp		g_chain_tmp[MAX_CHAIN_NUM];	// current temperature per chain
 
 volatile int		g_tmp_last_upd_time[MAX_CHAIN_NUM];
 static uint32_t 	g_temp_status[MAX_CHAIN_NUM];
@@ -84,7 +84,7 @@ void dm_tempctrl_init(c_temp_cfg *p_cfg)
 	}
 }
 
-#ifndef USE_AUTOCMD0A
+#if   0
 static void dm_tempctrl_get_chain_temp(int *chip_temp, c_temp *chain_temp)
 {
 	int i, cnt, avg, index = -1;

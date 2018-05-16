@@ -331,8 +331,10 @@ struct device_drv {
     // Device-specific functions
     void (*reinit_device)(struct cgpu_info *);
     void (*get_statline_before)(char *, size_t, struct cgpu_info *);
+	struct api_data *(*get_api_stats)(struct cgpu_info *);
+	struct api_data *(*get_api_debug)(struct cgpu_info *);
     void (*get_statline)(char *, size_t, struct cgpu_info *);
-    struct api_data *(*get_api_stats)(struct cgpu_info *);
+   // struct api_data *(*get_api_stats)(struct cgpu_info *);
     bool (*get_stats)(struct cgpu_info *);
     void (*identify_device)(struct cgpu_info *); // e.g. to flash a led
     char *(*set_device)(struct cgpu_info *, char *option, char *setting, char *replybuf);
@@ -519,7 +521,8 @@ struct cgpu_info {
     int core_num;
     int fan_duty;
 	int chainNum;
-#ifndef CHIP_A6
+//#ifndef CHIP_A6    //commmet by lzl 20180515
+#ifdef CHIP_A6
     double mhs_av;
 #endif
     int pre_heat;
@@ -1054,9 +1057,15 @@ extern char *opt_drillbit_auto;
 #ifdef USE_BAB
 extern char *opt_bab_options;
 #endif
+
+#if  0  //add by lzl 20180510
 #ifdef USE_BITMINE_A1
 extern char *opt_bitmine_a1_options;
 #endif
+#else
+extern char *opt_bitmine_a1_options;
+#endif
+
 #ifdef USE_ANT_S1
 extern char *opt_bitmain_options;
 extern char *opt_bitmain_freq;
@@ -1656,5 +1665,8 @@ extern struct api_data *api_add_avg(struct api_data *root, char *name, float *da
 extern void dupalloc(struct cgpu_info *cgpu, int timelimit);
 extern void dupcounters(struct cgpu_info *cgpu, uint64_t *checked, uint64_t *dups);
 extern bool isdupnonce(struct cgpu_info *cgpu, struct work *work, uint32_t nonce);
+
+#define ROOT_ADD_API(FUNC, NAME, VAR, BOOL) root = api_add_##FUNC(root, (NAME), &(VAR), (BOOL))
+
 
 #endif /* __MINER_H__ */

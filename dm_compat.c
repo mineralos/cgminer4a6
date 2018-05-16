@@ -8,6 +8,8 @@
  */
 
 #include "dm_compat.h"
+#include "spi-context.h"
+
 
 MCOMPAT_CHAIN_T s_chain_ops;
 MCOMPAT_CHAIN_T* s_chain_ops_p = &s_chain_ops;
@@ -36,6 +38,7 @@ static void applog_hexdump(char *prefix, uint8_t *buff, int len, int level)
 	applog(level, "%s", line);
 }
 
+/*
 void hexdump(char *prefix, uint8_t *buff, int len)
 {
 	applog_hexdump(prefix, buff, len, LOG_WARNING);
@@ -45,6 +48,8 @@ void hexdump_error(char *prefix, uint8_t *buff, int len)
 {
 	applog_hexdump(prefix, buff, len, LOG_ERR);
 }
+*/
+
 
 void init_mcompat_chain(void)
 {
@@ -1928,6 +1933,7 @@ void zynq_spi_init(ZYNQ_SPI_T *spi, int bus)
 	return;
 }
 
+/*
 void zynq_spi_exit(ZYNQ_SPI_T *spi)
 {
 	if (NULL == spi)
@@ -1939,6 +1945,7 @@ void zynq_spi_exit(ZYNQ_SPI_T *spi)
 
 	return;
 }
+*/
 
 void zynq_spi_write(ZYNQ_SPI_T *spi, uint8_t *txbuf, int len)
 {
@@ -2031,6 +2038,7 @@ void zynq_set_spi_speed(int speed)
 
 int zynq_gpio_g9_vid_set(int level)
 {
+    #if  0   //add by lzl 20180510
 	int fd = 0;
 
 	fd = open(SYSFS_VID_DEV, O_RDWR);
@@ -2046,10 +2054,14 @@ int zynq_gpio_g9_vid_set(int level)
 	close(fd);
 
 	return 0;
+	#else
+	return 0;
+	#endif
 }
 
 int zynq_gpio_g19_vid_set(int chain_id, int level)
 {
+     #if  0   //add by lzl 20180510
 	int fd = 0;
 
 	fd = open(SYSFS_VID_DEV, O_RDWR);
@@ -2068,6 +2080,9 @@ int zynq_gpio_g19_vid_set(int chain_id, int level)
 	close(fd);
 
 	return 0;
+	#else
+	return 0;
+	#endif
 }
 
 /* DUPES, FIXME THIS ONE IS USED */
@@ -3417,6 +3432,7 @@ void init_hub_gpio(void)
 	Xil_Peripheral_Out32(MCOMPAT_PERIPHERAL_S00_AXI_SLV_REG1_OFFSET, 3);
 }
 
+/*
 void flush_spi(uint8_t chain_id)
 {
 	uint16_t spi_tx[MCOMPAT_CONFIG_MAX_CMD_LENGTH];
@@ -3427,6 +3443,7 @@ void flush_spi(uint8_t chain_id)
 
 	opi_spi_transfer(chain_id, spi_tx, spi_rx, MCOMPAT_CONFIG_MAX_CMD_LENGTH);
 }
+*/ //add by lzl 20180510
 
 bool opi_spi_read_write(uint8_t chain_id, uint8_t *txbuf, uint8_t *rxbuf, int len)
 {
@@ -4021,16 +4038,20 @@ void spi_recv_data_in_word(ZYNQ_SPI_T *spi, unsigned char *buf, int len)
 	}
 }
 
+/*
+
 void spi_send_data(ZYNQ_SPI_T *spi, unsigned char *buf, int len)
 {
 	zynq_spi_write(spi, buf, len);
 }
+*/
 
 void spi_recv_data(ZYNQ_SPI_T *spi, unsigned char *buf, int len)
 {
 	zynq_spi_read(spi, buf, len);
 }
 
+/*
 
 bool spi_send_command(ZYNQ_SPI_T *spi, unsigned char cmd, unsigned char chip_id, unsigned char *buff, int len)
 {
@@ -4090,6 +4111,7 @@ bool spi_poll_result(ZYNQ_SPI_T *spi, unsigned char cmd, unsigned char __maybe_u
 
 	return true;
 }
+*/
 
 
 
@@ -5439,6 +5461,7 @@ bool spi_cmd_write_job(unsigned char chain_id, unsigned char chip_id, unsigned c
 	return true;
 }
 
+/*
 const unsigned short wCRCTalbeAbs[] =
 {
 	0x0000, 0xCC01, 0xD801, 0x1400,
@@ -5462,6 +5485,7 @@ unsigned short CRC16_2(unsigned char* pchMsg, unsigned short wDataLen)
 
 	return wCRC;
 }
+*/
 
 
 void print_data_hex(char *arg, unsigned char *buff, int len)

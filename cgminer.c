@@ -293,8 +293,13 @@ char *opt_drillbit_options = NULL;
 char *opt_drillbit_auto = NULL;
 #endif
 char *opt_bab_options = NULL;
-#ifdef USE_BITMINE_A1
-char *opt_bitmine_a1_options = NULL;
+
+#if  0  //add by lzl 20180510
+	#ifdef USE_BITMINE_A1
+	char *opt_bitmine_a1_options = NULL;
+	#endif
+#else
+	char *opt_bitmine_a1_options = NULL;
 #endif
 #if defined(USE_ANT_S1) || defined(USE_ANT_S2)
 char *opt_bitmain_options;
@@ -345,6 +350,7 @@ static bool polling_usb;
 static bool usb_reinit;
 #endif
 
+#if  0  //add by lzl 20180519
 //for A4
 int opt_A1Pll1=120; // -1 Default
 int opt_A1Pll2=120; // -1 Default
@@ -354,7 +360,6 @@ int opt_A1Pll5=120; // -1 Default
 int opt_A1Pll6=120; // -1 Default
 int opt_A1Pll7=120; // -1 Default
 int opt_A1Pll8=120; // -1 Default
-
 int opt_voltage1 = 1;
 int opt_voltage2 = 1;
 int opt_voltage3 = 1;
@@ -363,6 +368,30 @@ int opt_voltage5 = 1;
 int opt_voltage6 = 1;
 int opt_voltage7 = 1;
 int opt_voltage8 = 1;
+
+#else
+//for A4
+int opt_A1Pll1=1100; // -1 Default
+int opt_A1Pll2=1100; // -1 Default
+int opt_A1Pll3=1100; // -1 Default
+int opt_A1Pll4=1100; // -1 Default
+int opt_A1Pll5=1100; // -1 Default
+int opt_A1Pll6=1100; // -1 Default
+int opt_A1Pll7=1100; // -1 Default
+int opt_A1Pll8=1100; // -1 Defaul
+
+int opt_voltage1 = 20;
+int opt_voltage2 = 20;
+int opt_voltage3 = 20;
+int opt_voltage4 = 20;
+int opt_voltage5 = 20;
+int opt_voltage6 = 20;
+int opt_voltage7 = 20;
+int opt_voltage8 = 20;
+
+#endif
+
+
 
 
 char *opt_kernel_path;
@@ -1079,7 +1108,6 @@ static char *set_url(char *arg)
     {
         setup_url(pool, arg);
     }
-
     return NULL;
 }
 
@@ -1135,7 +1163,6 @@ static char *set_user(const char *arg)
     {
         opt_set_charp(arg, &pool->rpc_user);
     }
-
 
     return NULL;
 }

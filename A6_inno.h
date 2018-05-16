@@ -3,6 +3,8 @@
 
 #include "A6_inno_cmd.h"
 #include "A6_inno_fan.h"
+#include "A6_inno_clock.h"
+#include  "A6_inno_gpio.h"
 
 #define WEAK_CHIP_THRESHOLD 5
 #define BROKEN_CHIP_THRESHOLD 5

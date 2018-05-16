@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "dragonmint_t1.h"
+//#include "dragonmint_t1.h"
 
 #include "dm_temp_ctrl.h"
 #include "dm_fan_ctrl.h"

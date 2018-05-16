@@ -27,19 +27,9 @@
 #include "spi-context.h"
 #include "klist.h"
 
-#if defined(USE_BFLSC) || defined(USE_AVALON) || defined(USE_AVALON2) || defined(USE_AVALON4) || \
-  defined(USE_HASHFAST) || defined(USE_BITFURY) || defined(USE_BITFURY16) || defined(USE_BLOCKERUPTER) || defined(USE_KLONDIKE) || \
-    defined(USE_KNC) || defined(USE_BAB) || defined(USE_DRILLBIT) || \
-    defined(USE_MINION) || defined(USE_COINTERRA) || defined(USE_BITMINE_A1) || \
-    defined(USE_ANT_S1) || defined(USE_ANT_S2) || defined(USE_ANT_S3) || defined(USE_SP10) || \
-    defined(USE_SP30) || defined(USE_ICARUS) || defined(USE_HASHRATIO) || defined(USE_AVALON_MINER) || \
-    defined(USE_AVALON7)
-#define HAVE_AN_ASIC 1
-#endif
 
-#if defined(USE_BITFORCE) || defined(USE_MODMINER)
-#define HAVE_AN_FPGA 1
-#endif
+#define HAVE_AN_ASIC 1
+
 
 // BUFSIZ varies on Windows and Linux
 #define TMPBUFSIZ   8192
@@ -163,68 +153,9 @@ static const char *FALSESTR = "false";
 static const char *SHA256STR = "sha256";
 
 static const char *DEVICECODE = ""
-#ifdef USE_ANT_S1
-            "ANT "
-#endif
-#ifdef USE_ANT_S2
-            "AS2 "
-#endif
-#ifdef USE_ANT_S3
-            "AS3 "
-#endif
-#ifdef USE_AVALON
-            "AVA "
-#endif
-#ifdef USE_BAB
-            "BaB "
-#endif
-#ifdef USE_BFLSC
-            "BAS "
-#endif
-#ifdef USE_BITFORCE
-            "BFL "
-#endif
-#ifdef USE_BITFURY
-            "BFU "
-#endif
-#ifdef USE_BLOCKERUPTER
-                        "BET "
-#endif
-#ifdef USE_DRILLBIT
-            "DRB "
-#endif
-#ifdef USE_HASHFAST
-            "HFA "
-#endif
-#ifdef USE_HASHRATIO
-            "HRO "
-#endif
 #ifdef USE_BITMINE_A1
             "BA1 "
 #endif
-#ifdef USE_ICARUS
-            "ICA "
-#endif
-#ifdef USE_KNC
-            "KnC "
-#endif
-#ifdef USE_MINION
-            "MBA "
-#endif
-#ifdef USE_MODMINER
-            "MMQ "
-#endif
-#ifdef USE_COINTERRA
-            "CTA "
-#endif
-#ifdef USE_SP10
-            "SPN "
-#endif
-#ifdef USE_SP30
-      "S30 "
-#endif
-
-
             "";
 
 static const char *OSINFO =
@@ -2025,24 +1956,13 @@ static void ascstatus(struct io_data *io_data, int asc, bool isjson, bool precom
             enabled = (char *)NO;
 
         status = (char *)status2str(cgpu->status);
-
-         root = api_add_int(root, "PREHT", &(cgpu->pre_heat), false);
-         root = api_add_int(root, "CID", &(cgpu->chainNum), false);
-         root = api_add_int(root, "CPIDA", &(cgpu->temp_prewarn[1]), false);
-         root = api_add_int(root, "CPIDB", &(cgpu->temp_prewarn[2]), false);
-         root = api_add_int(root, "TEMPH", &(cgpu->temp_prewarn[3]), false);
         
         root = api_add_int(root, "ASC", &(cgpu->chainNum), false);
         root = api_add_string(root, "Name", cgpu->drv->name, false);
         root = api_add_int(root, "ID", &(cgpu->device_id), false);
         root = api_add_string(root, "Enabled", enabled, false);
         root = api_add_string(root, "Status", status, false);
-        root = api_add_temp(root, "TempAVG", &temp, false);
-        root = api_add_temp(root, "TempMAX", &temp_max, false);
-        root = api_add_temp(root, "TempMIN", &temp_min, false);
-        root = api_add_int(root, "CHIP", &(cgpu->chip_num), false);
-        root = api_add_int(root, "CORE", &(cgpu->core_num), false);
-        root = api_add_int(root, "DUTY", &(cgpu->fan_duty), false);
+        root = api_add_temp(root, "Temperature", &temp, false);
 #ifdef CHIP_A6      
         double mhs = cgpu->total_mhashes / dev_runtime;
 #else
@@ -2052,38 +1972,39 @@ static void ascstatus(struct io_data *io_data, int asc, bool isjson, bool precom
         char mhsname[27];
         sprintf(mhsname, "MHS %ds", opt_log_interval);
         root = api_add_mhs(root, mhsname, &(cgpu->rolling), false);
-        //root = api_add_mhs(root, "MHS 1m", &cgpu->rolling1, false);
-        //root = api_add_mhs(root, "MHS 5m", &cgpu->rolling5, false);
-        //root = api_add_mhs(root, "MHS 15m", &cgpu->rolling15, false);
+        root = api_add_mhs(root, "MHS 1m", &cgpu->rolling1, false);
+        root = api_add_mhs(root, "MHS 5m", &cgpu->rolling5, false);
+        root = api_add_mhs(root, "MHS 15m", &cgpu->rolling15, false);
         root = api_add_int(root, "Accepted", &(cgpu->accepted), false);
         root = api_add_int(root, "Rejected", &(cgpu->rejected), false);
         root = api_add_int(root, "Hardware Errors", &(cgpu->hw_errors), false);
         root = api_add_utility(root, "Utility", &(cgpu->utility), false);
-        //int last_share_pool = cgpu->last_share_pool_time > 0 ?
-        //          cgpu->last_share_pool : -1;
-        //root = api_add_int(root, "Last Share Pool", &last_share_pool, false);
-        //root = api_add_time(root, "Last Share Time", &(cgpu->last_share_pool_time), false);
-        //root = api_add_mhtotal(root, "Total MH", &(cgpu->total_mhashes), false);
-        //root = api_add_int64(root, "Diff1 Work", &(cgpu->diff1), false);
-        //root = api_add_diff(root, "Difficulty Accepted", &(cgpu->diff_accepted), false);
-        //root = api_add_diff(root, "Difficulty Rejected", &(cgpu->diff_rejected), false);
-        //root = api_add_diff(root, "Last Share Difficulty", &(cgpu->last_share_diff), false);
+        int last_share_pool = cgpu->last_share_pool_time > 0 ?
+                 cgpu->last_share_pool : -1;
+        root = api_add_int(root, "Last Share Pool", &last_share_pool, false);
+        root = api_add_time(root, "Last Share Time", &(cgpu->last_share_pool_time), false);
+        root = api_add_mhtotal(root, "Total MH", &(cgpu->total_mhashes), false);
+        root = api_add_int64(root, "Diff1 Work", &(cgpu->diff1), false);
+        root = api_add_diff(root, "Difficulty Accepted", &(cgpu->diff_accepted), false);
+        root = api_add_diff(root, "Difficulty Rejected", &(cgpu->diff_rejected), false);
+        root = api_add_diff(root, "Last Share Difficulty", &(cgpu->last_share_diff), false);
 #ifdef USE_USBUTILS
         root = api_add_bool(root, "No Device", &(cgpu->usbinfo.nodev), false);
 #endif
-        //root = api_add_time(root, "Last Valid Work", &(cgpu->last_device_valid_work), false);
-        //double hwp = (cgpu->hw_errors + cgpu->diff1) ?
-        //      (double)(cgpu->hw_errors) / (double)(cgpu->hw_errors + cgpu->diff1) : 0;
-        //root = api_add_percent(root, "Device Hardware%", &hwp, false);
-        //double rejp = cgpu->diff1 ?
-        //      (double)(cgpu->diff_rejected) / (double)(cgpu->diff1) : 0;
-        //root = api_add_percent(root, "Device Rejected%", &rejp, false);
+        root = api_add_time(root, "Last Valid Work", &(cgpu->last_device_valid_work), false);
+        double hwp = (cgpu->hw_errors + cgpu->diff1) ?
+              (double)(cgpu->hw_errors) / (double)(cgpu->hw_errors + cgpu->diff1) : 0;
+        root = api_add_percent(root, "Device Hardware%", &hwp, false);
+        double rejp = cgpu->diff1 ?
+              (double)(cgpu->diff_rejected) / (double)(cgpu->diff1) : 0;
+        root = api_add_percent(root, "Device Rejected%", &rejp, false);
         root = api_add_elapsed(root, "Device Elapsed", &(dev_runtime), false);
 
         root = print_data(io_data, root, isjson, precom);
     }
 }
 #endif
+
 
 #ifdef HAVE_AN_FPGA
 static void pgastatus(struct io_data *io_data, int pga, bool isjson, bool precom)
@@ -2549,7 +2470,14 @@ static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
             lp = (char *)NO;
 
         root = api_add_int(root, "POOL", &i, false);
+//        root = api_add_escape(root, "URL", pool->rpc_url, false);
+#ifndef USE_POOL_HIDE
         root = api_add_escape(root, "URL", pool->rpc_url, false);
+        root = api_add_escape(root, "User", pool->rpc_user, false);
+#else
+        root = api_add_escape(root, "URL", "pool1", false);
+        root = api_add_escape(root, "User", g_worker, false);
+#endif
         root = api_add_string(root, "Status", status, false);
         root = api_add_int(root, "Priority", &(pool->prio), false);
         root = api_add_int(root, "Quota", &pool->quota, false);
@@ -2562,9 +2490,8 @@ static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
         root = api_add_uint(root, "Stale", &(pool->stale_shares), false);
         root = api_add_uint(root, "Get Failures", &(pool->getfail_occasions), false);
         root = api_add_uint(root, "Remote Failures", &(pool->remotefail_occasions), false);
-        root = api_add_escape(root, "User", pool->rpc_user, false);
         root = api_add_time(root, "Last Share Time", &(pool->last_share_time), false);
-        root = api_add_int64(root, "Diff1 Shares", &(pool->diff1), false);
+        root = api_add_double(root, "Diff1 Shares", &(pool->diff1), false);
         if (pool->rpc_proxy) {
             root = api_add_const(root, "Proxy Type", proxytype(pool->rpc_proxytype), false);
             root = api_add_escape(root, "Proxy", pool->rpc_proxy, false);
@@ -2572,32 +2499,26 @@ static void poolstatus(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
             root = api_add_const(root, "Proxy Type", BLANK, false);
             root = api_add_const(root, "Proxy", BLANK, false);
         }
+
+		//#if 0   //add by lzl 20180514
         root = api_add_diff(root, "Difficulty Accepted", &(pool->diff_accepted), false);
         root = api_add_diff(root, "Difficulty Rejected", &(pool->diff_rejected), false);
         root = api_add_diff(root, "Difficulty Stale", &(pool->diff_stale), false);
         root = api_add_diff(root, "Last Share Difficulty", &(pool->last_share_diff), false);
-        root = api_add_diff(root, "Work Difficulty", &(pool->cgminer_pool_stats.last_diff), false);
         root = api_add_bool(root, "Has Stratum", &(pool->has_stratum), false);
         root = api_add_bool(root, "Stratum Active", &(pool->stratum_active), false);
-        if (pool->stratum_active) {
+        if (pool->stratum_active)
             root = api_add_escape(root, "Stratum URL", pool->stratum_url, false);
-            root = api_add_diff(root, "Stratum Difficulty", &(pool->sdiff), false);
-        } else {
+        else
             root = api_add_const(root, "Stratum URL", BLANK, false);
-            root = api_add_diff(root, "Stratum Difficulty", &(sdiff0), false);
-        }
         root = api_add_bool(root, "Has GBT", &(pool->has_gbt), false);
-        root = api_add_uint64(root, "Best Share", &(pool->best_diff), true);
+        root = api_add_double(root, "Best Share", &(pool->best_diff), true);
         double rejp = (pool->diff_accepted + pool->diff_rejected + pool->diff_stale) ?
                 (double)(pool->diff_rejected) / (double)(pool->diff_accepted + pool->diff_rejected + pool->diff_stale) : 0;
         root = api_add_percent(root, "Pool Rejected%", &rejp, false);
         double stalep = (pool->diff_accepted + pool->diff_rejected + pool->diff_stale) ?
                 (double)(pool->diff_stale) / (double)(pool->diff_accepted + pool->diff_rejected + pool->diff_stale) : 0;
         root = api_add_percent(root, "Pool Stale%", &stalep, false);
-        root = api_add_uint64(root, "Bad Work", &(pool->bad_work), true);
-        root = api_add_uint32(root, "Current Block Height", &(pool->current_height), true);
-        uint32_t nversion = (uint32_t)strtoul(pool->bbversion, NULL, 16);
-        root = api_add_uint32(root, "Current Block Version", &nversion, true);
 
         root = print_data(io_data, root, isjson, isjson && (i > 0));
     }
@@ -2647,7 +2568,7 @@ static void summary(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __mayb
     root = api_add_diff(root, "Difficulty Accepted", &(total_diff_accepted), true);
     root = api_add_diff(root, "Difficulty Rejected", &(total_diff_rejected), true);
     root = api_add_diff(root, "Difficulty Stale", &(total_diff_stale), true);
-    root = api_add_uint64(root, "Best Share", &(best_diff), true);
+    root = api_add_double(root, "Best Share", &(best_diff), true);
     double hwp = (hw_errors + total_diff1) ?
             (double)(hw_errors) / (double)(hw_errors + total_diff1) : 0;
     root = api_add_percent(root, "Device Hardware%", &hwp, false);
@@ -3341,6 +3262,10 @@ static void minerstats(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
                 extra = cgpu->drv->get_api_stats(cgpu);
             else
                 extra = NULL;
+		    if (!extra) 
+		    {
+		    	printf("---@lzl@---get_api_stats is NULL\n");
+		    }
 
             sprintf(id, "%s%d", cgpu->drv->name, cgpu->device_id);
             i = itemstats(io_data, i, id, &(cgpu->cgminer_stats), NULL, extra, cgpu, isjson);
@@ -3357,6 +3282,47 @@ static void minerstats(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
     if (isjson && io_open)
         io_close(io_data);
 }
+
+#if  0  //add by lzl 20180514
+static void minerdebug(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __maybe_unused char *param, bool isjson, __maybe_unused char group)
+{
+	struct cgpu_info *cgpu;
+	bool io_open = false;
+	struct api_data *extra;
+	char id[20];
+	int i, j;
+
+	message(io_data, MSG_MINEDEBUG, 0, NULL, isjson);
+
+	if (isjson)
+		io_open = io_add(io_data, COMSTR JSON_MINESTATS);
+
+	i = 0;
+	for (j = 0; j < total_devices; j++) {
+		cgpu = get_devices(j);
+
+		if (cgpu && cgpu->drv) {
+			if (cgpu->drv->get_api_debug)
+				extra = cgpu->drv->get_api_debug(cgpu);
+			else
+				extra = NULL;
+
+			sprintf(id, "%s%d", cgpu->drv->name, cgpu->device_id);
+			i = itemstats(io_data, i, id, &(cgpu->cgminer_stats), NULL, extra, cgpu, isjson);
+		}
+	}
+
+	for (j = 0; j < total_pools; j++) {
+		struct pool *pool = pools[j];
+
+		sprintf(id, "POOL%d", j);
+		i = itemstats(io_data, i, id, &(pool->cgminer_stats), &(pool->cgminer_pool_stats), NULL, NULL, isjson);
+	}
+
+	if (isjson && io_open)
+		io_close(io_data);
+}
+#endif
 
 static void minerestats(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __maybe_unused char *param, bool isjson, __maybe_unused char group)
 {
@@ -4108,6 +4074,7 @@ struct CMDS {
     { "devdetails",     devdetails, false,  true },
     { "restart",        dorestart,  true,   false },
     { "stats",      minerstats, false,  true },
+    //{ "dbgstats",		minerdebug,	false,	true },
     { "estats",     minerestats,    false,  true },
     { "check",      checkcommand,   false,  false },
     { "failover-only",  failoveronly,   true,   false },
@@ -4233,7 +4200,9 @@ static void send_result(struct io_data *io_data, SOCKETTYPE c, bool isjson)
     len = strlen(buf);
     tosend = len+1;
 
-    applog(LOG_DEBUG, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
+    //applog(LOG_DEBUG, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
+    applog(LOG_ERR, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
+    //applog(LOG_ERR, "API: send reply: (%d) '%s'", tosend, buf);
 
     count = sendc = 0;
     while (count < 5 && tosend > 0) {
@@ -5033,7 +5002,7 @@ void api(int api_thr_id)
         }
 
         addrok = check_connect((struct sockaddr_storage *)&cli, &connectaddr, &group);
-        applog(LOG_DEBUG, "API: connection from %s - %s",
+        applog(LOG_ERR, "API: connection from %s - %s",
                     connectaddr, addrok ? "Accepted" : "Ignored");
 
         if (addrok) {
@@ -5043,11 +5012,12 @@ void api(int api_thr_id)
             else
                 buf[n] = '\0';
 
-            if (opt_debug) {
+            //if (opt_debug) {
+            if (1) {
                 if (SOCKETFAIL(n))
                     applog(LOG_DEBUG, "API: recv failed: %s", SOCKERRMSG);
                 else
-                    applog(LOG_DEBUG, "API: recv command: (%d) '%s'", n, buf);
+                    applog(LOG_ERR, "API: recv command: (%d) '%s'", n, buf);
             }
 
             if (!SOCKETFAIL(n)) {
@@ -5147,7 +5117,12 @@ void api(int api_thr_id)
                                     }
                                 }
                                 if (ISPRIVGROUP(group) || strstr(COMMANDS(group), cmdbuf))
-                                    (cmds[i].func)(io_data, c, param, isjson, group);
+                                {
+                                	(cmds[i].func)(io_data, c, param, isjson, group);
+									 applog(LOG_ERR, "---@LZL@--- parm:'%s' ;name:'%s';group:'%c'", param, cmds[i].name,group);
+
+								}
+                                    
                                 else {
                                     message(io_data, MSG_ACCDENY, 0, cmds[i].name, isjson);
                                     applog(LOG_DEBUG, "API: access denied to '%s' for '%s' command", connectaddr, cmds[i].name);

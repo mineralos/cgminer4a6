@@ -30,7 +30,10 @@
 #include "A6_inno_gpio.h"
 
 #include "A6_inno_fan.h"
-#include "dm_fan_ctrl.h"
+//#include "dm_fan_ctrl.h"
+#include "dm_compat.h"
+//#include "dragonmint_t1.h"
+
 
 
 #define A6_FANSPEED_INIT	(100)
@@ -40,6 +43,9 @@
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
+//static volatile uint8_t g_debug_stats[MAX_CHAIN_NUM];
+
+
 
 #define TEMP_UPDATE_INT_MS	10000
 #define VOLTAGE_UPDATE_INT  120
@@ -212,9 +218,11 @@ struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
     if (a1->num_chips <= 0)
         goto failure;
 
+    /*
     applog(LOG_WARNING, "spidev%d.%d: %d: Found %d A1 chips",
            a1->spi_ctx->config.bus, a1->spi_ctx->config.cs_line,
            a1->chain_id, a1->num_chips);
+    */
 
     /* override max number of active chips if requested */
     a1->num_active_chips = a1->num_chips;
@@ -244,6 +252,7 @@ static bool init_A1_chain(struct A1_chain *a1)
     uint8_t src_reg[128];
     uint8_t reg[128];
 	int chain_id = a1->chain_id;
+    int num_chips = a1->num_chips;
 
     applog(LOG_INFO, "%d: A1 init chain", chain_id);
 
@@ -259,6 +268,10 @@ static bool init_A1_chain(struct A1_chain *a1)
     usleep(200);
 	
     a1->num_chips =  chain_detect(a1);
+	if (!a1->num_chips)
+	{
+		a1->num_chips = num_chips ;
+	}
     usleep(10000);
     
     if (a1->num_chips <= 0)
@@ -305,7 +318,7 @@ static bool init_A1_chain(struct A1_chain *a1)
 
     for (i = 0; i < a1->num_active_chips; i++)
     {
-        check_chip(a1, i);
+        check_chip(a1, i);//探测每个芯片的core数
         inno_fan_temp_add(&g_fan_ctrl, chain_id, i+1, a1->chips[i].temp);
     }
     chain_temp_update(&g_fan_ctrl, chain_id, g_type);
@@ -369,7 +382,7 @@ static void prepll_chip_temp(struct A1_chain *a1, int cid)
     memset(reg,0,sizeof(reg));
     for (i = a1->num_active_chips; i > 0; i--)
     {   
-        #if  0   //add by lzl 20180509
+        #if  1   //add by lzl 20180509
         if (!inno_cmd_read_reg(a1, i, reg))
 		#else
 		if(!mcompat_cmd_read_register(a1, i, reg,sizeof(reg)))
@@ -454,12 +467,20 @@ static bool detect_A1_chain(void)
     /*先将每条链的电都关掉*/
 	for(i = 0; i < ASIC_CHAIN_NUM; i++)
 	{
+	    spi[i] = spi_init(&cfg[i]);
+		if(spi[i] == NULL)
+		{
+			applog(LOG_ERR, "spi init fail");
+			return false;
+		}
     	mcompat_set_power_en(i, 0);
 		sleep(1);
 		mcompat_set_reset(i, 0);
 		sleep(1);
 		mcompat_set_start_en(i, 0);
 	    sleep(1);
+		spi[i]->disable = false;
+		
 		show_log[i] = 0;
 		update_cnt[i] = 0;
 		write_flag[i] = 0;
@@ -633,11 +654,12 @@ void A1_detect(bool hotplug)
   //  memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
 
     g_hwver = inno_get_hwver();
-    g_type = inno_get_miner_type();
+   // g_type = inno_get_miner_type();
+    g_type =INNO_TYPE_A6;
 
 	// FIXME: get correct hwver and chain num to init platform
 	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
-	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, 8, MAX_CHIP_NUM);
+	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T2, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
 	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
     
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
@@ -1084,6 +1106,154 @@ static void A1_get_statline_before(char *buf, size_t len, struct cgpu_info *cgpu
             a1->temp == 0 ? "   " : temp);
 }
 
+#if  0   //add by lzl 20180514
+static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
+{
+	struct A1_chain *a1 = cgpu->device_data;
+	int fan_speed = g_fan_cfg.fan_speed;
+	unsigned long long int chipmap = 0;
+	struct api_data *root = NULL;
+	bool fake;
+	int i;
+	char s[32];
+
+	ROOT_ADD_API(int, "Chain ID", a1->chain_id, false);
+	ROOT_ADD_API(int, "Num chips", a1->num_chips, false);
+	ROOT_ADD_API(int, "Num cores", a1->num_cores, false);
+	ROOT_ADD_API(int, "Num active chips", a1->num_active_chips, false);
+	ROOT_ADD_API(int, "Chain skew", a1->chain_skew, false);
+	ROOT_ADD_API(double, "Temp max", cgpu->temp_max, false);
+	ROOT_ADD_API(double, "Temp min", cgpu->temp_min, false);
+	ROOT_ADD_API(int, "Fan duty", fan_speed, true);
+	ROOT_ADD_API(int, "iVid", a1->iVid, false);
+	ROOT_ADD_API(int, "PLL", a1->pll, false);
+	ROOT_ADD_API(double, "Voltage Max", s_reg_ctrl.highest_vol[a1->chain_id], false);
+	ROOT_ADD_API(double, "Voltage Min", s_reg_ctrl.lowest_vol[a1->chain_id], false);
+	ROOT_ADD_API(double, "Voltage Avg", s_reg_ctrl.average_vol[a1->chain_id], false);
+	ROOT_ADD_API(bool, "VidOptimal", a1->VidOptimal, false);
+	ROOT_ADD_API(bool, "pllOptimal", a1->pllOptimal, false);
+	ROOT_ADD_API(int, "Chain num", cgpu->chainNum, false);
+	ROOT_ADD_API(double, "MHS av", cgpu->mhs_av, false);
+	ROOT_ADD_API(bool, "Disabled", a1->disabled, false);
+	fake = !!a1->throttled;
+	ROOT_ADD_API(bool, "Throttled", fake, true);
+	for (i = 0; i < a1->num_chips; i++) {
+		if (!a1->chips[i].disabled)
+			chipmap |= 1 << i;
+	}
+	sprintf(s, "%Lx", chipmap);
+	ROOT_ADD_API(string, "Enabled chips", s[0], true);
+	ROOT_ADD_API(double, "Temp", cgpu->temp, false);
+
+	for (i = 0; i < a1->num_chips; i++) {
+		sprintf(s, "%02d HW errors", i);
+		ROOT_ADD_API(int, s, a1->chips[i].hw_errors, true);
+		sprintf(s, "%02d Stales", i);
+		ROOT_ADD_API(int, s, a1->chips[i].stales, true);
+		sprintf(s, "%02d Duplicates", i);
+		ROOT_ADD_API(int, s, a1->chips[i].dupes, true);
+		sprintf(s, "%02d Nonces found", i);
+		ROOT_ADD_API(int, s, a1->chips[i].nonces_found, true);
+		sprintf(s, "%02d Nonce ranges", i);
+		ROOT_ADD_API(int, s, a1->chips[i].nonce_ranges_done, true);
+		sprintf(s, "%02d Cooldown", i);
+		ROOT_ADD_API(int, s, a1->chips[i].cooldown_begin, true);
+		sprintf(s, "%02d Fail count", i);
+		ROOT_ADD_API(int, s, a1->chips[i].fail_count, true);
+		sprintf(s, "%02d Fail reset", i);
+		ROOT_ADD_API(int, s, a1->chips[i].fail_reset, true);
+		sprintf(s, "%02d Temp", i);
+		ROOT_ADD_API(int, s, a1->chips[i].temp, true);
+		sprintf(s, "%02d nVol", i);
+		ROOT_ADD_API(int, s, a1->chips[i].nVol, true);
+	}
+	return root;
+}
+
+static struct api_data *A1_api_debug(struct cgpu_info *cgpu)
+{
+	struct A1_chain *a1 = cgpu->device_data;
+	int timeout = 1000;
+
+	g_debug_stats[a1->chain_id] = 1;
+
+	// Wait for g_debug_stats cleared or timeout
+	while (g_debug_stats[a1->chain_id] && timeout) {
+		timeout -= 10;
+		cgsleep_ms(10);
+	}
+
+	return A1_api_stats(cgpu);
+}
+#endif
+
+static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
+{
+    struct A1_chain *t1 = cgpu->device_data;
+    unsigned long long int chipmap = 0;
+    struct api_data *root = NULL;
+    char s[32];
+    int i;
+	
+    ROOT_ADD_API(int, "Chain ID", t1->chain_id, false);
+    ROOT_ADD_API(int, "Num chips", t1->num_chips, false);
+    ROOT_ADD_API(int, "Num cores", t1->num_cores, false);
+    ROOT_ADD_API(int, "Num active chips", t1->num_active_chips, false);
+    ROOT_ADD_API(int, "Chain skew", t1->chain_skew, false);
+    ROOT_ADD_API(double, "Temp max", cgpu->temp_max, false);
+    ROOT_ADD_API(double, "Temp min", cgpu->temp_min, false);
+   
+    ROOT_ADD_API(int, "Fan duty", cgpu->fan_duty, false);
+//	ROOT_ADD_API(bool, "FanOptimal", g_fan_ctrl.optimal, false);
+	ROOT_ADD_API(int, "iVid", t1->vid, false);
+    ROOT_ADD_API(int, "PLL", t1->pll, false);
+	ROOT_ADD_API(double, "Voltage Max", s_reg_ctrl.highest_vol[t1->chain_id], false);
+	ROOT_ADD_API(double, "Voltage Min", s_reg_ctrl.lowest_vol[t1->chain_id], false);
+	ROOT_ADD_API(double, "Voltage Avg", s_reg_ctrl.avarge_vol[t1->chain_id], false);
+//	ROOT_ADD_API(bool, "VidOptimal", t1->VidOptimal, false);
+//	ROOT_ADD_API(bool, "pllOptimal", t1->pllOptimal, false);
+	ROOT_ADD_API(bool, "VoltageBalanced", t1->voltagebalanced, false);
+	ROOT_ADD_API(int, "Chain num", cgpu->chainNum, false);
+	ROOT_ADD_API(double, "MHS av", cgpu->mhs_av, false);
+	ROOT_ADD_API(bool, "Disabled", t1->disabled, false);
+	for (i = 0; i < t1->num_chips; i++) {
+		if (!t1->chips[i].disabled)
+			chipmap |= 1 << i;
+	}
+	sprintf(s, "%Lx", chipmap);
+	ROOT_ADD_API(string, "Enabled chips", s[0], true);
+	ROOT_ADD_API(double, "Temp", cgpu->temp, false);
+
+	for (i = 0; i < t1->num_chips; i++) {
+		sprintf(s, "%02d HW errors", i);
+		ROOT_ADD_API(int, s, t1->chips[i].hw_errors, true);
+		sprintf(s, "%02d Stales", i);
+		ROOT_ADD_API(int, s, t1->chips[i].stales, true);
+		sprintf(s, "%02d Nonces found", i);
+		ROOT_ADD_API(int, s, t1->chips[i].nonces_found, true);
+		sprintf(s, "%02d Nonce ranges", i);
+		ROOT_ADD_API(int, s, t1->chips[i].nonce_ranges_done, true);
+		sprintf(s, "%02d Cooldown", i);
+		ROOT_ADD_API(int, s, t1->chips[i].cooldown_begin, true);
+		sprintf(s, "%02d Fail count", i);
+		ROOT_ADD_API(int, s, t1->chips[i].fail_count, true);
+		sprintf(s, "%02d Fail reset", i);
+		ROOT_ADD_API(int, s, t1->chips[i].fail_reset, true);
+		sprintf(s, "%02d Temp", i);
+		ROOT_ADD_API(int, s, t1->chips[i].temp, true);
+		sprintf(s, "%02d nVol", i);
+		ROOT_ADD_API(int, s, t1->chips[i].nVol, true);
+		sprintf(s, "%02d PLL", i);
+		ROOT_ADD_API(int, s, t1->chips[i].pll, true);
+		sprintf(s, "%02d pllOptimal", i);
+		ROOT_ADD_API(bool, s, t1->chips[i].pllOptimal, true);
+	}
+	return root;
+}
+
+
+
+
 struct device_drv bitmineA1_drv = {
     .drv_id = DRIVER_bitmineA1,
     .dname = "BitmineA1",
@@ -1095,4 +1265,6 @@ struct device_drv bitmineA1_drv = {
     .queue_full = A1_queue_full,
     .flush_work = A1_flush_work,
     .get_statline_before = A1_get_statline_before,
+    .get_api_stats = A1_api_stats,
+	//.get_api_debug = A1_api_debug,
 };

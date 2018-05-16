@@ -2,6 +2,7 @@
 #define _DM_COMPAT_H_
 
 #include "miner.h"
+#include "A6_inno_cmd.h"
 
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
@@ -302,7 +303,7 @@ void mcompat_watchdog_close(void);
 #define MCOMPAT_LIB_VID_I2C_TYPE                (3)
 #define MCOMPAT_LIB_VID_ERR_TYPE                (-1)
 
-#define REG_LENGTH      (12)
+//#define REG_LENGTH      (12)
 #define VID_MAX			(31)
 #define VID_MIN			(0)
 
@@ -432,9 +433,14 @@ extern bool mcompat_chain_power_down_all(void);
 #define MCOMPAT_CONFIG_MAX_CHIP_NUM                (80)
 #define MCOMPAT_CONFIG_MAX_JOB_LEN                 (92)
 #define MCOMPAT_CONFIG_MAX_CMD_LENGTH              (256)
+#define MAX_CHIP_NUM						(68)
+#define CMD_WRITE_REG0d                         (0x0d)
+
+
 
 #define MAGIC_NUM                               (100)
 
+#if  0  //add by lzl 20180510
 #define CMD_BIST_START                          (0x01)
 #define CMD_BIST_COLLECT                        (0x0b)
 #define CMD_BIST_FIX                            (0x03)
@@ -449,6 +455,7 @@ extern bool mcompat_chain_power_down_all(void);
 #define CMD_POWER_ON                            (0x02)
 #define CMD_POWER_OFF                           (0x06)
 #define CMD_POWER_RESET                         (0x0c)
+#endif
 
 #define RESP_READ_REG                           (0x1a)
 
@@ -456,6 +463,7 @@ extern bool mcompat_chain_power_down_all(void);
 #define CMD_HL                                  (2)
 #define CMD_RESET_DL                            (4)
 #define CMD_RESET_TL                            (CMD_HL + CMD_RESET_DL)
+
 
 
 #define ASIC_MCOMPAT_FAN_PWM_STEP            (5)
@@ -558,22 +566,22 @@ typedef struct ZYNQ_SPI_TAG{
 	pthread_mutex_t lock;
 }ZYNQ_SPI_T;
 
-void zynq_spi_init(ZYNQ_SPI_T *spi, int bus);
+//void zynq_spi_init(ZYNQ_SPI_T *spi, int bus);
 
-void zynq_spi_exit(ZYNQ_SPI_T *spi);
+//void zynq_spi_exit(ZYNQ_SPI_T *spi);
 
-void zynq_spi_read(ZYNQ_SPI_T *spi, uint8_t *rxbuf, int len);
+//void zynq_spi_read(ZYNQ_SPI_T *spi, uint8_t *rxbuf, int len);
 
-void zynq_spi_write(ZYNQ_SPI_T *spi, uint8_t *txbuf, int len);
+//void zynq_spi_write(ZYNQ_SPI_T *spi, uint8_t *txbuf, int len);
 
 
-void zynq_set_spi_speed(int speed);
+//void zynq_set_spi_speed(int speed);
 
 
 
 /* ZYNQ_VID */
 
-#define SYSFS_VID_DEV       ("/dev/vidgen0.0")
+//#define SYSFS_VID_DEV       ("/dev/vidgen0.0")
 
 #define IOCTL_SET_VAL_0     _IOR(MAGIC_NUM, 0, char *)
 #define IOCTL_SET_VALUE_0   _IOR(MAGIC_NUM, 0, char *)
@@ -1726,11 +1734,12 @@ void delay(unsigned int howLong);
 #define DEFAULT_SPI_BUS			1
 #define DEFAULT_SPI_CS_LINE		0
 #define DEFAULT_SPI_MODE		SPI_MODE_1
-#define DEFAULT_SPI_BITS_PER_WORD	16
+//#define DEFAULT_SPI_BITS_PER_WORD	16
 #define DEFAULT_SPI_SPEED		1500000
 #define DEFAULT_SPI_DELAY_USECS		0
 
 
+/*
 struct spi_config {
 	int bus;
 	int cs_line;
@@ -1739,17 +1748,8 @@ struct spi_config {
 	uint8_t bits;
 	uint16_t delay;
 };
+*/
 
-struct spi_ctx {
-	int fd;
-	int power_en;
-	int start_en;
-	int reset;
-	int led;
-	int plug;
-	int id;
-	struct spi_config config;
-};
 
 
 void opi_spi_init(void);

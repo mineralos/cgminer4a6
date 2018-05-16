@@ -129,7 +129,7 @@ cgminer_SOURCES += A5_inno_fan.c
 cgminer_SOURCES += scrypt.c
 endif
 
-if HAS_BITMINE_A6
+#if HAS_BITMINE_A6
 cgminer_SOURCES += driver-SPI-bitmine-A6.c
 cgminer_SOURCES += spi-context.c spi-context.h
 cgminer_SOURCES += A1-common.h
@@ -143,8 +143,14 @@ cgminer_SOURCES += A6_inno_cmd.c
 cgminer_SOURCES += A6_inno_clock.c
 cgminer_SOURCES += A6_inno_gpio.c
 cgminer_SOURCES += A6_inno_fan.c
-cgminer_SOURCES += scrypt.c
-endif
+cgminer_SOURCES += scrypt.c    scrypt.h
+#add by luozl for dm_cgminer4a6
+#cgminer_SOURCES += driver-SPI-dragonmint-t1.c
+cgminer_SOURCES += dm_compat.c   dm_compat.h
+#cgminer_SOURCES += dm_fan_ctrl.c   dm_fan_ctrl.h
+#cgminer_SOURCES += dm_temp_ctrl.c   dm_temp_ctrl.h
+#cgminer_SOURCES += dragonmint_t1.c   dragonmint_t1.h
+#endif
 
 if HAS_DRILLBIT
 cgminer_SOURCES += driver-drillbit.c driver-drillbit.h

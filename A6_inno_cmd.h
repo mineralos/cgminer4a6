@@ -33,6 +33,7 @@
 #define LEN_READ_RESULT     4
 #define LEN_WRITE_REG       18
 #define LEN_READ_REG        4
+#define NONCE_LEN           (6)
 
 
 #define SPI_REC_DATA_LOOP   10
@@ -91,6 +92,14 @@ struct A1_chip {
     /* temp */
     int temp;
     int nVol;
+
+	#if 1   //add by lzl 20180515
+	int tunedir; // Tune direction, +/- 1
+	int pll;
+	int cycles;
+	double product; // Hashrate product of cycles / time
+	bool pllOptimal; // We've stopped tuning frequency
+	#endif
 };
 
 struct A1_chain {
@@ -108,6 +117,20 @@ struct A1_chain {
     pthread_mutex_t lock;
 
     struct work_queue active_wq;
+
+	#if 1  //add by lzl 20180515
+	bool throttle; /* Needs throttling */
+	int cycles; /* Cycles used for iVid tuning */
+	int tunedir; // Tune direction, -1..+1
+	int pll; /* Current chain speed */
+	int base_pll; /* Initial chain speed */
+
+	int vid; /* Current actual iVid */
+	double product; // Hashrate product of cycles / time
+	bool VidOptimal; // We've stopped tuning voltage
+	bool pllOptimal; // We've stopped tuning frequency
+	bool voltagebalanced; // We've balanced voltage b/w chips
+	#endif
 
     /* mark chain disabled, do not try to re-enable it */
     bool disabled;

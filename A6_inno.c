@@ -15,6 +15,7 @@
 #include "A6_inno_clock.h"
 #include "A6_inno_gpio.h"
 #include "A6_inno_fan.h"
+#include "dm_compat.h"
 
 
 #define MUL_COEF 1.23
@@ -658,6 +659,7 @@ bool check_chip(struct A1_chain *a1, int i)
         //hexdump("check chip:", buffer, REG_LENGTH);
     }
 
+	//hexdump("check chip:", buffer, REG_LENGTH);
     a1->chips[i].num_cores = buffer[11];
     a1->num_cores += a1->chips[i].num_cores;
     applog(LOG_WARNING, "%d: Found chip %d with %d active cores",
@@ -805,26 +807,24 @@ int chain_detect(struct A1_chain *a1)
 	int cid = a1->chain_id;
 	uint8_t n_chips = mcompat_cmd_bist_start(cid, CMD_ADDR_BROADCAST);
 
-	if (unlikely(n_chips == 0 || n_chips > MAX_CHIP_NUM)){
-		write_miner_ageing_status(AGEING_BIST_START_FAILED);
+	//if (unlikely(n_chips == 0 || n_chips > MAX_CHIP_NUM)){
+	if (unlikely(n_chips == 0)){
+		//write_miner_ageing_status(AGEING_BIST_START_FAILED);
 		applog(LOG_ERR, "%d: detected %d chips", cid, n_chips);
-		return 0;
+		//return 0;
 	}
 
 	applog(LOG_WARNING, "%d: detected %d chips", cid, n_chips);
 
 	cgsleep_ms(10);
-/*
 	if (!mcompat_cmd_bist_collect(cid, CMD_ADDR_BROADCAST))
 	{
 		applog(LOG_WARNING, "bist collect fail");
 		return 0;
 	}
-*/
-
 	applog(LOG_WARNING, "collect core success");
-
 	return n_chips;
+	
 	#endif
 
 }

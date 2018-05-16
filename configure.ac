@@ -563,7 +563,7 @@ else
 	LIBUSB_LIBS=""
 fi
 
-djansson="no"
+djansson="yes"
 AC_ARG_WITH([system-jansson],
 	[AC_HELP_STRING([--with-system-jansson],[NOT RECOMMENDED! Compile against dynamic system jansson. (Default use included static jansson)])],
 	[djansson=$withval]
