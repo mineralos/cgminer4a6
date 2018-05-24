@@ -3262,10 +3262,6 @@ static void minerstats(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
                 extra = cgpu->drv->get_api_stats(cgpu);
             else
                 extra = NULL;
-		    if (!extra) 
-		    {
-		    	printf("---@lzl@---get_api_stats is NULL\n");
-		    }
 
             sprintf(id, "%s%d", cgpu->drv->name, cgpu->device_id);
             i = itemstats(io_data, i, id, &(cgpu->cgminer_stats), NULL, extra, cgpu, isjson);
@@ -4200,8 +4196,8 @@ static void send_result(struct io_data *io_data, SOCKETTYPE c, bool isjson)
     len = strlen(buf);
     tosend = len+1;
 
-    //applog(LOG_DEBUG, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
-    applog(LOG_ERR, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
+    applog(LOG_DEBUG, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
+    //applog(LOG_ERR, "API: send reply: (%d) '%.10s%s'", tosend, buf, len > 10 ? "..." : BLANK);
     //applog(LOG_ERR, "API: send reply: (%d) '%s'", tosend, buf);
 
     count = sendc = 0;
@@ -5119,7 +5115,7 @@ void api(int api_thr_id)
                                 if (ISPRIVGROUP(group) || strstr(COMMANDS(group), cmdbuf))
                                 {
                                 	(cmds[i].func)(io_data, c, param, isjson, group);
-									 applog(LOG_ERR, "---@LZL@--- parm:'%s' ;name:'%s';group:'%c'", param, cmds[i].name,group);
+									 //applog(LOG_ERR, "---@LZL@--- parm:'%s' ;name:'%s';group:'%c'", param, cmds[i].name,group);
 
 								}
                                     
