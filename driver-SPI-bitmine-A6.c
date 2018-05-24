@@ -31,7 +31,7 @@
 
 #include "A6_inno_fan.h"
 //#include "dm_fan_ctrl.h"
-#include "dm_compat.h"
+//#include "dm_compat.h"
 //#include "dragonmint_t1.h"
 
 
@@ -659,7 +659,7 @@ void A1_detect(bool hotplug)
 
 	// FIXME: get correct hwver and chain num to init platform
 	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
-	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T2, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
 	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
     
     memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));

@@ -146,7 +146,7 @@ cgminer_SOURCES += A6_inno_fan.c
 cgminer_SOURCES += scrypt.c    scrypt.h
 #add by luozl for dm_cgminer4a6
 #cgminer_SOURCES += driver-SPI-dragonmint-t1.c
-cgminer_SOURCES += dm_compat.c   dm_compat.h
+#cgminer_SOURCES += dm_compat.c   dm_compat.h
 #cgminer_SOURCES += dm_fan_ctrl.c   dm_fan_ctrl.h
 #cgminer_SOURCES += dm_temp_ctrl.c   dm_temp_ctrl.h
 #cgminer_SOURCES += dragonmint_t1.c   dragonmint_t1.h
