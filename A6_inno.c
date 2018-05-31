@@ -15,7 +15,6 @@
 #include "A6_inno_clock.h"
 #include "A6_inno_gpio.h"
 #include "A6_inno_fan.h"
-#include "dm_compat.h"
 
 
 #define MUL_COEF 1.23
@@ -427,7 +426,7 @@ bool is_chip_disabled(struct A1_chain *a1, uint8_t chip_id)
 /* check and disable chip, remember time */
 void disable_chip(struct A1_chain *a1, uint8_t chip_id)
 {
-    flush_spi(a1);
+    A6_flush_spi(a1);
     struct A1_chip *chip = &a1->chips[chip_id - 1];
     int cid = a1->chain_id;
     if (is_chip_disabled(a1, chip_id)) {
@@ -722,6 +721,7 @@ bool prechain_detect_yex(struct A1_chain *a1, int idxpll, int lastidx)
     return true;
 }
 
+#if  0   //add by lzl 20180531
 bool zynq_spi_exit(void)
 {
     int i;
@@ -741,6 +741,7 @@ bool zynq_spi_exit(void)
 
     return true;
 }
+#endif
 
 
 int inno_chain_power_down(struct A1_chain *a1)

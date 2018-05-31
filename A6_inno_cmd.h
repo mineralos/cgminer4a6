@@ -7,6 +7,7 @@
 #include "elist.h"
 
 
+#if  0   //add by lzl 20180531
 #define CMD_BIST_START      0x01
 #define CMD_BIST_COLLECT    0x0b
 #define CMD_BIST_FIX        0x03
@@ -21,6 +22,7 @@
 #define CMD_POWER_OFF       0x06
 #define CMD_POWER_RESET     0x0c
 #define CMD_READ_SEC_REG    0x0d
+#endif
 
 
 #define ADDR_BROADCAST      0x00
@@ -176,7 +178,7 @@ extern uint8_t inno_cmd_isBusy(struct A1_chain *pChain, uint8_t chip_id);
 
 extern uint32_t inno_cmd_test_chip(struct A1_chain *pChain);
 
-void flush_spi(struct A1_chain *pChain);
+void A6_flush_spi(struct A1_chain *pChain);
 void hexdump_error(char *prefix, uint8_t *buff, int len);
 void hexdump(char *prefix, uint8_t *buff, int len);
 

@@ -2,6 +2,7 @@
 #define _A6_INNO_
 
 #include "mcompat_drv.h"
+#include "mcompat_lib.h"
 #include "A6_inno_cmd.h"
 #include "A6_inno_fan.h"
 #include "A6_inno_clock.h"

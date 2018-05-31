@@ -77,7 +77,7 @@ void hexdump_error(char *prefix, uint8_t *buff, int len)
     applog_hexdump(prefix, buff, len, LOG_ERR);
 }
 
-void flush_spi(struct A1_chain *pChain)
+void A6_flush_spi(struct A1_chain *pChain)
 {
     uint8_t spi_tx[MAX_CMD_LENGTH];
     uint8_t spi_rx[MAX_CMD_LENGTH];
@@ -114,6 +114,7 @@ bool spi_send_zero(struct spi_ctx *ctx, uint8_t *txbuf, int len)
 }
 
 
+#if  0  //add by lzl 20180531
 bool spi_send_data(struct spi_ctx *ctx, uint8_t *txbuf, int len)
 {
 	bool ret;
@@ -214,6 +215,7 @@ bool spi_poll_result(struct A1_chain *pChain, uint8_t cmd, uint8_t chip_id, uint
 	
 	return false;
 }
+#endif
 
 bool inno_cmd_resetbist(struct A1_chain *pChain, uint8_t chip_id)
 {
