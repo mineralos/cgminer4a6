@@ -393,7 +393,7 @@ static void prepll_chip_temp(struct A1_chain *a1, int cid)
         }
 
         temp = 0x000003ff & ((reg[7] << 8) | reg[8]);
-		applog(LOG_INFO,"cid %d,chip %d,temp %d",cid, i, temp);
+		//applog(LOG_INFO,"cid %d,chip %d,temp %d",cid, i, temp);
         inno_fan_temp_add(&g_fan_ctrl, cid, i, temp);
     }
 

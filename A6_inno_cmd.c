@@ -497,8 +497,8 @@ bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 
     return true;
 	#else
-	return  mcompat_cmd_write_register(pChain->chain_id, chip_id, reg, REG_LENGTH);
-	
+	//return  mcompat_cmd_write_register(pChain->chain_id, chip_id, reg, REG_LENGTH);
+	return  mcompat_cmd_write_register(pChain->chain_id, chip_id, reg, (REG_LENGTH - 2));
 	#endif
 }
 
