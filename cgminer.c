@@ -5282,7 +5282,7 @@ void restart_threads(void)
     pthread_t rthread;
 
     cgtime(&restart_tv_start);
-    if (unlikely(pthread_create(&rthread, NULL, restart_thread, NULL)))
+    if (unlikely(pthread_create(&rthread, NULL,     restart_thread, NULL)))
         quithere(1, "Failed to create restart thread errno=%d", errno);
 }
 
@@ -10182,531 +10182,515 @@ static void initialise_usb(void) {
 
 int main(int argc, char *argv[])
 {
-    struct sigaction handler;
-    struct work *work = NULL;
-    bool pool_msg = false;
-    struct thr_info *thr;
-    struct block *block;
-    int i, j, slept = 0;
-    unsigned int k;
-    char *s;
-
-    /* This dangerous functions tramples random dynamically allocated
-     * variables so do it before anything at all */
-    if (unlikely(curl_global_init(CURL_GLOBAL_ALL)))
-        early_quit(1, "Failed to curl_global_init");
-
+        struct sigaction handler;
+        struct work *work = NULL;
+        bool pool_msg = false;
+        struct thr_info *thr;
+        struct block *block;
+        int i, j, slept = 0;
+        unsigned int k;
+        char *s;
+    
+        /* This dangerous functions tramples random dynamically allocated
+         * variables so do it before anything at all */
+        if (unlikely(curl_global_init(CURL_GLOBAL_ALL)))
+            early_quit(1, "Failed to curl_global_init");
+    
 #ifdef USE_LIBSYSTEMD
-    sd_notify(false, "STATUS=Starting up...");
+        sd_notify(false, "STATUS=Starting up...");
 #endif
-
+    
 # ifdef __linux
-    /* If we're on a small lowspec platform with only one CPU, we should
-     * yield after dropping a lock to allow a thread waiting for it to be
-     * able to get CPU time to grab the lock. */
-    if (sysconf(_SC_NPROCESSORS_ONLN) == 1)
-        selective_yield = &sched_yield;
+        /* If we're on a small lowspec platform with only one CPU, we should
+         * yield after dropping a lock to allow a thread waiting for it to be
+         * able to get CPU time to grab the lock. */
+        if (sysconf(_SC_NPROCESSORS_ONLN) == 1)
+            selective_yield = &sched_yield;
 #endif
-
+    
 #if LOCK_TRACKING
-    // Must be first
-    if (unlikely(pthread_mutex_init(&lockstat_lock, NULL)))
-        quithere(1, "Failed to pthread_mutex_init lockstat_lock errno=%d", errno);
+        // Must be first
+        if (unlikely(pthread_mutex_init(&lockstat_lock, NULL)))
+            quithere(1, "Failed to pthread_mutex_init lockstat_lock errno=%d", errno);
 #endif
-
-    initial_args = cgmalloc(sizeof(char *) * (argc + 1));
-    for  (i = 0; i < argc; i++)
-        initial_args[i] = strdup(argv[i]);
-    initial_args[argc] = NULL;
-
-    mutex_init(&hash_lock);
-    mutex_init(&console_lock);
-    cglock_init(&control_lock);
-    mutex_init(&stats_lock);
-    mutex_init(&sharelog_lock);
-    cglock_init(&ch_lock);
-    mutex_init(&sshare_lock);
-    rwlock_init(&blk_lock);
-    rwlock_init(&netacc_lock);
-    rwlock_init(&mining_thr_lock);
-    rwlock_init(&devices_lock);
-
-    mutex_init(&lp_lock);
-    if (unlikely(pthread_cond_init(&lp_cond, NULL)))
-        early_quit(1, "Failed to pthread_cond_init lp_cond");
-
-    mutex_init(&restart_lock);
-    if (unlikely(pthread_cond_init(&restart_cond, NULL)))
-        early_quit(1, "Failed to pthread_cond_init restart_cond");
-
-    if (unlikely(pthread_cond_init(&gws_cond, NULL)))
-        early_quit(1, "Failed to pthread_cond_init gws_cond");
-
-    /* Create a unique get work queue */
-    getq = tq_new();
-    if (!getq)
-        early_quit(1, "Failed to create getq");
-    /* We use the getq mutex as the staged lock */
-    stgd_lock = &getq->mutex;
-
-    initialise_usb();
-
-    snprintf(packagename, sizeof(packagename), "%s %s", PACKAGE, VERSION);
-
-    handler.sa_handler = &sighandler;
-    handler.sa_flags = 0;
-    sigemptyset(&handler.sa_mask);
-    sigaction(SIGTERM, &handler, &termhandler);
-    sigaction(SIGINT, &handler, &inthandler);
-    sigaction(SIGABRT, &handler, &abrthandler);
+    
+        initial_args = cgmalloc(sizeof(char *) * (argc + 1));
+        for  (i = 0; i < argc; i++)
+            initial_args[i] = strdup(argv[i]);
+        initial_args[argc] = NULL;
+    
+        mutex_init(&hash_lock);
+        mutex_init(&console_lock);
+        cglock_init(&control_lock);
+        mutex_init(&stats_lock);
+        mutex_init(&sharelog_lock);
+        cglock_init(&ch_lock);
+        mutex_init(&sshare_lock);
+        rwlock_init(&blk_lock);
+        rwlock_init(&netacc_lock);
+        rwlock_init(&mining_thr_lock);
+        rwlock_init(&devices_lock);
+    
+        mutex_init(&lp_lock);
+        if (unlikely(pthread_cond_init(&lp_cond, NULL)))
+            early_quit(1, "Failed to pthread_cond_init lp_cond");
+    
+        mutex_init(&restart_lock);
+        if (unlikely(pthread_cond_init(&restart_cond, NULL)))
+            early_quit(1, "Failed to pthread_cond_init restart_cond");
+    
+        if (unlikely(pthread_cond_init(&gws_cond, NULL)))
+            early_quit(1, "Failed to pthread_cond_init gws_cond");
+    
+        /* Create a unique get work queue */
+        getq = tq_new();
+        if (!getq)
+            early_quit(1, "Failed to create getq");
+        /* We use the getq mutex as the staged lock */
+        stgd_lock = &getq->mutex;
+    
+        initialise_usb();
+    
+        snprintf(packagename, sizeof(packagename), "%s %s", PACKAGE, VERSION);
+    
+        handler.sa_handler = &sighandler;
+        handler.sa_flags = 0;
+        sigemptyset(&handler.sa_mask);
+        sigaction(SIGTERM, &handler, &termhandler);
+        sigaction(SIGINT, &handler, &inthandler);
+        sigaction(SIGABRT, &handler, &abrthandler);
 #ifndef WIN32
-    signal(SIGPIPE, SIG_IGN);
+        signal(SIGPIPE, SIG_IGN);
 #else
-    timeBeginPeriod(1);
+        timeBeginPeriod(1);
 #endif
-    opt_kernel_path = alloca(PATH_MAX);
-    strcpy(opt_kernel_path, CGMINER_PREFIX);
-    cgminer_path = alloca(PATH_MAX);
-    s = strdup(argv[0]);
-    strcpy(cgminer_path, dirname(s));
-    free(s);
-    strcat(cgminer_path, "/");
-
-    devcursor = 8;
-    logstart = devcursor + 1;
-    logcursor = logstart + 1;
-
-    block = cgcalloc(sizeof(struct block), 1);
-    for (i = 0; i < 36; i++)
-        strcat(block->hash, "0");
-    HASH_ADD_STR(blocks, hash, block);
-    strcpy(current_hash, block->hash);
-
-    INIT_LIST_HEAD(&scan_devices);
-
-    /* parse command line */
-    opt_register_table(opt_config_table,
-               "Options for both config file and command line");
-    opt_register_table(opt_cmdline_table,
-               "Options for command line only");
-
-    opt_parse(&argc, argv, applog_and_exit);
-    if (argc != 1)
-        early_quit(1, "Unexpected extra commandline arguments");
-
-    if (!config_loaded)
-        load_default_config();
-
-    if (opt_benchmark || opt_benchfile) {
-        struct pool *pool;
-
-        pool = add_pool();
-        pool->rpc_url = cgmalloc(255);
-        if (opt_benchfile)
-            strcpy(pool->rpc_url, "Benchfile");
-        else
-            strcpy(pool->rpc_url, "Benchmark");
-        pool->rpc_user = pool->rpc_url;
-        pool->rpc_pass = pool->rpc_url;
-        pool->rpc_userpass = pool->rpc_url;
-        pool->sockaddr_url = pool->rpc_url;
-        strncpy(pool->diff, "?", sizeof(pool->diff)-1);
-        pool->diff[sizeof(pool->diff)-1] = '\0';
-        enable_pool(pool);
-        pool->idle = false;
-        successful_connect = true;
-
-        for (i = 0; i < 16; i++) {
-            hex2bin(&bench_hidiff_bins[i][0], &bench_hidiffs[i][0], 160);
-            hex2bin(&bench_lodiff_bins[i][0], &bench_lodiffs[i][0], 160);
+        opt_kernel_path = alloca(PATH_MAX);
+        strcpy(opt_kernel_path, CGMINER_PREFIX);
+        cgminer_path = alloca(PATH_MAX);
+        s = strdup(argv[0]);
+        strcpy(cgminer_path, dirname(s));
+        free(s);
+        strcat(cgminer_path, "/");
+    
+        devcursor = 8;
+        logstart = devcursor + 1;
+        logcursor = logstart + 1;
+    
+        block = cgcalloc(sizeof(struct block), 1);
+        for (i = 0; i < 36; i++)
+            strcat(block->hash, "0");
+        HASH_ADD_STR(blocks, hash, block);
+        strcpy(current_hash, block->hash);
+    
+        INIT_LIST_HEAD(&scan_devices);
+    
+        /* parse command line */
+        opt_register_table(opt_config_table,
+                   "Options for both config file and command line");
+        opt_register_table(opt_cmdline_table,
+                   "Options for command line only");
+    
+        opt_parse(&argc, argv, applog_and_exit);
+        if (argc != 1)
+            early_quit(1, "Unexpected extra commandline arguments");
+    
+        if (!config_loaded)
+            load_default_config();
+    
+        if (opt_benchmark || opt_benchfile) {
+            struct pool *pool;
+    
+            pool = add_pool();
+            pool->rpc_url = cgmalloc(255);
+            if (opt_benchfile)
+                strcpy(pool->rpc_url, "Benchfile");
+            else
+                strcpy(pool->rpc_url, "Benchmark");
+            pool->rpc_user = pool->rpc_url;
+            pool->rpc_pass = pool->rpc_url;
+            pool->rpc_userpass = pool->rpc_url;
+            pool->sockaddr_url = pool->rpc_url;
+            strncpy(pool->diff, "?", sizeof(pool->diff)-1);
+            pool->diff[sizeof(pool->diff)-1] = '\0';
+            enable_pool(pool);
+            pool->idle = false;
+            successful_connect = true;
+    
+            for (i = 0; i < 16; i++) {
+                hex2bin(&bench_hidiff_bins[i][0], &bench_hidiffs[i][0], 160);
+                hex2bin(&bench_lodiff_bins[i][0], &bench_lodiffs[i][0], 160);
+            }
+            set_target(bench_target, 32);
         }
-        set_target(bench_target, 32);
-    }
-
+    
 #ifdef HAVE_CURSES
-    if (opt_realquiet || opt_display_devs || opt_decode)
-        use_curses = false;
-
-    if (use_curses)
-        enable_curses();
+        if (opt_realquiet || opt_display_devs || opt_decode)
+            use_curses = false;
+    
+        if (use_curses)
+            enable_curses();
 #endif
-
-    applog(LOG_WARNING, "Started %s", packagename);
-    if (cnfbuf) {
-        applog(LOG_NOTICE, "Loaded configuration file %s", cnfbuf);
-        switch (fileconf_load) {
-            case 0:
-                applog(LOG_WARNING, "Fatal JSON error in configuration file.");
-                applog(LOG_WARNING, "Configuration file could not be used.");
-                break;
-            case -1:
-                applog(LOG_WARNING, "Error in configuration file, partially loaded.");
-                if (use_curses)
-                    applog(LOG_WARNING, "Start cgminer with -T to see what failed to load.");
-                break;
-            default:
-                break;
+    
+        applog(LOG_WARNING, "Started %s", packagename);
+        if (cnfbuf) {
+            applog(LOG_NOTICE, "Loaded configuration file %s", cnfbuf);
+            switch (fileconf_load) {
+                case 0:
+                    applog(LOG_WARNING, "Fatal JSON error in configuration file.");
+                    applog(LOG_WARNING, "Configuration file could not be used.");
+                    break;
+                case -1:
+                    applog(LOG_WARNING, "Error in configuration file, partially loaded.");
+                    if (use_curses)
+                        applog(LOG_WARNING, "Start cgminer with -T to see what failed to load.");
+                    break;
+                default:
+                    break;
+            }
+            free(cnfbuf);
+            cnfbuf = NULL;
         }
-        free(cnfbuf);
-        cnfbuf = NULL;
-    }
-
-    strcat(opt_kernel_path, "/");
-
-    if (want_per_device_stats)
-        opt_log_output = true;
-
+    
+        strcat(opt_kernel_path, "/");
+    
+        if (want_per_device_stats)
+            opt_log_output = true;
+    
 #ifdef HAVE_SYSLOG_H
-    if (opt_log_output)
-        setlogmask(LOG_UPTO(LOG_DEBUG));
-    else
-        setlogmask(LOG_UPTO(LOG_NOTICE));
+        if (opt_log_output)
+            setlogmask(LOG_UPTO(LOG_DEBUG));
+        else
+            setlogmask(LOG_UPTO(LOG_NOTICE));
 #endif
-
-    total_control_threads = 8;
-    control_thr = cgcalloc(total_control_threads, sizeof(*thr));
-
-    gwsched_thr_id = 0;
-
+    
+        total_control_threads = 8;
+        control_thr = cgcalloc(total_control_threads, sizeof(*thr));
+    
+        gwsched_thr_id = 0;
+    
 #ifdef USE_USBUTILS
-    usb_initialise();
-
-    // before device detection
-    cgsem_init(&usb_resource_sem);
-    usbres_thr_id = 1;
-    thr = &control_thr[usbres_thr_id];
-    if (thr_info_create(thr, NULL, usb_resource_thread, thr))
-        early_quit(1, "usb resource thread create failed");
-    pthread_detach(thr->pth);
+        usb_initialise();
+    
+        // before device detection
+        cgsem_init(&usb_resource_sem);
+        usbres_thr_id = 1;
+        thr = &control_thr[usbres_thr_id];
+        if (thr_info_create(thr, NULL, usb_resource_thread, thr))
+            early_quit(1, "usb resource thread create failed");
+        pthread_detach(thr->pth);
 #endif
-
-    /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
-    DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
-
-    /* Use the DRIVER_PARSE_COMMANDS macro to detect all devices */
-    DRIVER_PARSE_COMMANDS(DRIVER_DRV_DETECT_ALL)
-
-    if (opt_display_devs) {
-        applog(LOG_ERR, "Devices detected:");
+    
+        /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
+        DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
+    
+        if (!total_pools) {
+            applog(LOG_WARNING, "Need to specify at least one pool server.");
+#ifdef HAVE_CURSES
+            if (!use_curses || !input_pool(false))
+#endif
+                early_quit(1, "Pool setup failed");
+        }
+    
+        for (i = 0; i < total_pools; i++) {
+            struct pool *pool = pools[i];
+            size_t siz;
+    
+            pool->cgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
+            pool->cgminer_pool_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
+    
+            if (!pool->rpc_userpass) {
+                if (!pool->rpc_pass)
+                    pool->rpc_pass = strdup("");
+                if (!pool->rpc_user)
+                    early_quit(1, "No login credentials supplied for pool %u %s", i, pool->rpc_url);
+                siz = strlen(pool->rpc_user) + strlen(pool->rpc_pass) + 2;
+                pool->rpc_userpass = cgmalloc(siz);
+                snprintf(pool->rpc_userpass, siz, "%s:%s", pool->rpc_user, pool->rpc_pass);
+            }
+        }
+        /* Set the currentpool to pool 0 */
+        currentpool = pools[0];
+    
+#ifdef HAVE_SYSLOG_H
+        if (use_syslog)
+            openlog(PACKAGE, LOG_PID, LOG_USER);
+#endif
+    
+	#if defined(unix) || defined(__APPLE__)
+            if (opt_stderr_cmd)
+                fork_monitor();
+	#endif // defined(unix)
+    
+        if (opt_benchmark || opt_benchfile)
+            goto begin_bench;
+    
+        for (i = 0; i < total_pools; i++) {
+            struct pool *pool  = pools[i];
+    
+            enable_pool(pool);
+            pool->idle = true;
+        }
+    
+        /* Look for at least one active pool before starting */
+        applog(LOG_NOTICE, "Probing for an alive pool");
+        probe_pools();
+        do {
+            sleep(1);
+            slept++;
+        } while (!pools_active && slept < 60);
+    
+        while (!pools_active) {
+            if (!pool_msg) {
+                applog(LOG_ERR, "No servers were found that could be used to get work from.");
+                applog(LOG_ERR, "Please check the details from the list below of the servers you have input");
+                applog(LOG_ERR, "Most likely you have input the wrong URL, forgotten to add a port, or have not set up workers");
+                for (i = 0; i < total_pools; i++) {
+                    struct pool *pool = pools[i];
+    
+                    applog(LOG_WARNING, "Pool: %d  URL: %s  User: %s  Password: %s",
+                    i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
+                }
+                pool_msg = true;
+                if (use_curses)
+                    applog(LOG_ERR, "Press any key to exit, or cgminer will wait indefinitely for an alive pool.");
+            }
+            if (!use_curses)
+                early_quit(0, "No servers could be used! Exiting.");
+#ifdef HAVE_CURSES
+            touchwin(logwin);
+            wrefresh(logwin);
+            halfdelay(10);
+            if (getch() != ERR)
+                early_quit(0, "No servers could be used! Exiting.");
+            cbreak();
+#endif
+        };
+    
+    begin_bench:
+        /* Use the DRIVER_PARSE_COMMANDS macro to detect all devices */
+        DRIVER_PARSE_COMMANDS(DRIVER_DRV_DETECT_ALL)
+    
+        if (opt_display_devs) {
+            applog(LOG_ERR, "Devices detected:");
+            for (i = 0; i < total_devices; ++i) {
+                struct cgpu_info *cgpu = devices[i];
+                if (cgpu->name)
+                    applog(LOG_ERR, " %2d. %s %d: %s (driver: %s)", i, cgpu->drv->name, cgpu->device_id, cgpu->name, cgpu->drv->dname);
+                else
+                    applog(LOG_ERR, " %2d. %s %d (driver: %s)", i, cgpu->drv->name, cgpu->device_id, cgpu->drv->dname);
+            }
+            early_quit(0, "%d devices listed", total_devices);
+        }
+    
+        mining_threads = 0;
+        for (i = 0; i < total_devices; ++i)
+            enable_device(devices[i]);
+    
+        mining_thr = cgcalloc(mining_threads, sizeof(thr));
+        for (i = 0; i < mining_threads; i++)
+            mining_thr[i] = cgcalloc(1, sizeof(*thr));
+    
+    
+        if (!opt_decode) {
+#ifdef USE_USBUTILS
+            if (!total_devices) {
+                applog(LOG_WARNING, "No devices detected!");
+                applog(LOG_WARNING, "Waiting for USB hotplug devices or press q to quit");
+            }
+#else
+            if (!total_devices)
+                early_quit(1, "All devices disabled, cannot mine!");
+#endif
+        }
+    
+        most_devices = total_devices;
+    
+        load_temp_cutoffs();
+    
+        for (i = 0; i < total_devices; ++i)
+            devices[i]->cgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
+    
+        if (!opt_compact) {
+            logstart += most_devices;
+            logcursor = logstart + 1;
+#ifdef HAVE_CURSES
+            check_winsizes();
+#endif
+        }
+    
+        // Start threads
+        k = 0;
         for (i = 0; i < total_devices; ++i) {
             struct cgpu_info *cgpu = devices[i];
-            if (cgpu->name)
-                applog(LOG_ERR, " %2d. %s %d: %s (driver: %s)", i, cgpu->drv->name, cgpu->device_id, cgpu->name, cgpu->drv->dname);
-            else
-                applog(LOG_ERR, " %2d. %s %d (driver: %s)", i, cgpu->drv->name, cgpu->device_id, cgpu->drv->dname);
-        }
-        early_quit(0, "%d devices listed", total_devices);
-    }
-
-    mining_threads = 0;
-    for (i = 0; i < total_devices; ++i)
-        enable_device(devices[i]);
-
-    if (!opt_decode) {
-#ifdef USE_USBUTILS
-        if (!total_devices) {
-            applog(LOG_WARNING, "No devices detected!");
-            applog(LOG_WARNING, "Waiting for USB hotplug devices or press q to quit");
-        }
-#else
-        if (!total_devices)
-            early_quit(1, "All devices disabled, cannot mine!");
-#endif
-    }
-
-    most_devices = total_devices;
-
-    load_temp_cutoffs();
-
-    for (i = 0; i < total_devices; ++i)
-        devices[i]->cgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-
-    if (!opt_compact) {
-        logstart += most_devices;
-        logcursor = logstart + 1;
-#ifdef HAVE_CURSES
-        check_winsizes();
-#endif
-    }
-
-    if (!total_pools) {
-        applog(LOG_WARNING, "Need to specify at least one pool server.");
-#ifdef HAVE_CURSES
-        if (!use_curses || !input_pool(false))
-#endif
-            early_quit(1, "Pool setup failed");
-    }
-
-    for (i = 0; i < total_pools; i++) {
-        struct pool *pool = pools[i];
-        size_t siz;
-
-        pool->cgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-        pool->cgminer_pool_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-
-        if (!pool->rpc_userpass) {
-            if (!pool->rpc_pass)
-                pool->rpc_pass = strdup("");
-            if (!pool->rpc_user)
-                early_quit(1, "No login credentials supplied for pool %u %s", i, pool->rpc_url);
-            siz = strlen(pool->rpc_user) + strlen(pool->rpc_pass) + 2;
-            pool->rpc_userpass = cgmalloc(siz);
-            snprintf(pool->rpc_userpass, siz, "%s:%s", pool->rpc_user, pool->rpc_pass);
-        }
-    }
-    /* Set the currentpool to pool 0 */
-    currentpool = pools[0];
-
-#ifdef HAVE_SYSLOG_H
-    if (use_syslog)
-        openlog(PACKAGE, LOG_PID, LOG_USER);
-#endif
-
-    #if defined(unix) || defined(__APPLE__)
-        if (opt_stderr_cmd)
-            fork_monitor();
-    #endif // defined(unix)
-
-    mining_thr = cgcalloc(mining_threads, sizeof(thr));
-    for (i = 0; i < mining_threads; i++)
-        mining_thr[i] = cgcalloc(1, sizeof(*thr));
-
-    // Start threads
-    k = 0;
-    for (i = 0; i < total_devices; ++i) {
-        struct cgpu_info *cgpu = devices[i];
-        cgpu->thr = cgmalloc(sizeof(*cgpu->thr) * (cgpu->threads+1));
-        cgpu->thr[cgpu->threads] = NULL;
-        cgpu->status = LIFE_INIT;
-
-        for (j = 0; j < cgpu->threads; ++j, ++k) {
-            thr = get_thread(k);
-            thr->id = k;
-            thr->cgpu = cgpu;
-            thr->device_thread = j;
-
-            if (!cgpu->drv->thread_prepare(thr))
-                continue;
-
-            if (unlikely(thr_info_create(thr, NULL, miner_thread, thr)))
-                early_quit(1, "thread %d create failed", thr->id);
-
-            cgpu->thr[j] = thr;
-
-            /* Enable threads for devices set not to mine but disable
-             * their queue in case we wish to enable them later */
-            if (cgpu->deven != DEV_DISABLED) {
-                applog(LOG_DEBUG, "Pushing sem post to thread %d", thr->id);
-                cgsem_post(&thr->sem);
+            cgpu->thr = cgmalloc(sizeof(*cgpu->thr) * (cgpu->threads+1));
+            cgpu->thr[cgpu->threads] = NULL;
+            cgpu->status = LIFE_INIT;
+    
+            for (j = 0; j < cgpu->threads; ++j, ++k) {
+                thr = get_thread(k);
+                thr->id = k;
+                thr->cgpu = cgpu;
+                thr->device_thread = j;
+    
+                if (!cgpu->drv->thread_prepare(thr))
+                    continue;
+    
+                if (unlikely(thr_info_create(thr, NULL, miner_thread, thr)))
+                    early_quit(1, "thread %d create failed", thr->id);
+    
+                cgpu->thr[j] = thr;
+    
+                /* Enable threads for devices set not to mine but disable
+                 * their queue in case we wish to enable them later */
+                if (cgpu->deven != DEV_DISABLED) {
+                    applog(LOG_DEBUG, "Pushing sem post to thread %d", thr->id);
+                    cgsem_post(&thr->sem);
+                }
             }
         }
-    }
-
-    if (opt_benchmark || opt_benchfile)
-        goto begin_bench;
-
-    for (i = 0; i < total_pools; i++) {
-        struct pool *pool  = pools[i];
-
-        enable_pool(pool);
-        pool->idle = true;
-    }
-
-    /* Look for at least one active pool before starting */
-    applog(LOG_NOTICE, "Probing for an alive pool");
-    probe_pools();
-    do {
-        sleep(1);
-        slept++;
-    } while (!pools_active && slept < 60);
-
-    while (!pools_active) {
-        if (!pool_msg) {
-            applog(LOG_ERR, "No servers were found that could be used to get work from.");
-            applog(LOG_ERR, "Please check the details from the list below of the servers you have input");
-            applog(LOG_ERR, "Most likely you have input the wrong URL, forgotten to add a port, or have not set up workers");
-            for (i = 0; i < total_pools; i++) {
-                struct pool *pool = pools[i];
-
-                applog(LOG_WARNING, "Pool: %d  URL: %s  User: %s  Password: %s",
-                i, pool->rpc_url, pool->rpc_user, pool->rpc_pass);
-            }
-            pool_msg = true;
-            if (use_curses)
-                applog(LOG_ERR, "Press any key to exit, or cgminer will wait indefinitely for an alive pool.");
+    
+        total_mhashes_done = 0;
+        for (i = 0; i < total_devices; i++) {
+            struct cgpu_info *cgpu = devices[i];
+    
+            cgpu->rolling = cgpu->total_mhashes = 0;
         }
-        if (!use_curses)
-        {
-            chain_all_exit();
-            early_quit(0, "No servers could be used! Exiting.");
-        }
-#ifdef HAVE_CURSES
-        touchwin(logwin);
-        wrefresh(logwin);
-        halfdelay(10);
-        if (getch() != ERR)
-            early_quit(0, "No servers could be used! Exiting.");
-        cbreak();
-#endif
-    };
-
-begin_bench:
-    total_mhashes_done = 0;
-    for (i = 0; i < total_devices; i++) {
-        struct cgpu_info *cgpu = devices[i];
-
-        cgpu->rolling = cgpu->total_mhashes = 0;
-    }
-
-    cgtime(&total_tv_start);
-    cgtime(&total_tv_end);
-    cgtime(&tv_hashmeter);
-    get_datestamp(datestamp, sizeof(datestamp), &total_tv_start);
-
-    watchpool_thr_id = 2;
-    thr = &control_thr[watchpool_thr_id];
-    /* start watchpool thread */
-    if (thr_info_create(thr, NULL, watchpool_thread, NULL))
-        early_quit(1, "watchpool thread create failed");
-    pthread_detach(thr->pth);
-
-    watchdog_thr_id = 3;
-    thr = &control_thr[watchdog_thr_id];
-    /* start watchdog thread */
-    if (thr_info_create(thr, NULL, watchdog_thread, NULL))
-        early_quit(1, "watchdog thread create failed");
-    pthread_detach(thr->pth);
-
-    /* Create API socket thread */
-    api_thr_id = 5;
-    thr = &control_thr[api_thr_id];
-    if (thr_info_create(thr, NULL, api_thread, thr))
-        early_quit(1, "API thread create failed");
-
+    
+        cgtime(&total_tv_start);
+        cgtime(&total_tv_end);
+        cgtime(&tv_hashmeter);
+        get_datestamp(datestamp, sizeof(datestamp), &total_tv_start);
+    
+        watchpool_thr_id = 2;
+        thr = &control_thr[watchpool_thr_id];
+        /* start watchpool thread */
+        if (thr_info_create(thr, NULL, watchpool_thread, NULL))
+            early_quit(1, "watchpool thread create failed");
+        pthread_detach(thr->pth);
+    
+        watchdog_thr_id = 3;
+        thr = &control_thr[watchdog_thr_id];
+        /* start watchdog thread */
+        if (thr_info_create(thr, NULL, watchdog_thread, NULL))
+            early_quit(1, "watchdog thread create failed");
+        pthread_detach(thr->pth);
+    
+        /* Create API socket thread */
+        api_thr_id = 5;
+        thr = &control_thr[api_thr_id];
+        if (thr_info_create(thr, NULL, api_thread, thr))
+            early_quit(1, "API thread create failed");
+    
 #ifdef USE_USBUTILS
-    hotplug_thr_id = 6;
-    thr = &control_thr[hotplug_thr_id];
-    if (thr_info_create(thr, NULL, hotplug_thread, thr))
-        early_quit(1, "hotplug thread create failed");
-    pthread_detach(thr->pth);
+        hotplug_thr_id = 6;
+        thr = &control_thr[hotplug_thr_id];
+        if (thr_info_create(thr, NULL, hotplug_thread, thr))
+            early_quit(1, "hotplug thread create failed");
+        pthread_detach(thr->pth);
 #endif
-
+    
 #ifdef HAVE_CURSES
-    /* Create curses input thread for keyboard input. Create this last so
-     * that we know all threads are created since this can call kill_work
-     * to try and shut down all previous threads. */
-    input_thr_id = 7;
-    thr = &control_thr[input_thr_id];
-    if (thr_info_create(thr, NULL, input_thread, thr))
-        early_quit(1, "input thread create failed");
-    pthread_detach(thr->pth);
+        /* Create curses input thread for keyboard input. Create this last so
+         * that we know all threads are created since this can call kill_work
+         * to try and shut down all previous threads. */
+        input_thr_id = 7;
+        thr = &control_thr[input_thr_id];
+        if (thr_info_create(thr, NULL, input_thread, thr))
+            early_quit(1, "input thread create failed");
+        pthread_detach(thr->pth);
 #endif
-
-    /* Just to be sure */
-    if (total_control_threads != 8)
-        early_quit(1, "incorrect total_control_threads (%d) should be 8", total_control_threads);
-
-    set_highprio();
-
+    
+        /* Just to be sure */
+        if (total_control_threads != 8)
+            early_quit(1, "incorrect total_control_threads (%d) should be 8", total_control_threads);
+    
+        set_highprio();
+    
 #ifdef USE_LIBSYSTEMD
-    sd_notify(false, "READY=1\n"
-        "STATUS=Started");
+        sd_notify(false, "READY=1\n"
+            "STATUS=Started");
 #endif
-
-    /* Once everything is set up, main() becomes the getwork scheduler */
-    while (42) {
-        int ts, max_staged = max_queue;
-        struct pool *pool;
-        //bool lagging = false;
-        static int  last_temp_time = 0;
-
-       if (last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms())
-       {
-        inno_fan_speed_update(&g_fan_ctrl);
-        last_temp_time = get_current_ms();
-       }
-
-        if(g_reset_delay != 0xffff)
-        {
-            applog(LOG_INFO, "powerdown for api commond");
-            power_down_all_chain();
-            sleep(g_reset_delay);
-            exit(1);
-        }
-        if (opt_work_update)
-            signal_work_update();
-        opt_work_update = false;
-
-        mutex_lock(stgd_lock);
-        ts = __total_staged();
-        /* Wait until hash_pop tells us we need to create more work */
-        if (ts > max_staged) {
-            work_filled = true;
-            pthread_cond_wait(&gws_cond, stgd_lock);
+    
+        /* Once everything is set up, main() becomes the getwork scheduler */
+        while (42) {
+            int ts, max_staged = max_queue;
+            struct pool *pool;
+    
+            if (opt_work_update)
+                signal_work_update();
+            opt_work_update = false;
+    
+            mutex_lock(stgd_lock);
             ts = __total_staged();
-        }
-        mutex_unlock(stgd_lock);
-
-        if (ts > max_staged) {
-            /* Keeps slowly generating work even if it's not being
-             * used to keep last_getwork incrementing and to see
-             * if pools are still alive. */
-            work_filled = true;
-            work = hash_pop(false);
+            /* Wait until hash_pop tells us we need to create more work */
+            if (ts > max_staged) {
+                work_filled = true;
+                pthread_cond_wait(&gws_cond, stgd_lock);
+                ts = __total_staged();
+            }
+            mutex_unlock(stgd_lock);
+    
+            if (ts > max_staged) {
+                /* Keeps slowly generating work even if it's not being
+                 * used to keep last_getwork incrementing and to see
+                 * if pools are still alive. */
+                work_filled = true;
+                work = hash_pop(false);
+                if (work)
+                    discard_work(work);
+                continue;
+            }
+    
             if (work)
                 discard_work(work);
-            continue;
-        }
-
-        if (work)
-            discard_work(work);
-        work = make_work();
-
-        while (42) {
-            pool = select_pool();
-            if (!pool_unusable(pool))
-                break;
-            switch_pools(NULL);
-            pool = select_pool();
-            if (pool_unusable(pool))
-                cgsleep_ms(5);
-        };
-        if (pool->has_stratum) {
-            if (opt_gen_stratum_work) {
-                gen_stratum_work(pool, work);
-                applog(LOG_DEBUG, "Generated stratum work");
-                stage_work(work);
+            work = make_work();
+    
+            while (42) {
+                pool = select_pool();
+                if (!pool_unusable(pool))
+                    break;
+                switch_pools(NULL);
+                pool = select_pool();
+                if (pool_unusable(pool))
+                    cgsleep_ms(5);
+            };
+            if (pool->has_stratum) {
+                if (opt_gen_stratum_work) {
+                    gen_stratum_work(pool, work);
+                    applog(LOG_DEBUG, "Generated stratum work");
+                    stage_work(work);
+                }
+                continue;
             }
-            continue;
-        }
-
+    
 #ifdef HAVE_LIBCURL
-        if (pool->gbt_solo) {
-            gen_solo_work(pool, work);
-            applog(LOG_DEBUG, "Generated GBT SOLO work");
-            stage_work(work);
-            continue;
-        }
-
-        if (pool->has_gbt) {
-            gen_gbt_work(pool, work);
-            applog(LOG_DEBUG, "Generated GBT work");
-            stage_work(work);
-            continue;
-        }
+            if (pool->gbt_solo) {
+                gen_solo_work(pool, work);
+                applog(LOG_DEBUG, "Generated GBT SOLO work");
+                stage_work(work);
+                continue;
+            }
+    
+            if (pool->has_gbt) {
+                gen_gbt_work(pool, work);
+                applog(LOG_DEBUG, "Generated GBT work");
+                stage_work(work);
+                continue;
+            }
 #endif
-        if (opt_benchfile) {
-            get_benchfile_work(work);
-            applog(LOG_DEBUG, "Generated benchfile work");
-            stage_work(work);
-            continue;
-        } else if (opt_benchmark) {
-            get_benchmark_work(work);
-            applog(LOG_DEBUG, "Generated benchmark work");
-            stage_work(work);
-            continue;
+            if (opt_benchfile) {
+                get_benchfile_work(work);
+                applog(LOG_DEBUG, "Generated benchfile work");
+                stage_work(work);
+                continue;
+            } else if (opt_benchmark) {
+                get_benchmark_work(work);
+                applog(LOG_DEBUG, "Generated benchmark work");
+                stage_work(work);
+                continue;
+            }
         }
+    
+        return 0;
     }
 
-    return 0;
-}

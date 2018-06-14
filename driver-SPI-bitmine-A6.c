@@ -242,7 +242,7 @@ struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
     return a1;
 
 failure:
-    //exit_A1_chain(a1);
+    exit_A1_chain(a1);
     return NULL;
 }
 
@@ -342,7 +342,7 @@ static bool init_A1_chain(struct A1_chain *a1)
 	return true;
 
 failure:
-    //exit_A1_chain(a1);
+    exit_A1_chain(a1);
     return false;
 }
 
@@ -871,6 +871,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			loop_blink_led(spi[a1->chain_id]->led, 10);
 			#else
 			mcompat_set_power_en(a1->chain_id, 0);
+			//exit_A1_chain(a1);
 			loop_blink_led(a1->chain_id, 10);
 			#endif
 	   		//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
@@ -1056,7 +1057,7 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 {
 	struct A1_chain *a1 = cgpu->device_data;
 	int i;
-
+    
 	mutex_lock(&a1->lock);
 
 	for (i = 0; i < a1->num_active_chips; i++) 
@@ -1081,7 +1082,8 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 	if(!inno_cmd_resetjob(a1, ADDR_BROADCAST))
 	{
 		applog(LOG_WARNING, "chip clear work false");
-	}
+    }
+	
 		
 	/* flush queued work */
 	//applog(LOG_INFO, "%d: flushing queued work...", cid);
