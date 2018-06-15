@@ -521,10 +521,9 @@ struct cgpu_info {
     int core_num;
     int fan_duty;
 	int chainNum;
-//#ifndef CHIP_A6    //commmet by lzl 20180515
-#ifdef CHIP_A6
+    
     double mhs_av;
-#endif
+    
     int pre_heat;
     int temp_prewarn[4];    
     int cutofftemp;
@@ -1667,6 +1666,7 @@ extern void dupcounters(struct cgpu_info *cgpu, uint64_t *checked, uint64_t *dup
 extern bool isdupnonce(struct cgpu_info *cgpu, struct work *work, uint32_t nonce);
 
 #define ROOT_ADD_API(FUNC, NAME, VAR, BOOL) root = api_add_##FUNC(root, (NAME), &(VAR), (BOOL))
+
 
 
 #endif /* __MINER_H__ */

@@ -142,7 +142,7 @@ cgminer_SOURCES += A6_inno.c A6_inno.h
 cgminer_SOURCES += A6_inno_cmd.c
 cgminer_SOURCES += A6_inno_clock.c
 cgminer_SOURCES += A6_inno_gpio.c
-cgminer_SOURCES += A6_inno_fan.c
+#cgminer_SOURCES += A6_inno_fan.c
 cgminer_SOURCES += scrypt.c    scrypt.h
 #add by luozl for dm_cgminer4a6
 #cgminer_SOURCES += driver-SPI-dragonmint-t1.c

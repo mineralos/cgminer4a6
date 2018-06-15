@@ -146,6 +146,7 @@ struct strategies strategies[] = {
     { "Balance" },
 };
 
+int g_auto_fan = 1;  
 static char packagename[256];
 
 bool opt_work_update;

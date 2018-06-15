@@ -23,6 +23,8 @@ extern bool opt_decode;
 extern bool opt_log_output;
 extern bool opt_realquiet;
 extern bool want_per_device_stats;
+extern bool use_syslog;
+
 
 /* global log_level, messages with lower or equal prio are logged */
 extern int opt_log_level;

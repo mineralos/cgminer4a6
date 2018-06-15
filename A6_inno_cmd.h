@@ -45,7 +45,7 @@
 #define ASIC_RESULT_LEN     6
 #define READ_RESULT_LEN     (ASIC_RESULT_LEN + 2)
 
-#define REG_LENGTH      14
+//#define REG_LENGTH      14
 
 #define JOB_LENGTH      92
 

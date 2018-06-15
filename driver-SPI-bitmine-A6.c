@@ -34,6 +34,11 @@
 //#include "dm_compat.h"
 //#include "dragonmint_t1.h"
 
+#include "mcompat_chain.h"
+#include "mcompat_tempctrl.h"
+#include "mcompat_fanctrl.h"
+
+
 
 
 #define A6_FANSPEED_INIT	(100)
@@ -457,6 +462,8 @@ failure:
 #endif
 
 int chain_flag[ASIC_CHAIN_NUM] = {0};
+
+#if 0  //add by lzl 20180614
 static bool detect_A1_chain(void)
 {
 	int i,cnt = 0;
@@ -612,7 +619,145 @@ static bool detect_A1_chain(void)
     return (cnt == 0) ? false : true;
 }
 
+#else
 
+void *chain_detect_thread(void *argv)
+{
+	int i, cid;
+	int chain_id = *(int*)argv;
+	uint8_t buffer[REG_LENGTH];
+
+	if (chain_id >= g_chain_num) {
+		applog(LOG_ERR, "invalid chain id %d", chain_id);
+		return NULL;
+	}
+
+	struct A1_chain *a1 = malloc(sizeof(*a1));
+	assert(a1 != NULL);
+	memset(a1, 0, sizeof(struct A1_chain));
+
+	cid = g_chain_id[chain_id];
+	a1->chain_id = cid;
+	a1->num_chips = mcompat_chain_preinit(cid);
+	if (a1->num_chips == 0) {
+		goto failure;
+	}
+
+	if (!mcompat_chain_set_pll(cid, opt_A1Pll1, opt_voltage1)) {
+		goto failure;
+	}
+
+	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, false)) {
+		goto failure;
+	}
+
+	/* FIXME: num_active_chips should be determined by BISTSTART after setting pll */
+	a1->num_active_chips = a1->num_chips;
+	a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
+    assert (a1->chips != NULL);
+
+	/* Config to V-sensor */
+	mcompat_configure_tvsensor(cid, CMD_ADDR_BROADCAST, 0);
+	usleep(1000);
+
+	/* Collect core number and read voltage for each chip */
+	for (i = 0; i < a1->num_active_chips; ++i) {
+		check_chip(a1, i);
+		s_reg_ctrl.stat_val[cid][i] = a1->chips[i].nVol;
+    }
+
+	/* Config to T-sensor */
+	mcompat_configure_tvsensor(cid, CMD_ADDR_BROADCAST, 1);
+	usleep(1000);
+
+	/* Chip voltage stat. */
+	inno_get_voltage_stats(a1, &s_reg_ctrl);
+    
+    sprintf(volShowLog[a1->chain_id], "+         %2d  |  %8f  |  %8f  |  %8f  |\n",a1->chain_id,   \
+                     s_reg_ctrl.highest_vol[a1->chain_id],s_reg_ctrl.avarge_vol[a1->chain_id],s_reg_ctrl.lowest_vol[a1->chain_id]);
+    inno_log_record(a1->chain_id, volShowLog[a1->chain_id], sizeof(volShowLog[0]));
+
+    mutex_init(&a1->lock);
+    INIT_LIST_HEAD(&a1->active_wq.head);
+
+	chain[chain_id] = a1;
+
+	return NULL;
+
+failure:
+	if (a1->chips) {
+		free(a1->chips);
+		a1->chips = NULL;
+	}
+	free(a1);
+
+	g_chain_alive[cid] = 0;
+
+	return NULL;
+}
+
+static bool all_chain_detect(void)
+{
+	int i, cid;
+    int thr_args[ASIC_CHAIN_NUM];
+	void *thr_ret[ASIC_CHAIN_NUM];
+	pthread_t thr[ASIC_CHAIN_NUM];
+
+	/* Determine working PLL & VID */
+	//performance_cfg();
+
+	/* Register PLL map config */
+	mcompat_chain_set_pllcfg(g_pll_list, g_pll_regs, PLL_LV_NUM);
+
+	applog(LOG_NOTICE, "Total chains: %d", g_chain_num);
+    
+    /* Chain detect */
+	for (i = 0; i < g_chain_num; ++i) {
+		thr_args[i] = i;
+		pthread_create(&thr[i], NULL, chain_detect_thread, (void*)&thr_args[i]);
+	}
+	for (i = 0; i < g_chain_num; ++i)
+		pthread_join(thr[i], &thr_ret[i]);
+
+	applog(LOG_NOTICE, "chain detect finished");
+    
+	for (i = 0; i < g_chain_num; ++i) {
+		cid = g_chain_id[i];
+
+		/* FIXME: should be thread */
+		//chain_detect_thread(&i);
+
+		if (!g_chain_alive[cid])
+			continue;
+
+		struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
+		assert(cgpu != NULL);
+		memset(cgpu, 0, sizeof(*cgpu));
+
+		cgpu->drv = &bitmineA1_drv;
+		cgpu->name = "BitmineA1.SingleChain";
+		cgpu->threads = 1;
+		cgpu->chainNum = cid;
+		cgpu->device_data = chain[i];
+
+		if ((chain[i]->num_chips <= MAX_CHIP_NUM) && (chain[i]->num_cores <= MAX_CORES))
+			cgpu->mhs_av = (double)(opt_A1Pll1 *  (chain[i]->num_cores) / 2);
+		else
+			cgpu->mhs_av = 0;
+
+		cgtime(&cgpu->dev_start_tv);
+		//chain[i]->lastshare = cgpu->dev_start_tv.tv_sec;
+		chain[i]->cgpu = cgpu;
+		add_cgpu(cgpu);
+
+		applog(LOG_NOTICE, "chain%d: detected %d chips / %d cores",
+			cid, chain[i]->num_active_chips, chain[i]->num_cores);
+	}
+}
+
+#endif
+
+#if 0  //add by lzl 20180614
 /* Probe SPI channel and register chip chain */
 void A1_detect(bool hotplug)
 {
@@ -713,6 +858,119 @@ void A1_detect(bool hotplug)
     }   
 }
 
+#else
+
+void A1_detect(bool hotplug)
+{
+    /* no hotplug support for SPI */
+    if (hotplug)
+        return;
+        
+    struct timeval test_tv;
+    int j = 0;
+    /* parse bimine-a1-options */
+    if (opt_bitmine_a1_options != NULL && parsed_config_options == NULL) {
+        int ref_clk = 0;
+        int sys_clk = 0;
+        int spi_clk = 0;
+        int override_chip_num = 0;
+        int wiper = 0;
+
+        sscanf(opt_bitmine_a1_options, "%d:%d:%d:%d:%d",
+               &ref_clk, &sys_clk, &spi_clk,  &override_chip_num,
+               &wiper);
+        if (ref_clk != 0)
+            A1_config_options.ref_clk_khz = ref_clk;
+        if (sys_clk != 0) {
+            if (sys_clk < 100000)
+                quit(1, "system clock must be above 100MHz");
+            A1_config_options.sys_clk_khz = sys_clk;
+        }
+        if (spi_clk != 0)
+            A1_config_options.spi_clk_khz = spi_clk;
+        if (override_chip_num != 0)
+            A1_config_options.override_chip_num = override_chip_num;
+        if (wiper != 0)
+            A1_config_options.wiper = wiper;
+
+        /* config options are global, scan them once */
+        parsed_config_options = &A1_config_options;
+    }
+    applog(LOG_DEBUG, "A1 detect");
+  //  memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
+
+    g_hwver = inno_get_hwver();
+   // g_type = inno_get_miner_type();
+    g_type =INNO_TYPE_A6;
+
+	// FIXME: get correct hwver and chain num to init platform
+	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
+	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
+
+    #if  0  //add by luozl 20180614
+    memset(&s_reg_ctrl,0,sizeof(s_reg_ctrl));
+    memset(&g_fan_ctrl,0,sizeof(g_fan_ctrl));
+    
+	// set fan speed high to get to a lower startup temperature
+	//dm_fanctrl_set_fan_speed(A6_FANSPEED_INIT);
+	inno_fan_temp_init(&g_fan_ctrl, fan_level);
+    #else
+    // init temp ctrl
+	c_temp_cfg tmp_cfg;
+	mcompat_tempctrl_get_defcfg(&tmp_cfg);
+    tmp_cfg.tmp_min      = -40;     // min value of temperature
+    tmp_cfg.tmp_max      = 125;     // max value of temperature
+    tmp_cfg.tmp_target   = 70;      // target temperature
+    tmp_cfg.tmp_thr_lo   = 30;      // low temperature threshold
+    tmp_cfg.tmp_thr_hi   = 90;      // high temperature threshold
+    tmp_cfg.tmp_thr_warn = 95;     // warning threshold
+    tmp_cfg.tmp_thr_pd   = 100;     // power down threshold
+    tmp_cfg.tmp_exp_time = 2000;   // temperature expiring time (ms)
+	mcompat_tempctrl_init(&tmp_cfg);
+
+	// start fan ctrl thread
+	c_fan_cfg fan_cfg;
+	mcompat_fanctrl_get_defcfg(&fan_cfg);
+	fan_cfg.preheat = false;		// disable preheat
+	fan_cfg.fan_mode = g_auto_fan ? FAN_MODE_AUTO : FAN_MODE_MANUAL;
+	fan_cfg.fan_speed = g_fan_speed;
+	fan_cfg.fan_speed_target = 50;
+	mcompat_fanctrl_init(&fan_cfg);
+//	mcompat_fanctrl_init(NULL);			// using default cfg
+	pthread_t tid;
+	pthread_create(&tid, NULL, mcompat_fanctrl_thread, NULL);
+    #endif
+
+     // update time
+    for(j = 0; j < 100; j++)
+    {
+         cgtime(&test_tv);
+         if(test_tv.tv_sec > 1000000000)
+         {
+             break;
+         }
+    
+         usleep(500000);
+    }
+      
+    A1Pll1 = A1_ConfigA1PLLClock(opt_A1Pll1);
+    A1Pll2 = A1_ConfigA1PLLClock(opt_A1Pll2);
+    A1Pll3 = A1_ConfigA1PLLClock(opt_A1Pll3);
+    A1Pll4 = A1_ConfigA1PLLClock(opt_A1Pll4);
+    A1Pll5 = A1_ConfigA1PLLClock(opt_A1Pll5);
+    A1Pll6 = A1_ConfigA1PLLClock(opt_A1Pll6);
+    A1Pll7 = A1_ConfigA1PLLClock(opt_A1Pll7);
+    A1Pll8 = A1_ConfigA1PLLClock(opt_A1Pll8);
+
+   	all_chain_detect();
+
+    applog(LOG_WARNING, "A1 dectect finish");
+}
+
+
+#endif
+
 
 void Inno_Log_Save(struct A1_chip *chip,int nChip,int nChain)
 {
@@ -759,6 +1017,18 @@ void inno_log_print(int cid, void* log, int len)
     fclose(fd);
 }
 
+static void overheated_blinking(int cid)
+{
+	// block thread and blink led
+	while (42) {
+		mcompat_set_led(cid, LED_OFF);
+		cgsleep_ms(500);
+		mcompat_set_led(cid, LED_ON);
+		cgsleep_ms(500);
+	}
+}
+
+
 static int64_t  A1_scanwork(struct thr_info *thr)
 {
     int i;
@@ -783,6 +1053,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
     static uint8_t last_chip_id,last_cid;
     static uint8_t same_err_cnt = 0;
 
+    #if  0   //add by lzl 20180614
     if (first_flag[cid] != 1)
     {
         applog(LOG_ERR, "%d: A1_scanwork first in set all parameter!", a1->chain_id);
@@ -876,7 +1147,20 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 			#endif
 	   		//early_quit(1,"Notice chain %d maybe has some promble in temperate\n",a1->chain_id);
 		}
-	}		
+	}
+
+    #else
+    
+    if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms()) {
+        check_disbale_flag[cid]++;
+
+        cgpu->chip_num = a1->num_active_chips;
+        cgpu->core_num = a1->num_cores;
+
+        a1->last_temp_time = get_current_ms();
+    }
+    
+    #endif
 
 	/* poll queued results */
 	while (true)
@@ -996,6 +1280,28 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 		check_disbale_flag[cid] = 0;
 	}
+    
+    #if 1  //add by lzl 20180614
+    /* Temperature control */
+	int chain_temp_status = mcompat_tempctrl_update_chain_temp(cid);
+
+	cgpu->temp_min = (double)g_chain_tmp[cid].tmp_lo;
+	cgpu->temp_max = (double)g_chain_tmp[cid].tmp_hi;
+	cgpu->temp	   = (double)g_chain_tmp[cid].tmp_avg;
+
+	if (chain_temp_status == TEMP_SHUTDOWN) {
+		// shut down chain
+		applog(LOG_ERR, "DANGEROUS TEMPERATURE(%.0f): power down chain %d",
+			cgpu->temp_max, cid);
+		mcompat_chain_power_down(cid);
+		cgpu->status = LIFE_DEAD;
+		cgtime(&thr->sick);
+
+		/* Function doesn't currently return */
+		overheated_blinking(cid);
+	}
+    #endif
+    
 
 	mutex_unlock(&a1->lock);
 
@@ -1196,6 +1502,7 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     struct api_data *root = NULL;
     char s[32];
     int i;
+    int fan_speed = g_fan_cfg.fan_speed;
 	
     ROOT_ADD_API(int, "Chain ID", t1->chain_id, false);
     ROOT_ADD_API(int, "Num chips", t1->num_chips, false);
@@ -1205,7 +1512,8 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     ROOT_ADD_API(double, "Temp max", cgpu->temp_max, false);
     ROOT_ADD_API(double, "Temp min", cgpu->temp_min, false);
    
-    ROOT_ADD_API(int, "Fan duty", cgpu->fan_duty, false);
+    //ROOT_ADD_API(int, "Fan duty", cgpu->fan_duty, false);
+    ROOT_ADD_API(int, "Fan duty", fan_speed, true);
 //	ROOT_ADD_API(bool, "FanOptimal", g_fan_ctrl.optimal, false);
 	ROOT_ADD_API(int, "iVid", t1->vid, false);
     ROOT_ADD_API(int, "PLL", t1->pll, false);

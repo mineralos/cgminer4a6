@@ -6,7 +6,7 @@
 #include "A6_inno_cmd.h"
 #include "A6_inno_fan.h"
 #include "A6_inno_clock.h"
-#include  "A6_inno_gpio.h"
+#include "A6_inno_gpio.h"
 
 #define WEAK_CHIP_THRESHOLD 5
 #define BROKEN_CHIP_THRESHOLD 5
@@ -14,6 +14,13 @@
 
 #define INNO_MINER_TYPE_FILE            "/tmp/type"
 #define INNO_HARDWARE_VERSION_FILE      "/tmp/hwver"
+#define MAX_CHIP_NUM                    (72)
+#define MAX_CORES                      (72*9)
+#define SPI_SPEED_RUN			(SPI_SPEED_6250K)
+const int g_pll_list[PLL_LV_NUM];
+const uint8_t g_pll_regs[PLL_LV_NUM][REG_LENGTH];
+
+
 
 typedef enum{
 HARDWARE_VERSION_NONE = 0x00,

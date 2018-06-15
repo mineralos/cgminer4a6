@@ -14,6 +14,8 @@
 /************************************ 头文件 ***********************************/
 #include "A6_inno_fan.h"
 #include <stdlib.h>
+#include "logging.h"
+
 //#include "dm_fan_ctrl.h"
 
 /************************************ 宏定义 ***********************************/
@@ -212,15 +214,15 @@ void inno_fan_temp_init(inno_fan_temp_s *fan_temp, int *fan_level)
         asic_temp_clear(fan_temp, chain_id);
     }
 
-    printf( "pwm  name:%s.\n", ASIC_INNO_FAN_PWM0_DEVICE_NAME);
-    printf( "pwm  step:%d.\n", ASIC_INNO_FAN_PWM_STEP);
-    printf( "duty max: %d.\n", ASIC_INNO_FAN_PWM_DUTY_MAX);
-    printf( "targ freq:%d.\n", ASIC_INNO_FAN_PWM_FREQ_TARGET);
-    printf( "freq rate:%d.\n", ASIC_INNO_FAN_PWM_FREQ);
-    printf( "fan speed thrd:%d.\n", ASIC_INNO_FAN_TEMP_MAX_THRESHOLD);
-    printf( "fan up thrd:%d.\n", ASIC_INNO_FAN_TEMP_UP_THRESHOLD);
-    printf( "fan down thrd:%d.\n", ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD);
-    printf( "auto_fan %s, fan_speed %d\n",g_auto_fan == 0?"false":"true", g_fan_speed);
+    applog(LOG_INFO, "pwm  name:%s.\n", ASIC_INNO_FAN_PWM0_DEVICE_NAME);
+    applog(LOG_INFO, "pwm  step:%d.\n", ASIC_INNO_FAN_PWM_STEP);
+    applog(LOG_INFO, "duty max: %d.\n", ASIC_INNO_FAN_PWM_DUTY_MAX);
+    applog(LOG_INFO, "targ freq:%d.\n", ASIC_INNO_FAN_PWM_FREQ_TARGET);
+    applog(LOG_INFO, "freq rate:%d.\n", ASIC_INNO_FAN_PWM_FREQ);
+    applog(LOG_INFO, "fan speed thrd:%d.\n", ASIC_INNO_FAN_TEMP_MAX_THRESHOLD);
+    applog(LOG_INFO, "fan up thrd:%d.\n", ASIC_INNO_FAN_TEMP_UP_THRESHOLD);
+    applog(LOG_INFO, "fan down thrd:%d.\n", ASIC_INNO_FAN_TEMP_DOWN_THRESHOLD);
+    applog(LOG_INFO, "auto_fan %s, fan_speed %d\n",g_auto_fan == 0?"false":"true", g_fan_speed);
 }
 
 bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int temp)
@@ -229,7 +231,7 @@ bool inno_fan_temp_add(inno_fan_temp_s *fan_temp,int chain_id, int chip_id, int 
 
     if((temp > ERR_LOW_TEMP) || (temp < ERR_HIGH_TEMP))
     {
-        printf("Notice!!! Error temperature %d for chain %d, chip %d\n",temp, chain_id, chip_id);
+        applog(LOG_ERR, "Notice!!! Error temperature %d for chain %d, chip %d\n",temp, chain_id, chip_id);
         return false;
     }
 

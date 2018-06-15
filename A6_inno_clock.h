@@ -18,6 +18,9 @@
 
 
 #define A4_PLL(prediv,fbdiv,postdiv) ((prediv<<(89-64))|fbdiv<<(80-64)|0b010<<(77-64)|postdiv<<(70-64))
+#define PLL_LV_NUM (142)
+//#define PLL_LV_NUM (324)
+
 
 
 typedef enum
@@ -105,7 +108,7 @@ struct A1_config_options {
 void A1_SetA1PLLClock(struct A1_chain *a1,int pllClkIdx);
 int A1_ConfigA1PLLClock(int optPll);
 
-extern const struct PLL_Clock PLL_Clk_12Mhz[142];
+extern struct PLL_Clock PLL_Clk_12Mhz[PLL_LV_NUM];
 
 
 
