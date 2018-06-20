@@ -48,7 +48,7 @@
 struct spi_config cfg[ASIC_CHAIN_NUM];
 struct spi_ctx *spi[ASIC_CHAIN_NUM];
 struct A1_chain *chain[ASIC_CHAIN_NUM];
-//static volatile uint8_t g_debug_stats[MAX_CHAIN_NUM];
+static volatile uint8_t g_debug_stats[ASIC_CHAIN_NUM];
 
 
 
@@ -1477,23 +1477,8 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 	}
 	return root;
 }
-
-static struct api_data *A1_api_debug(struct cgpu_info *cgpu)
-{
-	struct A1_chain *a1 = cgpu->device_data;
-	int timeout = 1000;
-
-	g_debug_stats[a1->chain_id] = 1;
-
-	// Wait for g_debug_stats cleared or timeout
-	while (g_debug_stats[a1->chain_id] && timeout) {
-		timeout -= 10;
-		cgsleep_ms(10);
-	}
-
-	return A1_api_stats(cgpu);
-}
 #endif
+
 
 static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 {
@@ -1503,7 +1488,8 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     char s[32];
     int i;
     int fan_speed = g_fan_cfg.fan_speed;
-	
+
+    mutex_lock(&t1->lock);
     ROOT_ADD_API(int, "Chain ID", t1->chain_id, false);
     ROOT_ADD_API(int, "Num chips", t1->num_chips, false);
     ROOT_ADD_API(int, "Num cores", t1->num_cores, false);
@@ -1534,6 +1520,22 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 	ROOT_ADD_API(string, "Enabled chips", s[0], true);
 	ROOT_ADD_API(double, "Temp", cgpu->temp, false);
 
+    mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 1);
+    usleep(1000);
+    
+    int chip_temp[MCOMPAT_CONFIG_MAX_CHIP_NUM];
+	mcompat_get_chip_temp(t1->chain_id, chip_temp);
+    
+       // config to V-sensor
+	mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 0);
+	usleep(1000);
+    int chip_volt[MCOMPAT_CONFIG_MAX_CHIP_NUM] = {0};
+    mcompat_get_chip_volt(t1->chain_id, chip_volt);
+    
+    mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 1);
+	usleep(1000);
+    
+
 	for (i = 0; i < t1->num_chips; i++) {
 		sprintf(s, "%02d HW errors", i);
 		ROOT_ADD_API(int, s, t1->chips[i].hw_errors, true);
@@ -1549,19 +1551,40 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 		ROOT_ADD_API(int, s, t1->chips[i].fail_count, true);
 		sprintf(s, "%02d Fail reset", i);
 		ROOT_ADD_API(int, s, t1->chips[i].fail_reset, true);
+        
 		sprintf(s, "%02d Temp", i);
+        t1->chips[i].temp = chip_temp[i];
 		ROOT_ADD_API(int, s, t1->chips[i].temp, true);
+        
 		sprintf(s, "%02d nVol", i);
+        t1->chips[i].nVol = chip_volt[i];
 		ROOT_ADD_API(int, s, t1->chips[i].nVol, true);
+        
 		sprintf(s, "%02d PLL", i);
 		ROOT_ADD_API(int, s, t1->chips[i].pll, true);
 		sprintf(s, "%02d pllOptimal", i);
 		ROOT_ADD_API(bool, s, t1->chips[i].pllOptimal, true);
 	}
+    mutex_unlock(&t1->lock);
+    
 	return root;
 }
 
+static struct api_data *A1_api_debug(struct cgpu_info *cgpu)
+{
+	struct A1_chain *a1 = cgpu->device_data;
+	int timeout = 1000;
 
+	g_debug_stats[a1->chain_id] = 1;
+
+	// Wait for g_debug_stats cleared or timeout
+	while (g_debug_stats[a1->chain_id] && timeout) {
+		timeout -= 10;
+		cgsleep_ms(10);
+	}
+
+	return A1_api_stats(cgpu);
+}
 
 
 struct device_drv bitmineA1_drv = {
@@ -1576,5 +1599,5 @@ struct device_drv bitmineA1_drv = {
     .flush_work = A1_flush_work,
     .get_statline_before = A1_get_statline_before,
     .get_api_stats = A1_api_stats,
-	//.get_api_debug = A1_api_debug,
+	.get_api_debug = A1_api_debug,
 };

@@ -3279,7 +3279,7 @@ static void minerstats(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
         io_close(io_data);
 }
 
-#if  0  //add by lzl 20180514
+#if  1  //add by lzl 20180514
 static void minerdebug(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __maybe_unused char *param, bool isjson, __maybe_unused char group)
 {
 	struct cgpu_info *cgpu;
@@ -3287,8 +3287,9 @@ static void minerdebug(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
 	struct api_data *extra;
 	char id[20];
 	int i, j;
-
-	message(io_data, MSG_MINEDEBUG, 0, NULL, isjson);
+    
+	//message(io_data, MSG_MINEDEBUG, 0, NULL, isjson);
+	message(io_data, MSG_MINESTATS, 0, NULL, isjson);
 
 	if (isjson)
 		io_open = io_add(io_data, COMSTR JSON_MINESTATS);
@@ -4070,7 +4071,7 @@ struct CMDS {
     { "devdetails",     devdetails, false,  true },
     { "restart",        dorestart,  true,   false },
     { "stats",      minerstats, false,  true },
-    //{ "dbgstats",		minerdebug,	false,	true },
+    { "dbgstats",		minerdebug,	false,	true },
     { "estats",     minerestats,    false,  true },
     { "check",      checkcommand,   false,  false },
     { "failover-only",  failoveronly,   true,   false },
