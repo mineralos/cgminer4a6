@@ -1099,7 +1099,7 @@ void power_down_all_chain(void)
         inno_chain_power_down(chain[i]);
     }
 	#else
-	mcompat_chain_power_on_all();
+	mcompat_chain_power_down_all();
 	#endif
 }
 
@@ -1420,18 +1420,19 @@ void chain_all_exit(void)
     int i;
     applog(LOG_ERR, "All chain power off and spi exit!");
 
+    mcompat_chain_power_down_all();
     for(i = 0; i < ASIC_CHAIN_NUM; i++)
     {
         if (chain[i] == NULL)
             continue;
         free(chain[i]->chips);
-		#if 0  //add by lzl 20180509
+        #if 0  //add by lzl 20180509
         asic_gpio_write(chain[i]->spi_ctx->led, 1);
         asic_gpio_write(chain[i]->spi_ctx->power_en, 0);
-		#else
-		mcompat_set_led(i, 1);
-		mcompat_set_power_en(i, 0);
-		#endif
+        #else
+        //mcompat_set_led(i, 1);
+        //mcompat_set_power_en(i, 0);
+        #endif
         chain[i]->chips = NULL;
         chain[i]->spi_ctx = NULL;
         free(chain[i]);
