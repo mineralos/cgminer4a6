@@ -643,7 +643,8 @@ void *chain_detect_thread(void *argv)
 		goto failure;
 	}
 
-	if (!mcompat_chain_set_pll(cid, opt_A1Pll1, opt_voltage1)) {
+	//if (!mcompat_chain_set_pll(cid, opt_A1Pll1, opt_voltage1)) {
+	if (!mcompat_chain_set_pll_vid(cid, opt_A1Pll1, opt_voltage1)) {
 		goto failure;
 	}
 
@@ -927,6 +928,7 @@ void A1_detect(bool hotplug)
     tmp_cfg.tmp_thr_warn = 90;     // warning threshold
     tmp_cfg.tmp_thr_pd   = 95;     // power down threshold
     tmp_cfg.tmp_exp_time = 2000;   // temperature expiring time (ms)
+    tmp_cfg.tmp_target = 60;
 	mcompat_tempctrl_init(&tmp_cfg);
 
 	// start fan ctrl thread
@@ -934,9 +936,12 @@ void A1_detect(bool hotplug)
 	mcompat_fanctrl_get_defcfg(&fan_cfg);
 	fan_cfg.preheat = false;		// disable preheat
 	fan_cfg.fan_mode = g_auto_fan ? FAN_MODE_AUTO : FAN_MODE_MANUAL;
-	fan_cfg.fan_speed = g_fan_speed;
-	fan_cfg.fan_speed_target = 50;
+	//fan_cfg.fan_speed = g_fan_speed;
+	fan_cfg.fan_speed = 100;
+	//fan_cfg.fan_speed_target = 50;
+	fan_cfg.fan_speed_target = 100;
 	mcompat_fanctrl_init(&fan_cfg);
+    mcompat_fanctrl_set_bypass(true);
 //	mcompat_fanctrl_init(NULL);			// using default cfg
 	pthread_t tid;
 	pthread_create(&tid, NULL, mcompat_fanctrl_thread, NULL);
@@ -966,6 +971,16 @@ void A1_detect(bool hotplug)
    	all_chain_detect();
 
     applog(LOG_WARNING, "A1 dectect finish");
+
+    /* Now adjust target temperature for runtime setting */
+	tmp_cfg.tmp_target = 70;
+	mcompat_tempctrl_set_cfg(&tmp_cfg);
+    
+	//mcompat_fanctrl_get_defcfg(&fan_cfg);
+	mcompat_fanctrl_get_cfg(&fan_cfg);
+	fan_cfg.fan_speed_target = 70;
+	mcompat_fanctrl_init(&fan_cfg);
+    mcompat_fanctrl_set_bypass(false);
 }
 
 
@@ -1017,6 +1032,34 @@ void inno_log_print(int cid, void* log, int len)
     fclose(fd);
 }
 
+static void get_temperatures(struct A1_chain *a1)
+{
+	int i;
+	int temp[MAX_CHIP_NUM] = {0};
+
+	mcompat_get_chip_temp(a1->chain_id, temp);
+
+	for (i = 0; i < a1->num_active_chips; i++)
+		a1->chips[i].temp = temp[i];
+}
+
+static void get_voltages(struct A1_chain *a1)
+{
+	int i;
+    int volt[MAX_CHIP_NUM] = {0};
+
+	//configure for vsensor
+	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 0);
+    mcompat_get_chip_volt(a1->chain_id, volt);
+
+	for (i = 0; i < a1->num_active_chips; i++)
+        a1->chips[i].nVol = volt[i];
+          
+	//configure for tsensor
+	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 1);
+}
+
+
 static void overheated_blinking(int cid)
 {
 	// block thread and blink led
@@ -1025,6 +1068,15 @@ static void overheated_blinking(int cid)
 		cgsleep_ms(500);
 		mcompat_set_led(cid, LED_ON);
 		cgsleep_ms(500);
+        
+        c_fan_cfg fan_cfg;
+	    //mcompat_fanctrl_get_defcfg(&fan_cfg);
+	    mcompat_fanctrl_get_cfg(&fan_cfg);
+	    fan_cfg.fan_speed_target = 100;
+        fan_cfg.fan_speed = 100;
+	    mcompat_fanctrl_init(&fan_cfg);
+        mcompat_fanctrl_set_bypass(true);
+        //mcompat_fanctrl_set_fan_speed(100);
 	}
 }
 
@@ -1301,6 +1353,13 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		overheated_blinking(cid);
 	}
     #endif
+
+    if (g_debug_stats[cid]) {
+		cgsleep_ms(1);
+		get_temperatures(a1);
+		get_voltages(a1);
+		g_debug_stats[cid] = 0;
+	}
     
 
 	mutex_unlock(&a1->lock);
@@ -1489,7 +1548,9 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     int i;
     int fan_speed = g_fan_cfg.fan_speed;
 
-    mutex_lock(&t1->lock);
+    //applog(LOG_ERR, "---@LZL---speed:%d\n",g_fan_cfg.fan_speed);
+    //mutex_lock(&t1->lock);
+    
     ROOT_ADD_API(int, "Chain ID", t1->chain_id, false);
     ROOT_ADD_API(int, "Num chips", t1->num_chips, false);
     ROOT_ADD_API(int, "Num cores", t1->num_cores, false);
@@ -1519,7 +1580,8 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 	sprintf(s, "%Lx", chipmap);
 	ROOT_ADD_API(string, "Enabled chips", s[0], true);
 	ROOT_ADD_API(double, "Temp", cgpu->temp, false);
-
+    
+    #if  0   //add by lzl 20180713
     mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 1);
     usleep(1000);
     
@@ -1534,6 +1596,7 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     
     mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 1);
 	usleep(1000);
+    #endif
     
 
 	for (i = 0; i < t1->num_chips; i++) {
@@ -1553,11 +1616,11 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 		ROOT_ADD_API(int, s, t1->chips[i].fail_reset, true);
         
 		sprintf(s, "%02d Temp", i);
-        t1->chips[i].temp = chip_temp[i];
+        //t1->chips[i].temp = chip_temp[i];
 		ROOT_ADD_API(int, s, t1->chips[i].temp, true);
         
 		sprintf(s, "%02d nVol", i);
-        t1->chips[i].nVol = chip_volt[i];
+        //t1->chips[i].nVol = chip_volt[i];
 		ROOT_ADD_API(int, s, t1->chips[i].nVol, true);
         
 		sprintf(s, "%02d PLL", i);
@@ -1565,7 +1628,7 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
 		sprintf(s, "%02d pllOptimal", i);
 		ROOT_ADD_API(bool, s, t1->chips[i].pllOptimal, true);
 	}
-    mutex_unlock(&t1->lock);
+    //mutex_unlock(&t1->lock);
     
 	return root;
 }

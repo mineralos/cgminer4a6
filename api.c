@@ -4882,7 +4882,7 @@ void api(int api_thr_id)
     isjoin = false;
 
     if (!opt_api_listen) {
-        applog(LOG_DEBUG, "API not running%s", UNAVAILABLE);
+        applog(LOG_ERR, "API not running%s", UNAVAILABLE);
         free(apisock);
         return;
     }
@@ -4998,12 +4998,15 @@ void api(int api_thr_id)
             goto die;
         }
 
+        //applog(LOG_ERR, "%s %d\n",__func__,__LINE__);
         addrok = check_connect((struct sockaddr_storage *)&cli, &connectaddr, &group);
         applog(LOG_ERR, "API: connection from %s - %s",
                     connectaddr, addrok ? "Accepted" : "Ignored");
 
         if (addrok) {
+            //applog(LOG_ERR, "%s %d\n",__func__,__LINE__);
             n = recv(c, &buf[0], TMPBUFSIZ-1, 0);
+            //applog(LOG_ERR, "%s %d\n",__func__,__LINE__);
             if (SOCKETFAIL(n))
                 buf[0] = '\0';
             else
@@ -5122,7 +5125,7 @@ void api(int api_thr_id)
                                     
                                 else {
                                     message(io_data, MSG_ACCDENY, 0, cmds[i].name, isjson);
-                                    applog(LOG_DEBUG, "API: access denied to '%s' for '%s' command", connectaddr, cmds[i].name);
+                                    applog(LOG_ERR, "API: access denied to '%s' for '%s' command", connectaddr, cmds[i].name);
                                 }
 
                                 did = true;
