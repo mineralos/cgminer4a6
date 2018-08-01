@@ -6980,6 +6980,8 @@ static void *stratum_sthread(void *userdata)
     snprintf(threadname, sizeof(threadname), "%d/SStratum", pool->pool_no);
     RenameThread(threadname);
 
+    set_highprio();
+
     pool->stratum_q = tq_new();
     if (!pool->stratum_q)
         quit(1, "Failed to create stratum_q in stratum_sthread");
@@ -8627,6 +8629,11 @@ void hash_queued_work(struct thr_info *mythr)
         fill_queue(mythr, cgpu, drv, thr_id);
 
         hashes = drv->scanwork(mythr);
+        if (cgpu->deven == DEV_DISABLED)
+        {
+             if (drv->thread_shutdown)
+                 drv->thread_shutdown(mythr);
+        }
 
         /* Reset the bool here in case the driver looks for it
          * synchronously in the scanwork loop. */

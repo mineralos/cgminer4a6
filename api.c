@@ -5000,7 +5000,7 @@ void api(int api_thr_id)
 
         //applog(LOG_ERR, "%s %d\n",__func__,__LINE__);
         addrok = check_connect((struct sockaddr_storage *)&cli, &connectaddr, &group);
-        applog(LOG_ERR, "API: connection from %s - %s",
+        applog(LOG_DEBUG, "API: connection from %s - %s",
                     connectaddr, addrok ? "Accepted" : "Ignored");
 
         if (addrok) {
@@ -5017,7 +5017,7 @@ void api(int api_thr_id)
                 if (SOCKETFAIL(n))
                     applog(LOG_DEBUG, "API: recv failed: %s", SOCKERRMSG);
                 else
-                    applog(LOG_ERR, "API: recv command: (%d) '%s'", n, buf);
+                    applog(LOG_DEBUG, "API: recv command: (%d) '%s'", n, buf);
             }
 
             if (!SOCKETFAIL(n)) {

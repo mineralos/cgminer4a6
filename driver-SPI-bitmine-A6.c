@@ -973,12 +973,14 @@ void A1_detect(bool hotplug)
     applog(LOG_WARNING, "A1 dectect finish");
 
     /* Now adjust target temperature for runtime setting */
-	tmp_cfg.tmp_target = 70;
+	//tmp_cfg.tmp_target = 70;
+	tmp_cfg.tmp_target = 60;
 	mcompat_tempctrl_set_cfg(&tmp_cfg);
     
 	//mcompat_fanctrl_get_defcfg(&fan_cfg);
 	mcompat_fanctrl_get_cfg(&fan_cfg);
-	fan_cfg.fan_speed_target = 70;
+	//fan_cfg.fan_speed_target = 70;
+	fan_cfg.fan_speed_target = 60;
 	mcompat_fanctrl_init(&fan_cfg);
     mcompat_fanctrl_set_bypass(false);
 }
@@ -1062,22 +1064,17 @@ static void get_voltages(struct A1_chain *a1)
 
 static void overheated_blinking(int cid)
 {
-	// block thread and blink led
-	while (42) {
-		mcompat_set_led(cid, LED_OFF);
-		cgsleep_ms(500);
-		mcompat_set_led(cid, LED_ON);
-		cgsleep_ms(500);
-        
-        c_fan_cfg fan_cfg;
-	    //mcompat_fanctrl_get_defcfg(&fan_cfg);
-	    mcompat_fanctrl_get_cfg(&fan_cfg);
-	    fan_cfg.fan_speed_target = 100;
-        fan_cfg.fan_speed = 100;
-	    mcompat_fanctrl_init(&fan_cfg);
-        mcompat_fanctrl_set_bypass(true);
-        //mcompat_fanctrl_set_fan_speed(100);
-	}
+    mcompat_set_led(cid, LED_OFF);
+    cgsleep_ms(500);
+    mcompat_set_led(cid, LED_ON);
+    cgsleep_ms(500);
+    c_fan_cfg fan_cfg;
+    mcompat_fanctrl_get_cfg(&fan_cfg);
+    fan_cfg.fan_speed_target = 100;
+    fan_cfg.fan_speed = 100;
+    mcompat_fanctrl_init(&fan_cfg);
+    mcompat_fanctrl_set_bypass(true);
+    return ;
 }
 
 
@@ -1088,12 +1085,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
     struct cgpu_info *cgpu = thr->cgpu;
     struct A1_chain *a1 = cgpu->device_data;
     int32_t nonce_ranges_processed = 0;
-
-    if (a1->num_cores == 0) {
-        cgpu->deven = DEV_DISABLED;
-        return 0;
-    }
-
+    int cid = a1->chain_id;
+    static unsigned char dead[8] = {0,0,0,0,0,0,0,0};
     uint32_t nonce;
     uint8_t chip_id;
     uint8_t job_id;
@@ -1101,9 +1094,20 @@ static int64_t  A1_scanwork(struct thr_info *thr)
     uint8_t reg[REG_LENGTH];
 
     mutex_lock(&a1->lock);
-    int cid = a1->chain_id;
     static uint8_t last_chip_id,last_cid;
-    static uint8_t same_err_cnt = 0;
+    static uint8_t same_err_cnt = 0;   
+    if (dead[cid] == 1)
+    {
+        overheated_blinking(cid);
+        cgpu->deven = DEV_DISABLED;
+        //cgpu->shutdown = false;
+        return 0;
+    }
+    
+    if (a1->num_cores == 0) {
+        cgpu->deven = DEV_DISABLED;
+        return 0;
+    }
 
     #if  0   //add by lzl 20180614
     if (first_flag[cid] != 1)
@@ -1348,7 +1352,9 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		mcompat_chain_power_down(cid);
 		cgpu->status = LIFE_DEAD;
 		cgtime(&thr->sick);
-
+        dead[cid] = 1;
+        cgpu->deven = DEV_DISABLED;
+        //cgpu->shutdown = false;
 		/* Function doesn't currently return */
 		overheated_blinking(cid);
 	}
@@ -1444,9 +1450,13 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 		//applog(LOG_INFO, "chip :%d flushing queued work success", i);
 	}
 
-	if(!inno_cmd_resetjob(a1, ADDR_BROADCAST))
-	{
-		applog(LOG_WARNING, "chip clear work false");
+    if (!(cgpu->deven == DEV_DISABLED))
+    {
+        if(!inno_cmd_resetjob(a1, ADDR_BROADCAST))
+        {
+            applog(LOG_WARNING, "chip clear work false");
+        }
+
     }
 	
 		
@@ -1650,6 +1660,23 @@ static struct api_data *A1_api_debug(struct cgpu_info *cgpu)
 }
 
 
+static int64_t  A1_shutdown(struct thr_info *thr)
+{
+    struct cgpu_info *cgpu = thr->cgpu;
+    struct A1_chain *a1 = cgpu->device_data;
+    int cid = a1->chain_id;
+    
+     while (42) 
+     {
+        mcompat_set_led(cid, LED_OFF);
+        cgsleep_ms(500);
+        mcompat_set_led(cid, LED_ON);
+        cgsleep_ms(500);
+     }
+     return 0;
+}
+
+
 struct device_drv bitmineA1_drv = {
     .drv_id = DRIVER_bitmineA1,
     .dname = "BitmineA1",
@@ -1663,4 +1690,5 @@ struct device_drv bitmineA1_drv = {
     .get_statline_before = A1_get_statline_before,
     .get_api_stats = A1_api_stats,
 	.get_api_debug = A1_api_debug,
+	.thread_shutdown = A1_shutdown,
 };
