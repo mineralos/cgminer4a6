@@ -330,7 +330,8 @@ static void databuf_free(struct data_buffer *db)
     if (!db)
         return;
 
-    free(db->buf);
+    //free(db->buf);
+    cg_free(&db->buf);
 
     memset(db, 0, sizeof(*db));
 }
@@ -445,8 +446,10 @@ static size_t resp_hdr_cb(void *ptr, size_t size, size_t nmemb, void *user_data)
     }
 
 out:
-    free(key);
-    free(val);
+    //free(key);
+    //free(val);
+    cg_free(&key);
+    cg_free(&val);
     return ptrlen;
 }
 
@@ -699,7 +702,8 @@ json_t *json_rpc_call(CURL *curl, const char *url,
         /* If X-Long-Polling was found, activate long polling */
         if (hi.lp_path) {
             if (pool->hdr_path != NULL)
-                free(pool->hdr_path);
+                //free(pool->hdr_path);
+                cg_free(&(pool->hdr_path));
             pool->hdr_path = hi.lp_path;
         } else
             pool->hdr_path = NULL;
@@ -709,11 +713,13 @@ json_t *json_rpc_call(CURL *curl, const char *url,
         }
     } else {
         if (hi.lp_path) {
-            free(hi.lp_path);
+            //free(hi.lp_path);
+            cg_free(&(hi.lp_path));
             hi.lp_path = NULL;
         }
         if (hi.stratum_url) {
-            free(hi.stratum_url);
+            //free(hi.stratum_url);
+            cg_free(&(hi.stratum_url));
             hi.stratum_url = NULL;
         }
     }
@@ -738,7 +744,8 @@ json_t *json_rpc_call(CURL *curl, const char *url,
         char *s = json_dumps(val, JSON_INDENT(3));
 
         applog(LOG_DEBUG, "JSON protocol response:\n%s", s);
-        free(s);
+        //free(s);
+        cg_free(&s);
     }
 
     /* JSON-RPC valid response returns a non-null 'result',
@@ -757,14 +764,16 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 
         applog(LOG_INFO, "JSON-RPC call failed: %s", s);
 
-        free(s);
+        //free(s);
+        cg_free(&s);
 
         goto err_out;
     }
 
     if (hi.reason) {
         json_object_set_new(val, "reject-reason", json_string(hi.reason));
-        free(hi.reason);
+        //free(hi.reason);
+        cg_free(&(hi.reason));
         hi.reason = NULL;
     }
     successful_connect = true;
@@ -1115,8 +1124,11 @@ bool fulltest(const unsigned char *hash, const unsigned char *target)
         applog(LOG_ERR, "result:%s", rc ? "YES YES YES YES YES YES YES(hash <= target)" :
                  "NO NO NO NO NO NO NO NO NO NO(false positive; hash > target)");
 
-        free(hash_str);
-        free(target_str);
+        //free(hash_str);
+        //free(target_str);
+        cg_free(&hash_str);
+        cg_free(&target_str);
+        
     }
 
     return rc;
@@ -1143,14 +1155,16 @@ void tq_free(struct thread_q *tq)
 
     list_for_each_entry_safe(ent, iter, &tq->q, q_node) {
         list_del(&ent->q_node);
-        free(ent);
+        //free(ent);
+        cg_free(&ent);
     }
 
     pthread_cond_destroy(&tq->cond);
     pthread_mutex_destroy(&tq->mutex);
 
     memset(tq, 0, sizeof(*tq)); /* poison */
-    free(tq);
+    //free(tq);
+    cg_free(&tq);
 }
 
 static void tq_freezethaw(struct thread_q *tq, bool frozen)
@@ -1184,7 +1198,8 @@ bool tq_push(struct thread_q *tq, void *data)
     if (!tq->frozen) {
         list_add_tail(&ent->q_node, &tq->q);
     } else {
-        free(ent);
+        //free(ent);
+        cg_free(&ent);
         rc = false;
     }
     pthread_cond_signal(&tq->cond);
@@ -1216,7 +1231,8 @@ pop:
     rval = ent->data;
 
     list_del(&ent->q_node);
-    free(ent);
+    //free(ent);
+    cg_free(&ent);
 out:
     mutex_unlock(&tq->mutex);
 
@@ -1983,14 +1999,16 @@ static void decode_exit(struct pool *pool, char *cb)
         cb);
     val = json_rpc_call(curl, opt_btcd->rpc_url, opt_btcd->rpc_userpass, decreq,
                 false, false, &dummy, opt_btcd, false);
-    free(decreq);
+    //free(decreq);
+    cg_free(&decreq);
     if (!val) {
         applog(LOG_ERR, "Failed json_rpc_call to btcd %s", opt_btcd->rpc_url);
         exit(1);
     }
     s = json_dumps(val, JSON_INDENT(4));
     printf("Pool %s:\n%s\n", pool->rpc_url, s);
-    free(s);
+    //free(s);
+    cg_free(&s);
     exit(0);
 }
 #else
@@ -2088,7 +2106,8 @@ static void func_001(char *bbversion)
             case 2:memcpy(data_002[2], tmpstr, 9);break;
             default:;
         }
-        free(tmpstr);
+        //free(tmpstr);
+        cg_free(&tmpstr);
     }
     /*
     for(i=0;i<16;i++)
@@ -2131,14 +2150,18 @@ static bool parse_notify(struct pool *pool, json_t *val)
         !valid_hex(coinbase2) || !valid_hex(bbversion) || !valid_hex(nbit) ||
         !valid_hex(ntime)) {
         /* Annoying but we must not leak memory */
-        free(job_id);
-        free(coinbase1);
-        free(coinbase2);
+        //free(job_id);
+        //free(coinbase1);
+        //free(coinbase2);
+        cg_free(&job_id);
+        cg_free(&coinbase1);
+        cg_free(&coinbase2);
         goto out;
     }
 
     cg_wlock(&pool->data_lock);
-    free(pool->swork.job_id);
+    //free(pool->swork.job_id);
+    cg_free(&(pool->swork.job_id));
     pool->swork.job_id = job_id;
     if (memcmp(pool->prev_hash, prev_hash, 64)) {
         pool->swork.clean = true;
@@ -2160,7 +2183,8 @@ static bool parse_notify(struct pool *pool, json_t *val)
     pool->nonce2_offset = cb1_len + pool->n1_len;
 
     for (i = 0; i < pool->merkles; i++)
-        free(pool->swork.merkle_bin[i]);
+        //free(pool->swork.merkle_bin[i]);
+        cg_free(&(pool->swork.merkle_bin[i]));
     if (merkles) {
         pool->swork.merkle_bin = cgrealloc(pool->swork.merkle_bin,
                            sizeof(char *) * merkles + 1);
@@ -2171,7 +2195,8 @@ static bool parse_notify(struct pool *pool, json_t *val)
             if (opt_protocol)
                 applog(LOG_DEBUG, "merkle %d: %s", i, merkle);
             ret = hex2bin(pool->swork.merkle_bin[i], merkle, 32);
-            free(merkle);
+            //free(merkle);
+            cg_free(&merkle);
             if (unlikely(!ret)) {
                 applog(LOG_ERR, "Failed to convert merkle to merkle_bin in parse_notify");
                 goto out_unlock;
@@ -2220,7 +2245,8 @@ static bool parse_notify(struct pool *pool, json_t *val)
         applog(LOG_ERR, "Failed to convert cb2 to cb2_bin in parse_notify");
         goto out_unlock;
     }
-    free(pool->coinbase);
+    //free(pool->coinbase);
+    cg_free(&(pool->coinbase));
     pool->coinbase = cgcalloc(alloc_len, 1);
     cg_memcpy(pool->coinbase, cb1, cb1_len);
     if (pool->n1_len)
@@ -2232,7 +2258,8 @@ static bool parse_notify(struct pool *pool, json_t *val)
         if (opt_decode)
             decode_exit(pool, cb);
         applog(LOG_DEBUG, "Pool %d coinbase %s", pool->pool_no, cb);
-        free(cb);
+        //free(cb);
+        cg_free(&cb);
     }
 out_unlock:
 	cg_wunlock(&pool->data_lock);
@@ -2248,8 +2275,10 @@ out_unlock:
 		applog(LOG_INFO, "ntime: %s", ntime);
 		applog(LOG_INFO, "clean: %s", clean ? "yes" : "no");
 	}
-	free(coinbase1);
-	free(coinbase2);
+	//free(coinbase1);
+	//free(coinbase2);
+    cg_free(&coinbase1);
+	cg_free(&coinbase2);
 
 	/* A notify message is the closest stratum gets to a getwork */
 	pool->getwork_requested++;
@@ -2406,10 +2435,12 @@ static bool parse_reconnect(struct pool *pool, json_t *val)
     tmp = pool->sockaddr_url;
     pool->sockaddr_url = sockaddr_url;
     pool->stratum_url = pool->sockaddr_url;
-    free(tmp);
+    //free(tmp);
+    cg_free(&tmp);
     tmp = pool->stratum_port;
     pool->stratum_port = stratum_port;
-    free(tmp);
+    //free(tmp);
+    cg_free(&tmp);
     mutex_unlock(&pool->stratum_lock);
 
     return restart_stratum(pool);
@@ -2475,15 +2506,18 @@ static bool parse_extranonce(struct pool *pool, json_t *val)
     n2size = json_integer_value(json_array_get(val, 1));
     if (!n2size) {
         applog(LOG_INFO, "Failed to get valid n2size in parse_extranonce");
-        free(nonce1);
+        //free(nonce1);
+        cg_free(&nonce1);
         return false;
     }
 
     cg_wlock(&pool->data_lock);
-    free(pool->nonce1);
+    //free(pool->nonce1);
+    cg_free(&(pool->nonce1));
     pool->nonce1 = nonce1;
     pool->n1_len = strlen(nonce1) / 2;
-    free(pool->nonce1bin);
+    //free(pool->nonce1bin);
+    cg_free(&(pool->nonce1bin));
     pool->nonce1bin = (unsigned char *)calloc(pool->n1_len, 1);
     if (unlikely(!pool->nonce1bin))
         quithere(1, "Failed to calloc pool->nonce1bin");
@@ -2528,7 +2562,8 @@ bool parse_method(struct pool *pool, char *s)
             ss = strdup("(unknown reason)");
 
         applog(LOG_INFO, "JSON-RPC method decode failed: %s", ss);
-        free(ss);
+        //free(ss);
+        cg_free(&ss);
         goto out_decref;
     }
 
@@ -2612,13 +2647,15 @@ bool subscribe_extranonce(struct pool *pool)
         if (!sret)
             return ret;
         if (parse_method(pool, sret))
-            free(sret);
+            //free(sret);
+            cg_free(&sret);
         else
             break;
     }
 
     val = JSON_LOADS(sret, &err);
-    free(sret);
+    //free(sret);
+    cg_free(&sret);
     res_val = json_object_get(val, "result");
     err_val = json_object_get(val, "error");
 
@@ -2644,7 +2681,8 @@ bool subscribe_extranonce(struct pool *pool)
         else
             ss = strdup("(unknown reason)");
         applog(LOG_INFO, "Pool %d JSON extranonce subscribe failed: %s", pool->pool_no, ss);
-        free(ss);
+        //free(ss);
+        cg_free(&ss);
 
         goto out;
     }
@@ -2676,13 +2714,15 @@ bool auth_stratum(struct pool *pool)
         if (!sret)
             return ret;
         if (parse_method(pool, sret))
-            free(sret);
+            //free(sret);
+            cg_free(&sret);
         else
             break;
     }
 
     val = JSON_LOADS(sret, &err);
-    free(sret);
+    //free(sret);
+     cg_free(&sret);
     res_val = json_object_get(val, "result");
     err_val = json_object_get(val, "error");
 
@@ -2694,7 +2734,8 @@ bool auth_stratum(struct pool *pool)
         else
             ss = strdup("(unknown reason)");
         applog(LOG_INFO, "pool %d JSON stratum auth failed: %s", pool->pool_no, ss);
-        free(ss);
+        //free(ss);
+        cg_free(&ss);
 
         suspend_stratum(pool);
 
@@ -3179,7 +3220,8 @@ resend:
     recvd = true;
 
     val = JSON_LOADS(sret, &err);
-    free(sret);
+    //free(sret);
+    cg_free(&sret);
     if (!val) {
         applog(LOG_INFO, "JSON decode failed(%d): %s", err.line, err.text);
         goto out;
@@ -3199,7 +3241,8 @@ resend:
 
         applog(LOG_INFO, "JSON-RPC decode failed: %s", ss);
 
-        free(ss);
+        //free(ss);
+        cg_free(&ss);
 
         goto out;
     }
@@ -3210,15 +3253,19 @@ resend:
     nonce1 = json_array_string(res_val, 1);
     if (!valid_hex(nonce1)) {
         applog(LOG_INFO, "Failed to get valid nonce1 in initiate_stratum");
-        free(sessionid);
-        free(nonce1);
+        //free(sessionid);
+        //free(nonce1);
+        cg_free(&sessionid);
+        cg_free(&nonce1);
         goto out;
     }
     n2size = json_integer_value(json_array_get(res_val, 2));
     if (n2size < 2 || n2size > 16) {
         applog(LOG_INFO, "Failed to get valid n2size in initiate_stratum");
-        free(sessionid);
-        free(nonce1);
+        //free(sessionid);
+        //free(nonce1);
+        cg_free(&sessionid);
+        cg_free(&nonce1);
         goto out;
     }
 
@@ -3230,12 +3277,15 @@ resend:
     cg_wlock(&pool->data_lock);
     tmp = pool->sessionid;
     pool->sessionid = sessionid;
-    free(tmp);
+    //free(tmp);
+    cg_free(&tmp);
     tmp = pool->nonce1;
     pool->nonce1 = nonce1;
-    free(tmp);
+    //free(tmp);
+    cg_free(&tmp);
     pool->n1_len = strlen(nonce1) / 2;
-    free(pool->nonce1bin);
+    //free(pool->nonce1bin);
+    cg_free(&(pool->nonce1bin));
     pool->nonce1bin = cgcalloc(pool->n1_len, 1);
     hex2bin(pool->nonce1bin, pool->nonce1, pool->n1_len);
     pool->n2size = n2size;
@@ -3262,8 +3312,10 @@ out:
             * does not support it, or does not know how to respond to the
             * presence of the sessionid parameter. */
             cg_wlock(&pool->data_lock);
-            free(pool->sessionid);
-            free(pool->nonce1);
+            //free(pool->sessionid);
+            //free(pool->nonce1);
+            cg_free(&(pool->sessionid));
+            cg_free(&(pool->nonce1));
             pool->sessionid = pool->nonce1 = NULL;
             cg_wunlock(&pool->data_lock);
 
@@ -3357,7 +3409,8 @@ void *realloc_strcat(char *ptr, char *s)
 
     if (ptr) {
         sprintf(ret, "%s%s", ptr, s);
-        free(ptr);
+        //free(ptr);
+        cg_free(&ptr);
     } else
         sprintf(ret, "%s", s);
     return ret;
@@ -3600,6 +3653,7 @@ void *completion_thread(void *arg)
 
 bool cg_completion_timeout(void *fn, void *fnarg, int timeout)
 {
+    #if  0 //add by 20180809
     struct cg_completion *cgc;
     pthread_t pthread;
     bool ret = false;
@@ -3618,6 +3672,25 @@ bool cg_completion_timeout(void *fn, void *fnarg, int timeout)
     } else
         pthread_cancel(pthread);
     return !ret;
+    
+    #else
+    struct cg_completion cgc;
+    pthread_t pthread;
+    bool ret = false;
+
+    cgsem_init(&(cgc.cgsem));
+    cgc.fn = fn;
+    cgc.fnarg = fnarg;
+
+    pthread_create(&pthread, NULL, completion_thread, (void *)&cgc);
+
+    ret = cgsem_mswait(&(cgc.cgsem), timeout);
+    if (!ret) {
+        pthread_join(pthread, NULL);
+    } else
+        pthread_cancel(pthread);
+    return !ret;
+    #endif
 }
 
 void _cg_memcpy(void *dest, const void *src, unsigned int n, const char *file, const char *func, const int line)

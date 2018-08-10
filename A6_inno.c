@@ -1425,7 +1425,8 @@ void chain_all_exit(void)
     {
         if (chain[i] == NULL)
             continue;
-        free(chain[i]->chips);
+        //free(chain[i]->chips);
+        cg_free(&(chain[i]->chips));
         #if 0  //add by lzl 20180509
         asic_gpio_write(chain[i]->spi_ctx->led, 1);
         asic_gpio_write(chain[i]->spi_ctx->power_en, 0);
@@ -1435,7 +1436,8 @@ void chain_all_exit(void)
         #endif
         chain[i]->chips = NULL;
         chain[i]->spi_ctx = NULL;
-        free(chain[i]);
+        //free(chain[i]);
+        cg_free(&chain[i]);
     }
 }
 

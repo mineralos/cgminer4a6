@@ -144,6 +144,7 @@ struct A1_chain {
     struct timeval tvScryptCurr;
     struct timeval tvScryptDiff;
     int work_start_delay;
+    time_t lastshare;
 };
 
 struct Test_bench {

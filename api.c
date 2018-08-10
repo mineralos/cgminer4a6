@@ -705,9 +705,12 @@ static void io_free()
         do {
             io_next = io_list->next;
 
-            free(io_list->io_data->ptr);
-            free(io_list->io_data);
-            free(io_list);
+            //free(io_list->io_data->ptr);
+            //free(io_list->io_data);
+            //free(io_list);
+            cg_free(&(io_list->io_data->ptr));
+            cg_free(&(io_list->io_data));
+            cg_free(&io_list);
 
             io_list = io_next;
         } while (io_list != io_head);
@@ -1138,7 +1141,8 @@ static struct api_data *print_data(struct io_data *io_data, struct api_data *roo
                 if (isjson)
                     add_item_buf(item, JSON1);
                 if (escape != original)
-                    free(escape);
+                    //free(escape);
+                    cg_free(&escape);
                 done = true;
                 break;
             case API_UINT8:
@@ -1229,19 +1233,23 @@ static struct api_data *print_data(struct io_data *io_data, struct api_data *roo
         if (!done)
             add_item_buf(item, buf);
 
-        free(root->name);
+        //free(root->name);
+        cg_free(&(root->name));
         if (root->data_was_malloc)
-            free(root->data);
+            //free(root->data);
+            cg_free(&(root->data));
 
         if (root->next == root) {
-            free(root);
+            //free(root);
+            cg_free(&root);
             root = NULL;
         } else {
             tmp = root;
             root = tmp->next;
             root->prev = tmp->prev;
             root->prev->next = root;
-            free(tmp);
+            //free(tmp);
+            cg_free(&tmp);
         }
     }
 
@@ -1652,8 +1660,10 @@ static void markgotdid(LOCKINFO *info, uint64_t id, const char *file, const char
             info->locktries = line->next;
     }
 
-    free(line->stat);
-    free(line);
+    //free(line->stat);
+    //free(line);
+    cg_free(&(line->stat));
+    cg_free(&line);
 }
 
 // Yes this uses locks also ... ;/
@@ -2688,7 +2698,8 @@ static bool pooldetails(char *param, char **url, char **user, char **pass)
     return true;
 
 exitsama:
-    free(ptr);
+    //free(ptr);
+    cg_free(&ptr);
     return false;
 }
 
@@ -2707,7 +2718,8 @@ static void addpool(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *
         ptr = escape_string(param, isjson);
         message(io_data, MSG_INVPDP, 0, ptr, isjson);
         if (ptr != param)
-            free(ptr);
+            //free(ptr);
+            cg_free(&ptr);
         ptr = NULL;
         return;
     }
@@ -2719,7 +2731,8 @@ static void addpool(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *
     ptr = escape_string(url, isjson);
     message(io_data, MSG_ADDPOOL, pool->pool_no, ptr, isjson);
     if (ptr != url)
-        free(ptr);
+        //free(ptr);
+        cg_free(&ptr);
     ptr = NULL;
 }
 
@@ -2953,7 +2966,8 @@ static void removepool(struct io_data *io_data, __maybe_unused SOCKETTYPE c, cha
     message(io_data, MSG_REMPOOL, id, rpc_url, isjson);
 
     if (dofree)
-        free(rpc_url);
+        //free(rpc_url);
+        cg_free(&rpc_url);
     rpc_url = NULL;
 }
 
@@ -3123,7 +3137,8 @@ void dosave(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, b
         ptr = escape_string(param, isjson);
         message(io_data, MSG_BADFN, 0, ptr, isjson);
         if (ptr != param)
-            free(ptr);
+            //free(ptr);
+            cg_free(&ptr);
         ptr = NULL;
         return;
     }
@@ -3134,7 +3149,8 @@ void dosave(struct io_data *io_data, __maybe_unused SOCKETTYPE c, char *param, b
     ptr = escape_string(param, isjson);
     message(io_data, MSG_SAVED, 0, ptr, isjson);
     if (ptr != param)
-        free(ptr);
+        //free(ptr);
+        cg_free(&ptr);
     ptr = NULL;
 }
 
@@ -4165,7 +4181,8 @@ static void head_join(struct io_data *io_data, char *cmdptr, bool isjson, bool *
     }
 
     if (ptr != cmdptr)
-        free(ptr);
+        //free(ptr);
+        cg_free(&ptr);
 }
 
 static void tail_join(struct io_data *io_data, bool isjson)
@@ -4262,7 +4279,8 @@ static void tidyup(__maybe_unused void *arg)
     }
 
     if (ipaccess != NULL) {
-        free(ipaccess);
+        //free(ipaccess);
+        cg_free(&ipaccess);
         ipaccess = NULL;
     }
 
@@ -4397,7 +4415,8 @@ static void setup_groups()
 
     // W (PRIVGROUP) is handled as a special case since it simply means all commands
 
-    free(buf);
+    //free(buf);
+    cg_free(&buf);
     return;
 }
 
@@ -4558,7 +4577,9 @@ popipo:
         ptr = comma;
     }
 
-    free(buf);
+    //free(buf);
+    cg_free(&buf);
+    
 }
 
 static void *quit_thread(__maybe_unused void *userdata)
@@ -4883,7 +4904,8 @@ void api(int api_thr_id)
 
     if (!opt_api_listen) {
         applog(LOG_ERR, "API not running%s", UNAVAILABLE);
-        free(apisock);
+        //free(apisock);
+        cg_free(&apisock);
         return;
     }
 
@@ -4901,7 +4923,8 @@ void api(int api_thr_id)
 
         if (ips == 0) {
             applog(LOG_WARNING, "API not running (no valid IPs specified)%s", UNAVAILABLE);
-            free(apisock);
+            //free(apisock);
+            cg_free(&apisock);
             return;
         }
     }
@@ -4916,7 +4939,8 @@ void api(int api_thr_id)
     hints.ai_family = AF_UNSPEC;
     if (getaddrinfo(opt_api_host, port_s, &hints, &res) != 0) {
         applog(LOG_ERR, "API failed to resolve %s", opt_api_host);
-        free(apisock);
+        //free(apisock);
+        cg_free(&apisock);
         return;
     }
     host = res;
@@ -4929,7 +4953,8 @@ void api(int api_thr_id)
     if (*apisock == INVSOCK) {
         applog(LOG_ERR, "API initialisation failed (%s)%s", SOCKERRMSG, UNAVAILABLE);
         freeaddrinfo(res);
-        free(apisock);
+        //free(apisock);
+        cg_free(&apisock);
         return;
     }
 
@@ -4966,14 +4991,16 @@ void api(int api_thr_id)
 
     if (bound == 0) {
         applog(LOG_ERR, "API bind to port %d failed (%s)%s", port, binderror, UNAVAILABLE);
-        free(apisock);
+        //free(apisock);
+        cg_free(&apisock);
         return;
     }
 
     if (SOCKETFAIL(listen(*apisock, QUEUE))) {
         applog(LOG_ERR, "API3 initialisation failed (%s)%s", SOCKERRMSG, UNAVAILABLE);
         CLOSESOCKET(*apisock);
-        free(apisock);
+        //free(apisock);
+        cg_free(&apisock);
         return;
     }
 
@@ -5168,7 +5195,8 @@ die:
     ;
     pthread_cleanup_pop(true);
 
-    free(apisock);
+    //free(apisock);
+    cg_free(&apisock);
 
     if (opt_debug)
         applog(LOG_DEBUG, "API: terminating due to: %s",

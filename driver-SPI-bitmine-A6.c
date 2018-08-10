@@ -115,6 +115,8 @@ uint8_t cLevelError3[3] = "$";
 uint8_t cLevelError4[3] = "%";
 uint8_t cLevelError5[3] = "*";
 uint8_t cLevelNormal[3] = "+";
+static struct timeval s_print_time[MCOMPAT_CONFIG_MAX_CHAIN_NUM];
+
 
 void inno_log_record(int cid, void* log, int len)
 {
@@ -140,7 +142,9 @@ static bool wq_enqueue(struct work_queue *wq, struct work *work)
     if (work == NULL)
         return false;
     struct work_ent *we = malloc(sizeof(*we));
-    assert(we != NULL);
+    //assert(we != NULL);
+    if (!we)
+        return false;
 
     we->work = work;
     INIT_LIST_HEAD(&we->head);
@@ -160,7 +164,8 @@ static struct work *wq_dequeue(struct work_queue *wq)
     struct work *work = we->work;
 
     list_del(&we->head);
-    free(we);
+    //free(we);
+    cg_free(&we);
     wq->num_elems--;
     return work;
 }
@@ -182,7 +187,8 @@ void exit_A1_chain(struct A1_chain *a1)
 {
     if (a1 == NULL)
         return;
-    free(a1->chips);
+    //free(a1->chips);
+    cg_free(&(a1->chips));
     #if  0  //add by lzl 20180509
     asic_gpio_write(a1->spi_ctx->led, 1);
     asic_gpio_write(a1->spi_ctx->power_en, 0);
@@ -193,7 +199,8 @@ void exit_A1_chain(struct A1_chain *a1)
 	#endif
     a1->chips = NULL;
     a1->spi_ctx = NULL;
-    free(a1);
+    //free(a1);
+    cg_free(&a1);
 }
 
 struct A1_chain *pre_init_A1_chain(struct spi_ctx *ctx, int chain_id)
@@ -621,19 +628,31 @@ static bool detect_A1_chain(void)
 
 #else
 
+
 void *chain_detect_thread(void *argv)
 {
 	int i, cid;
 	int chain_id = *(int*)argv;
 	uint8_t buffer[REG_LENGTH];
 
+    //pthread_detach(pthread_self());
+    //set_highprio();
+    int ret = nice(-10);
+    if (!ret)
+        applog(LOG_ERR, "Unable to set thread to high priority");
+    
 	if (chain_id >= g_chain_num) {
 		applog(LOG_ERR, "invalid chain id %d", chain_id);
 		return NULL;
 	}
 
 	struct A1_chain *a1 = malloc(sizeof(*a1));
-	assert(a1 != NULL);
+	//assert(a1 != NULL);
+	if (!a1) 
+    {
+        applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+        return NULL;
+    }
 	memset(a1, 0, sizeof(struct A1_chain));
 
 	cid = g_chain_id[chain_id];
@@ -655,7 +674,12 @@ void *chain_detect_thread(void *argv)
 	/* FIXME: num_active_chips should be determined by BISTSTART after setting pll */
 	a1->num_active_chips = a1->num_chips;
 	a1->chips = calloc(a1->num_active_chips, sizeof(struct A1_chip));
-    assert (a1->chips != NULL);
+    //assert (a1->chips != NULL);
+    if (!(a1->chips))
+    {
+        applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+        return NULL;
+    }
 
 	/* Config to V-sensor */
 	mcompat_configure_tvsensor(cid, CMD_ADDR_BROADCAST, 0);
@@ -687,15 +711,88 @@ void *chain_detect_thread(void *argv)
 
 failure:
 	if (a1->chips) {
-		free(a1->chips);
+		//free(a1->chips);
+		cg_free(&(a1->chips));
 		a1->chips = NULL;
 	}
-	free(a1);
+	//free(a1);
+	cg_free(&a1);
 
 	g_chain_alive[cid] = 0;
 
 	return NULL;
 }
+
+#if 0
+bool chain_restart(int chain_id)
+{
+	struct cgpu_info *cgpu = chain[chain_id]->cgpu;
+	struct A1_chain *t1 = chain[chain_id];
+	int cid = g_chain_id[chain_id];
+	int retries;
+    int thr_args[1];
+	void *thr_ret[1];
+	pthread_t thr[1];
+    int i;
+
+	/* Chain power down */
+	mcompat_set_led(cid, LED_OFF);
+	mcompat_chain_power_down(cid);
+	g_chain_alive[cid] = 0;
+
+	if (pthread_cancel(t1->worktid) != 0) {
+		applog(LOG_ERR, "chain%d: failed to stop work thread", cid);
+		return false;
+	}
+	if (t1->chips)
+		cg_free(&t1->chips);
+    if (t1->ctx)
+		cg_free(&t1->ctx);
+    if (t1->cgpu)
+		cg_free(&t1->cgpu);
+    if (t1->trimpot)
+		cg_free(&t1->trimpot);
+	cg_free(&t1);
+	chain[chain_id] = NULL;
+
+	/* Chain start */
+	for (retries = 0; retries < 3; ++retries) {
+		//if (chain_detect(1 << chain_id) == 1)
+			//break;
+    /* Chain detect */
+	for (i = 0; i < 1; ++i) {
+		thr_args[i] = i;
+		pthread_create(&thr[i], NULL, chain_detect_thread, (void*)&thr_args[i]);
+	}
+	for (i = 0; i < 1; ++i)
+		pthread_join(thr[i], &thr_ret[i]);
+    
+	applog(LOG_ERR, "chain%d: detect failed, retry %d", cid, retries + 1);
+	}
+	if (retries == 3 || g_chain_alive[cid]) {
+		applog(LOG_ERR, "chain%d: detect failed", cid);
+		return false;
+	}
+
+	applog(LOG_NOTICE, "chain%d: detected %d chips / %d cores",
+		cid, t1->num_active_chips, t1->num_cores);
+
+	/* Other init */
+	cgtime(&cgpu->dev_start_tv);
+	t1->lastshare = cgpu->dev_start_tv.tv_sec;
+	t1->cgpu = cgpu;
+	cgpu->device_data = t1;
+	if ((t1->num_chips <= MAX_CHIP_NUM) && (t1->num_cores <= MAX_CORES))
+		cgpu->mhs_av = (double)opt_T1Pll[cid] * 2ull * (t1->num_cores);
+	else
+		cgpu->mhs_av = 0;
+
+	pthread_cond_init(&t1->cond, NULL);
+	pthread_create(&t1->worktid, NULL, T1_work_thread, cgpu);
+
+	return true;
+}
+#endif
 
 static bool all_chain_detect(void)
 {
@@ -732,7 +829,12 @@ static bool all_chain_detect(void)
 			continue;
 
 		struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
-		assert(cgpu != NULL);
+		//assert(cgpu != NULL);
+		if (!cgpu) 
+        {
+            applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+            return  0 ;
+        }
 		memset(cgpu, 0, sizeof(*cgpu));
 
 		cgpu->drv = &bitmineA1_drv;
@@ -907,6 +1009,7 @@ void A1_detect(bool hotplug)
 	// FIXME: get correct hwver and chain num to init platform
 	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
 	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+    sys_platform_debug_init(MCOMPAT_LOG_INFO);
 	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
 
     #if  0  //add by luozl 20180614
@@ -1064,51 +1167,74 @@ static void get_voltages(struct A1_chain *a1)
 
 static void overheated_blinking(int cid)
 {
-    mcompat_set_led(cid, LED_OFF);
-    cgsleep_ms(500);
-    mcompat_set_led(cid, LED_ON);
-    cgsleep_ms(500);
+
     c_fan_cfg fan_cfg;
     mcompat_fanctrl_get_cfg(&fan_cfg);
     fan_cfg.fan_speed_target = 100;
     fan_cfg.fan_speed = 100;
     mcompat_fanctrl_init(&fan_cfg);
     mcompat_fanctrl_set_bypass(true);
+    if (cid < 0 || cid > 7) 
+    {
+         applog(LOG_ERR, "%s  invalid chain id:%d !",__func__,cid);
+         return ;
+    }
+    mcompat_set_led(cid, LED_OFF);
+    cgsleep_ms(500);
+    mcompat_set_led(cid, LED_ON);
+    cgsleep_ms(500);
     return ;
 }
 
+static struct timeval s_print_time[MCOMPAT_CONFIG_MAX_CHAIN_NUM];
 
 static int64_t  A1_scanwork(struct thr_info *thr)
 {
     int i;
     int32_t A1Pll = 1000;
-    struct cgpu_info *cgpu = thr->cgpu;
-    struct A1_chain *a1 = cgpu->device_data;
-    int32_t nonce_ranges_processed = 0;
-    int cid = a1->chain_id;
     static unsigned char dead[8] = {0,0,0,0,0,0,0,0};
+    static unsigned char tries[8] = {0,0,0,0,0,0,0,0};
     uint32_t nonce;
     uint8_t chip_id;
     uint8_t job_id;
     bool work_updated = false;
     uint8_t reg[REG_LENGTH];
 
-    mutex_lock(&a1->lock);
     static uint8_t last_chip_id,last_cid;
-    static uint8_t same_err_cnt = 0;   
+    static uint8_t same_err_cnt = 0; 
+    struct timeval now;
+
+    if (!thr  || !(thr->cgpu) || !(thr->cgpu->device_data)) 
+    {
+         applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+         return  0 ;
+    }
+    
+    struct cgpu_info *cgpu = thr->cgpu;
+    struct A1_chain *a1 = cgpu->device_data;
+    int32_t nonce_ranges_processed = 0;
+    int cid = a1->chain_id;
+
+    if (cid < 0 ||cid > 7) 
+    {
+         applog(LOG_ERR, "%s  invalid chain id:%d !",__func__,cid);
+         return  0 ;
+    }  
     if (dead[cid] == 1)
     {
         overheated_blinking(cid);
         cgpu->deven = DEV_DISABLED;
         //cgpu->shutdown = false;
-        return 0;
+        return  0 ;
     }
     
-    if (a1->num_cores == 0) {
+    if (a1->num_cores == 0) 
+    {
         cgpu->deven = DEV_DISABLED;
-        return 0;
+        return  0 ;
     }
 
+    mutex_lock(&a1->lock);
     #if  0   //add by lzl 20180614
     if (first_flag[cid] != 1)
     {
@@ -1217,7 +1343,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
     }
     
     #endif
-
+    
+    cgtime(&now);
 	/* poll queued results */
 	while (true)
 	{
@@ -1240,6 +1367,11 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 
 		struct A1_chip *chip = &a1->chips[chip_id - 1];
+        if (!chip) 
+        {
+             applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+             continue;
+        }
 		struct work *work = chip->work[job_id - 1];
 		if (work == NULL) 
 		{
@@ -1276,6 +1408,28 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 		applog(LOG_INFO, "YEAH: %d: chip %d / job_id %d: nonce 0x%08x", cid, chip_id, job_id, nonce);
 		chip->nonces_found++;
+        a1->lastshare = now.tv_sec;
+        tries[cid] = 0;
+	}
+
+    if ((now.tv_sec - a1->lastshare) > CHAIN_DEAD_TIME) 
+    {
+        a1->lastshare = now.tv_sec;
+        tries[cid]++;
+		applog(LOG_ERR, "A4+/A6 chain %d not producing nounce for more than %d mins",
+		       cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+        //if(!inno_cmd_resetjob(a1, ADDR_BROADCAST))
+        if(!mcompat_cmd_resetjob(cid, CMD_ADDR_BROADCAST, reg))
+        {
+            applog(LOG_ERR, "chain:%d spi hub reset failed",cid);
+        }
+        if (tries[cid] == 3)
+        {
+            tries[cid] == 0;
+            mcompat_chain_power_down_all();
+		    quit(1, "A4+/A6 chain %d not producing nounce for more than %d mins,all chains power down",
+                 cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+        }
 	}
 
 	/* check for completed works */
@@ -1298,8 +1452,20 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 					uint8_t c=i;
 					struct A1_chip *chip = &a1->chips[i - 1];
 					struct work *work = wq_dequeue(&a1->active_wq);
-					assert(work != NULL);
-
+					//assert(work != NULL);		
+                    if (!work) 
+                    {
+						cgsleep_ms(10);
+						/* Reducing frequency to print below warning */
+						cgtime(&now);
+						int tv_msec = ms_tdiff(&now, &s_print_time[cid]);						
+						if (tv_msec > 2000) 
+                        {
+							applog(LOG_WARNING, "A6/A4+ chain %d no work in wq_queue", cid);
+							copy_time(&s_print_time[cid], &now);
+						}
+						break;
+					}
 					if (set_work(a1, c, work, 0))
 					{
 						nonce_ranges_processed++;
@@ -1396,6 +1562,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		default:;	
 	}
 
+out_nm:
     if(miner_type == TYPE_A4)
         return (int64_t)(2214663.87 * opt_A1Pll1/ 1000 * (621/9.0) * (a1->tvScryptDiff.tv_usec / 1000000.0));
 	else
@@ -1465,7 +1632,12 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 	while (a1->active_wq.num_elems > 0) 
 	{
 		struct work *work = wq_dequeue(&a1->active_wq);
-		assert(work != NULL);
+		//assert(work != NULL);
+		if (!work) 
+		{
+            applog(LOG_WARNING, "%s line:%d chain %d no work in wq_queue",__func__,__LINE__,a1->chain_id);
+            continue ;
+        }
 		work_completed(cgpu, work);
 	}
 	mutex_unlock(&a1->lock);

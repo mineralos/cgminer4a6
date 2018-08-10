@@ -401,18 +401,24 @@ K_LIST *_k_free_list(K_LIST *list, KLIST_FFL_ARGS)
     }
 
     for (i = 0; i < list->item_mem_count; i++)
-        free(list->item_memory[i]);
-    free(list->item_memory);
+        //free(list->item_memory[i]);
+        cg_free(&(list->item_memory[i]));
+    //free(list->item_memory);
+    cg_free(&(list->item_memory));
 
     for (i = 0; i < list->data_mem_count; i++)
-        free(list->data_memory[i]);
-    free(list->data_memory);
+        //free(list->data_memory[i]);
+        cg_free(&(list->data_memory[i]));
+    //free(list->data_memory);
+    cg_free(&(list->data_memory));
 
     cglock_destroy(list->lock);
 
-    free(list->lock);
+    //free(list->lock);
+    cg_free(&(list->lock));
 
-    free(list);
+    //free(list);
+    cg_free(&list);
 
     return NULL;
 }
@@ -424,7 +430,8 @@ K_STORE *_k_free_store(K_STORE *store, KLIST_FFL_ARGS)
                 store->name, __func__, KLIST_FFL_PASS);
     }
 
-    free(store);
+    //free(store);
+    cg_free(&store);
 
     return NULL;
 }

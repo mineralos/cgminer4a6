@@ -539,6 +539,8 @@ static int include_count;
 #endif // defined(unix)
 
 struct sigaction termhandler, inthandler, abrthandler;
+struct sigaction segv_thandler;
+
 
 struct thread_q *getq;
 
@@ -703,9 +705,12 @@ static void sharelog(const char*disposition, const struct work*work)
 
     // timestamp,disposition,target,pool,dev,thr,sharehash,sharedata
     rv = snprintf(s, sizeof(s), "%lu,%s,%s,%s,%s%u,%u,%s,%s\n", t, disposition, target, pool->rpc_url, cgpu->drv->name, cgpu->device_id, thr_id, hash, data);
-    free(target);
-    free(hash);
-    free(data);
+    //free(target);
+    //free(hash);
+    //free(data);
+     cg_free(&target);
+     cg_free(&hash);
+     cg_free(&data);
     if (rv >= (int)(sizeof(s)))
         s[sizeof(s) - 1] = '\0';
     else if (rv < 0) {
@@ -1046,8 +1051,10 @@ bool detect_stratum(struct pool *pool, char *url)
     }
 out:
     if (!ret) {
-        free(pool->sockaddr_url);
-        free(pool->stratum_port);
+        //free(pool->sockaddr_url);
+        //free(pool->stratum_port);
+        cg_free(&(pool->sockaddr_url));
+        cg_free(&(pool->stratum_port));
         pool->stratum_port = pool->sockaddr_url = NULL;
     }
     return ret;
@@ -2237,7 +2244,8 @@ static char *parse_config(json_t *config, bool fileconf)
                 }
             }
         }
-        free(name);
+        //free(name);
+        cg_free(&name);
     }
 
     val = json_object_get(config, JSON_INCLUDE_CONF);
@@ -2321,7 +2329,8 @@ static void load_default_config(void)
     if (!access(cnfbuf, R_OK))
         load_config(cnfbuf, NULL);
     else {
-        free(cnfbuf);
+        //free(cnfbuf);
+        cg_free(&cnfbuf);
         cnfbuf = NULL;
     }
 }
@@ -2522,10 +2531,14 @@ static struct work *make_work(void)
  * cleaned to remove any dynamically allocated arrays within the struct */
 void clean_work(struct work *work)
 {
-    free(work->job_id);
-    free(work->ntime);
-    free(work->coinbase);
-    free(work->nonce1);
+    //free(work->job_id);
+    //free(work->ntime);
+    //free(work->coinbase);
+    //free(work->nonce1);
+    cg_free(&(work->job_id));
+    cg_free(&(work->ntime));
+    cg_free(&(work->coinbase));
+    cg_free(&(work->nonce1));
     memset(work, 0, sizeof(struct work));
 }
 
@@ -2543,7 +2556,8 @@ void _free_work(struct work **workptr, const char *file, const char *func, const
     }
 
     clean_work(work);
-    free(work);
+    //free(work);
+    cg_free(&work);
     *workptr = NULL;
 }
 
@@ -2662,7 +2676,8 @@ static void gen_gbt_work(struct pool *pool, struct work *work)
 
         applog(LOG_DEBUG, "Generated GBT header %s", header);
         applog(LOG_DEBUG, "Work coinbase %s", work->coinbase);
-        free(header);
+        //free(header);
+        cg_free(&header);
     }
 
     calc_midstate(work);
@@ -2725,14 +2740,16 @@ static bool gbt_decode(struct pool *pool, json_t *res_val)
         applog(LOG_DEBUG, "workid: %s", workid);
 
     cg_wlock(&pool->gbt_lock);
-    free(pool->coinbasetxn);
+    //free(pool->coinbasetxn);
+    cg_free(&(pool->coinbasetxn));
     pool->coinbasetxn = strdup(coinbasetxn);
     cbt_len = strlen(pool->coinbasetxn) / 2;
     /* We add 8 bytes of extra data corresponding to nonce2 */
     pool->n2size = 8;
     pool->coinbase_len = cbt_len + pool->n2size;
     cal_len = pool->coinbase_len + 1;
-    free(pool->coinbase);
+    //free(pool->coinbase);
+    cg_free(&(pool->coinbase));
     pool->coinbase = cgcalloc(cal_len, 1);
     hex2bin(pool->coinbase, pool->coinbasetxn, 42);
     extra_len = (uint8_t *)(pool->coinbase + 41);
@@ -2743,9 +2760,11 @@ static bool gbt_decode(struct pool *pool, json_t *res_val)
         cbt_len - orig_len - 42);
     pool->nonce2_offset = orig_len + 42;
 
-    free(pool->longpollid);
+    //free(pool->longpollid);
+    cg_free(&(pool->longpollid));
     pool->longpollid = strdup(longpollid);
-    free(pool->gbt_workid);
+    //free(pool->gbt_workid);
+    cg_free(&(pool->gbt_workid));
     if (workid)
         pool->gbt_workid = strdup(workid);
     else
@@ -2778,7 +2797,8 @@ static void gbt_merkle_bins(struct pool *pool, json_t *transaction_arr)
     json_t *arr_val;
     int i, j, binleft, binlen;
 
-    free(pool->txn_data);
+    //free(pool->txn_data);
+    cg_free(&(pool->txn_data));
     pool->txn_data = NULL;
     pool->transactions = 0;
     pool->merkles = 0;
@@ -3100,7 +3120,8 @@ static bool gbt_solo_decode(struct pool *pool, json_t *res_val)
             +   1 + 2 + witnessdata_size; // total scriptPubKey size + OP_RETURN + push size + data
     }
 
-    free(pool->coinbase);
+    //free(pool->coinbase);
+    cg_free(&(pool->coinbase));
     pool->coinbase = cgcalloc(len, 1);
     cg_memcpy(pool->coinbase + 41, pool->scriptsig_base, ofs);
     cg_memcpy(pool->coinbase + 41 + ofs, "\xff\xff\xff\xff", 4);
@@ -3949,7 +3970,8 @@ static bool submit_upstream_work(struct work *work, CURL *curl, bool resubmit)
     /* issue JSON-RPC request */
     val = json_rpc_call(curl, pool->rpc_url, pool->rpc_userpass, s, false, false, &rolltime, pool, true);
     cgtime(&tv_submit_reply);
-    free(s);
+    //free(s);
+    cg_free(&s);
 
     if (unlikely(!val)) {
         applog(LOG_INFO, "submit_upstream_work json_rpc_call failed");
@@ -4540,9 +4562,31 @@ static void __kill_work(void)
 
 }
 
+static void print_reason(void)
+{
+    void *array[10];
+    size_t size;
+    #if 1
+    char **strings;
+    size_t i;
+    size = backtrace(array, 10);
+    strings = backtrace_symbols(array, size);
+    applog(LOG_WARNING, "Obtained %d stack frames", size);
+    for (i = 0; i < size; i++)
+        applog(LOG_WARNING, "%s", strings[i]);
+    free(strings);
+    #else
+    int fd = open("/tmp/sighandler.log", O_CREAT | O_RDWR | O_APPEND);
+    size = backtrace(array, 10);
+    backtrace_symbols_fd(array, size, fd);
+    close(fd);
+    #endif
+}
+
 /* This should be the common exit path */
 void kill_work(void)
 {
+    //print_reason();
     cg_completion_timeout(&__kill_work, NULL, 5000);
 
     quit(0, "Shutdown signal received.");
@@ -4584,6 +4628,7 @@ static void sighandler(int __maybe_unused sig)
     sigaction(SIGTERM, &termhandler, NULL);
     sigaction(SIGINT, &inthandler, NULL);
     sigaction(SIGABRT, &abrthandler, NULL);
+    //sigaction(SIGSEGV, &segv_thandler,NULL);
     kill_work();
 }
 
@@ -4901,7 +4946,8 @@ void set_work_ntime(struct work *work, int ntime)
 
     *work_ntime = htobe32(ntime);
     if (work->ntime) {
-        free(work->ntime);
+        //free(work->ntime);
+        cg_free(&(work->ntime));
         work->ntime = bin2hex((unsigned char *)work_ntime, 4);
     }
 }
@@ -5380,7 +5426,8 @@ static bool block_exists(const char *hexstr, const unsigned char *bedata, const 
             oldblock = blocks;
             deleted_block = oldblock->block_no;
             HASH_DEL(blocks, oldblock);
-            free(oldblock);
+            //free(oldblock);
+            cg_free(&oldblock);
         }
         HASH_ADD_STR(blocks, hash, s);
         set_blockdiff(work);
@@ -5547,7 +5594,8 @@ int curses_int(const char *query)
 
     cvar = curses_input(query);
     ret = atoi(cvar);
-    free(cvar);
+    //free(cvar);
+    cg_free(&cvar);
     return ret;
 }
 #endif
@@ -5624,8 +5672,10 @@ static void json_escape_free()
 
     while (jeptr) {
         jenext = jeptr->next;
-        free(jeptr->buf);
-        free(jeptr);
+        //free(jeptr->buf);
+        //free(jeptr);
+        cg_free(&(jeptr->buf));
+        cg_free(&jeptr);
         jeptr = jenext;
     }
 }
@@ -5742,7 +5792,8 @@ void write_config(FILE *fcfg)
                 continue;
             }
         }
-        free(name);
+        //free(name);
+        cg_free(&name);
     }
 
     /* Special case options */
@@ -6183,7 +6234,8 @@ retry:
             struct stat statbuf;
 
             strcpy(filename, str);
-            free(str);
+            //free(str);
+            cg_free(&str);
             if (!stat(filename, &statbuf)) {
                 wlogprint("File exists, overwrite?\n");
                 input = getch();
@@ -6192,7 +6244,8 @@ retry:
             }
         }
         else
-            free(str);
+            //free(str);
+            cg_free(&str);
         fcfg = fopen(filename, "w");
         if (!fcfg) {
             wlogprint("Cannot open or create file\n");
@@ -6657,7 +6710,8 @@ static bool parse_stratum_response(struct pool *pool, char *s)
 
         applog(LOG_INFO, "JSON-RPC non method decode failed: %s", ss);
 
-        free(ss);
+        //free(ss);
+        cg_free(&ss);
 
         goto out;
     }
@@ -6708,7 +6762,8 @@ static bool parse_stratum_response(struct pool *pool, char *s)
     }
     stratum_share_result(val, res_val, err_val, sshare);
     free_work(sshare->work);
-    free(sshare);
+    //free(sshare);
+    cg_free(&sshare);
 
     ret = true;
 out:
@@ -6731,7 +6786,8 @@ void clear_stratum_shares(struct pool *pool)
             diff_cleared += sshare->work->work_difficulty;
             free_work(sshare->work);
             pool->sshares--;
-            free(sshare);
+            //free(sshare);
+            cg_free(&sshare);
             cleared++;
         }
     }
@@ -6940,7 +6996,8 @@ static void *stratum_rthread(void *userdata)
             test_work_current(work);
             free_work(work);
         }
-        free(s);
+        //free(s);
+        cg_free(&s);
     }
 
 out:
@@ -7118,7 +7175,8 @@ static void *stratum_sthread(void *userdata)
         if (unlikely(!submitted)) {
             applog(LOG_DEBUG, "Failed to submit stratum share, discarding");
             free_work(work);
-            free(sshare);
+            //free(sshare);
+            cg_free(&sshare);
             pool->stale_shares++;
             total_stale++;
         } else {
@@ -7213,7 +7271,8 @@ static bool setup_gbt_solo(CURL *curl, struct pool *pool)
         char *cb = bin2hex(pool->coinbase, pool->coinbase_len);
 
         applog(LOG_DEBUG, "Pool %d coinbase %s", pool->pool_no, cb);
-        free(cb);
+        //free(cb);
+        cg_free(&cb);
     }
 out:
     if (val)
@@ -7575,7 +7634,8 @@ void set_target(unsigned char *dest_target, double diff)
         char *htarget = bin2hex(target, 32);
 
         applog(LOG_DEBUG, "Generated target %s", htarget);
-        free(htarget);
+        //free(htarget);
+        cg_free(&htarget);
     }
     cg_memcpy(dest_target, target, 32);
 }
@@ -7627,7 +7687,8 @@ void set_target(unsigned char *dest_target, double diff)
         char *htarget = bin2hex(target, 32);
 
         applog(LOG_DEBUG, "Generated target %s", htarget);
-        free(htarget);
+        //free(htarget);
+        cg_free(&htarget);
     }
     cg_memcpy(dest_target, target, 32);
 }
@@ -7725,8 +7786,10 @@ static void gen_stratum_work(struct pool *pool, struct work *work)
         applog(LOG_DEBUG, "Generated stratum header %s", header);
         applog(LOG_DEBUG, "Work job_id %s nonce2 %"PRIu64" ntime %s", work->job_id,
                work->nonce2, work->ntime);
-        free(header);
-        free(merkle_hash);
+        //free(header);
+        //free(merkle_hash);
+        cg_free(&header);
+        cg_free(&merkle_hash);
     }
 
     calc_midstate(work);
@@ -7867,8 +7930,10 @@ static void gen_solo_work(struct pool *pool, struct work *work)
         applog(LOG_DEBUG, "Generated GBT solo header %s", header);
         applog(LOG_DEBUG, "Work nonce2 %"PRIu64" ntime %s", work->nonce2,
                work->ntime);
-        free(header);
-        free(merkle_hash);
+        //free(header);
+        //free(merkle_hash);
+        cg_free(&header);
+        cg_free(&merkle_hash);
     }
 
     calc_midstate(work);
@@ -9056,7 +9121,8 @@ static void reap_curl(struct pool *pool)
             pool->curls--;
             list_del(&ent->node);
             curl_easy_cleanup(ent->curl);
-            free(ent);
+            //free(ent);
+            cg_free(&ent);
         }
     }
     mutex_unlock(&pool->pool_lock);
@@ -9079,7 +9145,8 @@ static void prune_stratum_shares(struct pool *pool)
         if (sshare->work->pool == pool && current_time > sshare->sshare_time + 120) {
             HASH_DEL(stratum_shares, sshare);
             free_work(sshare->work);
-            free(sshare);
+            //free(sshare);
+            cg_free(&sshare);
             cleared++;
         }
     }
@@ -9626,7 +9693,8 @@ retry:
 
     pass = curses_input("Password [enter for none]");
     if (!strcmp(pass, "-1")) {
-        free(pass);
+        //free(pass);
+        cg_free(&pass);
         pass = strdup("");
     }
 
@@ -9636,18 +9704,24 @@ retry:
     if (!ret) {
         remove_pool(pool);
         wlogprint("URL %s failed alive testing, reinput details\n", url);
-        free(url);
-        free(user);
-        free(pass);
+        //free(url);
+        //free(user);
+        //free(pass);
+        cg_free(&url);
+        cg_free(&user);
+        cg_free(&pass);
         goto retry;
     }
 out:
     immedok(logwin, false);
 
     if (!ret) {
-        free(url);
-        free(user);
-        free(pass);
+        //free(url);
+        //free(user);
+        //free(pass);
+        cg_free(&url);
+        cg_free(&user);
+        cg_free(&pass);
     }
     return ret;
 }
@@ -10267,6 +10341,7 @@ int main(int argc, char *argv[])
         sigaction(SIGTERM, &handler, &termhandler);
         sigaction(SIGINT, &handler, &inthandler);
         sigaction(SIGABRT, &handler, &abrthandler);
+        //sigaction(SIGSEGV, &handler, &segv_thandler);
 #ifndef WIN32
         signal(SIGPIPE, SIG_IGN);
 #else
@@ -10277,7 +10352,8 @@ int main(int argc, char *argv[])
         cgminer_path = alloca(PATH_MAX);
         s = strdup(argv[0]);
         strcpy(cgminer_path, dirname(s));
-        free(s);
+        //free(s);
+        cg_free(&s);
         strcat(cgminer_path, "/");
     
         devcursor = 8;
@@ -10355,7 +10431,8 @@ int main(int argc, char *argv[])
                 default:
                     break;
             }
-            free(cnfbuf);
+            //free(cnfbuf);
+            cg_free(&cnfbuf);
             cnfbuf = NULL;
         }
     

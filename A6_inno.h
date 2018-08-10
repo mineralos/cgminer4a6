@@ -19,6 +19,8 @@
 #define SPI_SPEED_RUN			(SPI_SPEED_6250K)
 const int g_pll_list[PLL_LV_NUM];
 const uint8_t g_pll_regs[PLL_LV_NUM][REG_LENGTH];
+#define CHAIN_DEAD_TIME              (5*60)
+
 
 
 

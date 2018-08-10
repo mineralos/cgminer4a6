@@ -215,6 +215,15 @@ static inline int fsync (int fd)
 
 #define uninitialised_var(x) x = x
 
+#define cg_free(p) \
+	do { \
+		if (p && *(p)) { \
+			free(*(p)); \
+			*(p) = NULL; \
+		} \
+	} while(0)
+
+
 #if defined(__i386__)
 #define WANT_CRYPTOPP_ASM32
 #endif
@@ -619,7 +628,8 @@ static inline void string_elist_add(const char *s, struct list_head *head)
 static inline void string_elist_del(struct string_elist *item)
 {
     if (item->free_me)
-        free(item->string);
+        //free(item->string);
+        cg_free(&(item->string));
     list_del(&item->list);
 }
 

@@ -44,7 +44,8 @@ void save_err_output(const char *fmt, ...)
         err_output = realloc(err_output,
                      strlen(err_output) + strlen(p) + 1);
         strcat(err_output, p);
-        free(p);
+        //free(p);
+        cg_free(&p);
     } else
         err_output = p;
 }   
