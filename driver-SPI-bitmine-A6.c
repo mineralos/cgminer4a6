@@ -643,7 +643,7 @@ void *chain_detect_thread(void *argv)
     
 	if (chain_id >= g_chain_num) {
 		applog(LOG_ERR, "invalid chain id %d", chain_id);
-		return NULL;
+		goto failure;
 	}
 
 	struct A1_chain *a1 = malloc(sizeof(*a1));
@@ -651,7 +651,7 @@ void *chain_detect_thread(void *argv)
 	if (!a1) 
     {
         applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
-        return NULL;
+        goto failure;
     }
 	memset(a1, 0, sizeof(struct A1_chain));
 
@@ -678,7 +678,8 @@ void *chain_detect_thread(void *argv)
     if (!(a1->chips))
     {
         applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
-        return NULL;
+        //return NULL;
+        goto failure;
     }
 
 	/* Config to V-sensor */
@@ -707,7 +708,8 @@ void *chain_detect_thread(void *argv)
 
 	chain[chain_id] = a1;
 
-	return NULL;
+	//return NULL;
+	pthread_exit(0);
 
 failure:
 	if (a1->chips) {
@@ -719,76 +721,81 @@ failure:
 	cg_free(&a1);
 
 	g_chain_alive[cid] = 0;
-
-	return NULL;
+	*((int*)argv) = -1;
+    pthread_exit(argv);
 }
 
-#if 0
+#if   0
 bool chain_restart(int chain_id)
 {
 	struct cgpu_info *cgpu = chain[chain_id]->cgpu;
 	struct A1_chain *t1 = chain[chain_id];
 	int cid = g_chain_id[chain_id];
 	int retries;
-    int thr_args[1];
-	void *thr_ret[1];
-	pthread_t thr[1];
+    int thr_args;
+	void *thr_ret;
+	pthread_t thr;
     int i;
 
 	/* Chain power down */
 	mcompat_set_led(cid, LED_OFF);
 	mcompat_chain_power_down(cid);
 	g_chain_alive[cid] = 0;
-
-	if (pthread_cancel(t1->worktid) != 0) {
-		applog(LOG_ERR, "chain%d: failed to stop work thread", cid);
-		return false;
-	}
-	if (t1->chips)
-		cg_free(&t1->chips);
-    if (t1->ctx)
-		cg_free(&t1->ctx);
-    if (t1->cgpu)
-		cg_free(&t1->cgpu);
-    if (t1->trimpot)
-		cg_free(&t1->trimpot);
+    
+	cg_free(&t1->chips);
+	cg_free(&t1->ctx);
+	cg_free(&t1->cgpu);
+	cg_free(&t1->trimpot);
 	cg_free(&t1);
 	chain[chain_id] = NULL;
 
 	/* Chain start */
-	for (retries = 0; retries < 3; ++retries) {
+	for (retries = 0; retries < 3; ++retries) 
+    {
 		//if (chain_detect(1 << chain_id) == 1)
 			//break;
-    /* Chain detect */
-	for (i = 0; i < 1; ++i) {
-		thr_args[i] = i;
-		pthread_create(&thr[i], NULL, chain_detect_thread, (void*)&thr_args[i]);
-	}
-	for (i = 0; i < 1; ++i)
-		pthread_join(thr[i], &thr_ret[i]);
-    
-	applog(LOG_ERR, "chain%d: detect failed, retry %d", cid, retries + 1);
+        /* Chain detect */
+        thr_args = cid;
+    	pthread_create(&thr, NULL, chain_detect_thread, (void*)&thr_args);
+    	pthread_join(thr, &thr_ret);
+        if (*thr_ret == 0)
+        {
+            break;
+        } 
+    	applog(LOG_ERR, "chain%d:  restart failed, retry %d", cid, retries + 1);
 	}
 	if (retries == 3 || g_chain_alive[cid]) {
 		applog(LOG_ERR, "chain%d: detect failed", cid);
 		return false;
 	}
+	if (!g_chain_alive[cid])
+		return false;
 
-	applog(LOG_NOTICE, "chain%d: detected %d chips / %d cores",
-		cid, t1->num_active_chips, t1->num_cores);
+	struct cgpu_info *cgpu = malloc(sizeof(*cgpu));
+	//assert(cgpu != NULL);
+	if (!cgpu) 
+    {
+        applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+        return  0 ;
+    }
+	memset(cgpu, 0, sizeof(*cgpu));
 
-	/* Other init */
-	cgtime(&cgpu->dev_start_tv);
-	t1->lastshare = cgpu->dev_start_tv.tv_sec;
-	t1->cgpu = cgpu;
-	cgpu->device_data = t1;
-	if ((t1->num_chips <= MAX_CHIP_NUM) && (t1->num_cores <= MAX_CORES))
-		cgpu->mhs_av = (double)opt_T1Pll[cid] * 2ull * (t1->num_cores);
+	cgpu->drv = &bitmineA1_drv;
+	cgpu->name = "BitmineA1.SingleChain";
+	cgpu->threads = 1;
+	cgpu->chainNum = cid;
+	cgpu->device_data = chain[i];
+
+	if ((chain[i]->num_chips <= MAX_CHIP_NUM) && (chain[i]->num_cores <= MAX_CORES))
+		cgpu->mhs_av = (double)(opt_A1Pll1 *  (chain[i]->num_cores) / 2);
 	else
 		cgpu->mhs_av = 0;
+	cgtime(&cgpu->dev_start_tv); 
+	chain[i]->cgpu = cgpu;
+	add_cgpu(cgpu);
 
-	pthread_cond_init(&t1->cond, NULL);
-	pthread_create(&t1->worktid, NULL, T1_work_thread, cgpu);
+	applog(LOG_NOTICE, "chain%d: detected %d chips / %d cores",
+		cid, chain[i]->num_active_chips, chain[i]->num_cores);
 
 	return true;
 }
@@ -848,8 +855,8 @@ static bool all_chain_detect(void)
 		else
 			cgpu->mhs_av = 0;
 
-		cgtime(&cgpu->dev_start_tv);
-		//chain[i]->lastshare = cgpu->dev_start_tv.tv_sec;
+		cgtime(&cgpu->dev_start_tv); 
+  		//chain[i]->lastshare = cgpu->dev_start_tv.tv_sec;
 		chain[i]->cgpu = cgpu;
 		add_cgpu(cgpu);
 
@@ -1209,15 +1216,18 @@ static int64_t  A1_scanwork(struct thr_info *thr)
          applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
          return  0 ;
     }
-    
     struct cgpu_info *cgpu = thr->cgpu;
     struct A1_chain *a1 = cgpu->device_data;
+    
+    mutex_lock(&a1->lock);
+    
     int32_t nonce_ranges_processed = 0;
+    
     int cid = a1->chain_id;
-
     if (cid < 0 ||cid > 7) 
     {
          applog(LOG_ERR, "%s  invalid chain id:%d !",__func__,cid);
+         mutex_unlock(&a1->lock);
          return  0 ;
     }  
     if (dead[cid] == 1)
@@ -1225,16 +1235,18 @@ static int64_t  A1_scanwork(struct thr_info *thr)
         overheated_blinking(cid);
         cgpu->deven = DEV_DISABLED;
         //cgpu->shutdown = false;
+        mutex_unlock(&a1->lock);
         return  0 ;
     }
     
     if (a1->num_cores == 0) 
     {
         cgpu->deven = DEV_DISABLED;
+        mutex_unlock(&a1->lock);
         return  0 ;
     }
 
-    mutex_lock(&a1->lock);
+    //mutex_lock(&a1->lock);
     #if  0   //add by lzl 20180614
     if (first_flag[cid] != 1)
     {
@@ -1331,8 +1343,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 	}
 
-    #else
-    
+    //#else
     if (a1->last_temp_time + TEMP_UPDATE_INT_MS < get_current_ms()) {
         check_disbale_flag[cid]++;
 
@@ -1426,9 +1437,22 @@ static int64_t  A1_scanwork(struct thr_info *thr)
         if (tries[cid] == 3)
         {
             tries[cid] == 0;
-            mcompat_chain_power_down_all();
-		    quit(1, "A4+/A6 chain %d not producing nounce for more than %d mins,all chains power down",
+            #if  0
+    		/* Restart chain */
+    		if (!chain_restart(t1->chain_idx))
+            {
+        		applog(LOG_ERR, "chain%d: failed to restart, dead", cid);
+              	mcompat_chain_power_down_all();
+                sleep(5);
+    		    quit(1, "A4+/A6 chain %d not producing nounce for more than %d mins,all chains power down",
+                     cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+    		}
+           #else
+           mcompat_chain_power_down_all();
+           sleep(5);
+		   quit(1, "A4+/A6 chain %d not producing nounce for more than %d mins,all chains power down",
                  cid, (tries[cid]*CHAIN_DEAD_TIME / 60));
+            #endif
         }
 	}
 
@@ -1486,6 +1510,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 	}
 
+    #if 0  //add by lzl 20180813
 	if(check_disbale_flag[cid] > CHECK_DISABLE_TIME)
 	{
 		applog(LOG_INFO, "start to check disable chips");
@@ -1502,6 +1527,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 		}
 		check_disbale_flag[cid] = 0;
 	}
+    #endif
     
     #if 1  //add by lzl 20180614
     /* Temperature control */
@@ -1636,7 +1662,9 @@ static void A1_flush_work(struct cgpu_info *cgpu)
 		if (!work) 
 		{
             applog(LOG_WARNING, "%s line:%d chain %d no work in wq_queue",__func__,__LINE__,a1->chain_id);
-            continue ;
+            //continue ;
+            break;
+            
         }
 		work_completed(cgpu, work);
 	}
