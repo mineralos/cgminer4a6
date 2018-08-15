@@ -628,6 +628,117 @@ static bool detect_A1_chain(void)
 
 #else
 
+#if  1   //add by lzl 20180813
+static void get_voltages(struct A1_chain *a1)
+{
+	int i;
+    int volt[MAX_CHIP_NUM] = {0};
+    int total = 0;
+
+	//configure for vsensor
+	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 0);
+    mcompat_get_chip_volt(a1->chain_id, volt);
+
+	for (i = 0; i < a1->num_active_chips; i++)
+	{
+        a1->chips[i].nVol = volt[i];
+        //s_reg_ctrl.stat_val[a1->chain_id][0] = volt[i];
+        total += volt[i];
+    }
+    s_reg_ctrl.avarge_vol[a1->chain_id] = total /(a1->num_active_chips); 
+    //inno_get_voltage_stats(a1, &s_reg_ctrl);
+	//configure for tsensor
+	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 1);
+}
+#else
+bool A6_check_voltage(struct A1_chain *t1, int chip_id, inno_reg_ctrl_t *s_reg_ctrl)
+{
+	uint32_t rd[3], rd_min = 0xFFFFFFFF, rd_max = 0, rd_v = 0;
+	int cid = t1->chain_id, i;
+	uint8_t reg[REG_LENGTH] = {0};
+
+	/* Oversample by reading voltage 3 times and choosing middle value */
+	for (i = 0; i < 3; i++) {
+		if (unlikely(!mcompat_cmd_read_register(cid, chip_id, reg, REG_LENGTH))) {
+			applog(LOG_NOTICE, "%d: Failed to read register for ""chip %d -> disabling",
+			       cid, chip_id);
+			t1->chips[chip_id - 1].num_cores = 0;
+			t1->chips[chip_id - 1].disabled = 1;
+			return false;
+		}
+		rd[i] = 0x000003ff & ((reg[7] << 8) | reg[8]);
+		if (rd[i] < rd_min)
+			rd_min = rd[i];
+		if (rd[i] > rd_max)
+			rd_max = rd[i];
+	}
+	rd_v = rd_min;
+	for (i = 0; i < 3; i++) {
+		if (rd[i] > rd_v && rd[i] < rd_max)
+			rd_v = rd[i];
+	}
+
+	/* update temp database */
+	//t1->chips[chip_id - 1].nVol = (rd_v * VOLT_COEF_10NM) >> 10;
+	t1->chips[chip_id - 1].nVol = (rd_v * VOLT_COEF_14NM) >> 10;
+	s_reg_ctrl->stat_val[t1->chain_id][chip_id-1] = t1->chips[chip_id-1].nVol;
+	//applog(LOG_ERR, "[Read VOL %s:%d]rd_v = %d, tmp_v = %d",__FUNCTION__,__LINE__,rd_v,t1->chips[chip_id-1].nVol);
+
+	return true;
+}
+
+int A6_get_voltage_stats(struct A1_chain *t1, inno_reg_ctrl_t *s_reg_ctrl)
+{
+	int i = 0;
+	int cid = t1->chain_id;
+	s_reg_ctrl->highest_vol[cid] = s_reg_ctrl->stat_val[cid][0];
+	s_reg_ctrl->lowest_vol[cid] = s_reg_ctrl->stat_val[cid][0];
+	int total_vol = 0;
+	int cnt = 0;
+
+	if ((t1->num_active_chips < 1) || (t1 == NULL))
+		return -1;
+
+	for (i = 0; i < t1->num_active_chips; i++) {
+		if (s_reg_ctrl->highest_vol[cid] < s_reg_ctrl->stat_val[cid][i])
+			s_reg_ctrl->highest_vol[cid] = s_reg_ctrl->stat_val[cid][i];
+
+		if (s_reg_ctrl->lowest_vol[cid] > s_reg_ctrl->stat_val[cid][i])
+			s_reg_ctrl->lowest_vol[cid] = s_reg_ctrl->stat_val[cid][i];
+
+		// Ignore voltage value 0
+		if (s_reg_ctrl->stat_val[cid][i] > 0) {
+			total_vol += s_reg_ctrl->stat_val[cid][i];
+			cnt++;
+		}
+	}
+
+	// Ignore max and min voltages
+	if (cnt > 2) {
+		s_reg_ctrl->avarge_vol[cid] =
+			(total_vol - s_reg_ctrl->highest_vol[cid] - s_reg_ctrl->lowest_vol[cid]) / (cnt - 2);
+	} else
+		s_reg_ctrl->avarge_vol[cid] = 0;
+
+	return 0;
+}
+
+
+static void get_voltages(struct A1_chain *t1)
+{
+	int i;
+
+	//configure for vsensor
+	mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 0);
+	for (i = 0; i < t1->num_active_chips; i++)
+		A6_check_voltage(t1, i + 1, &s_reg_ctrl);
+
+	//configure for tsensor
+	mcompat_configure_tvsensor(t1->chain_id, CMD_ADDR_BROADCAST, 1);
+
+	A6_get_voltage_stats(t1, &s_reg_ctrl);
+}
+#endif
 
 void *chain_detect_thread(void *argv)
 {
@@ -689,15 +800,17 @@ void *chain_detect_thread(void *argv)
 	/* Collect core number and read voltage for each chip */
 	for (i = 0; i < a1->num_active_chips; ++i) {
 		check_chip(a1, i);
-		s_reg_ctrl.stat_val[cid][i] = a1->chips[i].nVol;
+		//s_reg_ctrl.stat_val[cid][i] = a1->chips[i].nVol;
     }
-
+    get_voltages(a1);
 	/* Config to T-sensor */
 	mcompat_configure_tvsensor(cid, CMD_ADDR_BROADCAST, 1);
 	usleep(1000);
 
 	/* Chip voltage stat. */
 	inno_get_voltage_stats(a1, &s_reg_ctrl);
+    applog(LOG_ERR, "chain_id %d :Vol_mean:%f;Vol_max:%f;Vol_min:%f\n",a1->chain_id,   \
+           s_reg_ctrl.avarge_vol[a1->chain_id],s_reg_ctrl.highest_vol[a1->chain_id],s_reg_ctrl.lowest_vol[a1->chain_id]);
     
     sprintf(volShowLog[a1->chain_id], "+         %2d  |  %8f  |  %8f  |  %8f  |\n",a1->chain_id,   \
                      s_reg_ctrl.highest_vol[a1->chain_id],s_reg_ctrl.avarge_vol[a1->chain_id],s_reg_ctrl.lowest_vol[a1->chain_id]);
@@ -970,6 +1083,8 @@ void A1_detect(bool hotplug)
 
 #else
 
+
+
 void A1_detect(bool hotplug)
 {
     /* no hotplug support for SPI */
@@ -1154,23 +1269,6 @@ static void get_temperatures(struct A1_chain *a1)
 	for (i = 0; i < a1->num_active_chips; i++)
 		a1->chips[i].temp = temp[i];
 }
-
-static void get_voltages(struct A1_chain *a1)
-{
-	int i;
-    int volt[MAX_CHIP_NUM] = {0};
-
-	//configure for vsensor
-	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 0);
-    mcompat_get_chip_volt(a1->chain_id, volt);
-
-	for (i = 0; i < a1->num_active_chips; i++)
-        a1->chips[i].nVol = volt[i];
-          
-	//configure for tsensor
-	mcompat_configure_tvsensor(a1->chain_id, CMD_ADDR_BROADCAST, 1);
-}
-
 
 static void overheated_blinking(int cid)
 {
@@ -1423,7 +1521,8 @@ static int64_t  A1_scanwork(struct thr_info *thr)
         tries[cid] = 0;
 	}
 
-    if ((now.tv_sec - a1->lastshare) > CHAIN_DEAD_TIME) 
+    //if ((now.tv_sec - a1->lastshare) > CHAIN_DEAD_TIME) 
+    if (((now.tv_sec - a1->lastshare) > CHAIN_DEAD_TIME) && (cgpu->accepted == 0))
     {
         a1->lastshare = now.tv_sec;
         tries[cid]++;
@@ -1434,7 +1533,7 @@ static int64_t  A1_scanwork(struct thr_info *thr)
         {
             applog(LOG_ERR, "chain:%d spi hub reset failed",cid);
         }
-        if (tries[cid] == 3)
+        if (tries[cid] == 4)
         {
             tries[cid] == 0;
             #if  0

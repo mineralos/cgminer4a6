@@ -46,9 +46,9 @@ MINER_TYPE_SUM,
 */
 
 typedef struct{
-   float highest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
-   float lowest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
-   float avarge_vol[ASIC_CHAIN_NUM];    /* chip temp bits */; 
+   double highest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   double lowest_vol[ASIC_CHAIN_NUM];    /* chip temp bits */;
+   double avarge_vol[ASIC_CHAIN_NUM];    /* chip temp bits */; 
    int stat_val[ASIC_CHAIN_NUM][ASIC_CHIP_NUM]; 
    int stat_cnt[ASIC_CHAIN_NUM][ASIC_CHIP_NUM];
 }inno_reg_ctrl_t;
