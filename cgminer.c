@@ -1094,6 +1094,16 @@ static char * s_url2 = "stratum+tcp://ltc.s.innomining.com:1900";
 static char * s_user = "inno17.000";
 #endif
 
+int g_miner_lock_state = 0;
+int g_read_pool_file = 0;
+struct pool_config {
+    char pool_url[512];
+    char pool_user[512];
+    char pool_pass[512];
+};
+struct pool_config g_encrypt_pool[3];
+
+
 static char *set_url(char *arg)
 {
     struct pool *pool = add_url();
@@ -1105,17 +1115,37 @@ static char *set_url(char *arg)
 
     applog(LOG_ERR, "start to set url ");
 
-#if LOCK_USER
+    #if 0  //add by lzl 20180815
+    #if LOCK_USER
     if((strstr(arg, ".f2pool.com") == NULL) && (strstr(arg, ".innomining.com") == NULL))
     {
         applog(LOG_ERR, "start to set default url %s", arg);
         setup_url(pool, s_url1);
     }
     else
-#endif
+    #endif
     {
         setup_url(pool, arg);
     }
+    #else
+    if (g_miner_lock_state && g_read_pool_file)
+    {
+        if (pool->pool_no < 3)
+        {
+            char *buf = NULL;
+            buf = (char *)malloc(strlen(g_encrypt_pool[pool->pool_no].pool_url)+1);
+            assert(buf);
+            memset(buf, 0, strlen(g_encrypt_pool[pool->pool_no].pool_url)+1);
+            memcpy(buf, g_encrypt_pool[pool->pool_no].pool_url, strlen(g_encrypt_pool[pool->pool_no].pool_url));
+            setup_url(pool, buf);
+        }
+    }
+    else
+    {
+        setup_url(pool, arg);
+    }
+    #endif
+
     return NULL;
 }
 
@@ -1160,17 +1190,33 @@ static char *set_user(const char *arg)
 
     pool = pools[total_users - 1];
 
-#if LOCK_USER
+    #if  0   //add by lzl 20180815
+    #if LOCK_USER
     if(strstr(arg, "inno17.") == NULL)
     {
         applog(LOG_ERR, "start to set default user:%s", arg);
         opt_set_charp(s_user, &pool->rpc_user);
     }
     else
-#endif
+    #endif
     {
         opt_set_charp(arg, &pool->rpc_user);
     }
+    #else
+    if(g_miner_lock_state && g_read_pool_file)
+    {
+        char *usr = NULL;
+        usr = (char *)malloc(strlen(g_encrypt_pool[pool->pool_no].pool_user) + strlen(arg)+2);
+        assert(usr);
+        memset(usr, 0, strlen(g_encrypt_pool[pool->pool_no].pool_user) + strlen(arg)+2);
+        sprintf(usr,"%s.%s",g_encrypt_pool[pool->pool_no].pool_user,arg);
+        opt_set_charp(usr, &pool->rpc_user);
+    }
+    else
+    {
+        opt_set_charp(arg, &pool->rpc_user);
+    }
+    #endif
 
     return NULL;
 }
@@ -1186,7 +1232,24 @@ static char *set_pass(const char *arg)
         add_pool();
 
     pool = pools[total_passes - 1];
+
+    #if 0   //add by lzl 20180815
     opt_set_charp(arg, &pool->rpc_pass);
+    #else
+    if(g_miner_lock_state && g_read_pool_file)
+    {
+        char *pass = NULL;
+        pass = (char *)malloc(strlen(g_encrypt_pool[pool->pool_no].pool_pass)+1);
+        assert(pass);
+        memset(pass, 0, strlen(g_encrypt_pool[pool->pool_no].pool_pass)+1);
+        memcpy(pass, g_encrypt_pool[pool->pool_no].pool_pass, strlen(g_encrypt_pool[pool->pool_no].pool_pass));
+        opt_set_charp(pass, &pool->rpc_pass);
+    }
+    else
+    {
+        opt_set_charp(arg, &pool->rpc_pass);
+    }
+    #endif
 
     return NULL;
 }
@@ -10367,6 +10430,20 @@ int main(int argc, char *argv[])
         strcpy(current_hash, block->hash);
     
         INIT_LIST_HEAD(&scan_devices);
+
+        //judge the environment variable to lock the pool or not
+        g_miner_lock_state = mcompat_read_lock();
+        //applog(LOG_ERR,"g_miner_lock_state: %d",g_miner_lock_state);
+        if(g_miner_lock_state)
+        {
+            if(mcompat_parse_pool_file(g_encrypt_pool))
+            {
+                applog(LOG_ERR,"Encrypt pool 1: %s %s %s",g_encrypt_pool[0].pool_url,g_encrypt_pool[0].pool_user,g_encrypt_pool[0].pool_pass);
+                applog(LOG_ERR,"Encrypt pool 2: %s %s %s",g_encrypt_pool[1].pool_url,g_encrypt_pool[1].pool_user,g_encrypt_pool[1].pool_pass);
+                applog(LOG_ERR,"Encrypt pool 3: %s %s %s",g_encrypt_pool[2].pool_url,g_encrypt_pool[2].pool_user,g_encrypt_pool[2].pool_pass);
+                g_read_pool_file = 1;
+            }
+        }
     
         /* parse command line */
         opt_register_table(opt_config_table,
