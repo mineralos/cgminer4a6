@@ -381,6 +381,7 @@ int opt_A1Pll6=1100; // -1 Default
 int opt_A1Pll7=1100; // -1 Default
 int opt_A1Pll8=1100; // -1 Defaul
 
+#if  0  //add by lzl 20180816
 int opt_voltage1 = 20;
 int opt_voltage2 = 20;
 int opt_voltage3 = 20;
@@ -389,6 +390,16 @@ int opt_voltage5 = 20;
 int opt_voltage6 = 20;
 int opt_voltage7 = 20;
 int opt_voltage8 = 20;
+#else
+int opt_voltage1 = 22;
+int opt_voltage2 = 22;
+int opt_voltage3 = 22;
+int opt_voltage4 = 22;
+int opt_voltage5 = 22;
+int opt_voltage6 = 22;
+int opt_voltage7 = 22;
+int opt_voltage8 = 22;
+#endif
 
 #endif
 
@@ -1115,7 +1126,7 @@ static char *set_url(char *arg)
 
     applog(LOG_ERR, "start to set url ");
 
-    #if 0  //add by lzl 20180815
+    #if 1  //add by lzl 20180815
     #if LOCK_USER
     if((strstr(arg, ".f2pool.com") == NULL) && (strstr(arg, ".innomining.com") == NULL))
     {
@@ -1190,7 +1201,7 @@ static char *set_user(const char *arg)
 
     pool = pools[total_users - 1];
 
-    #if  0   //add by lzl 20180815
+    #if  1   //add by lzl 20180815
     #if LOCK_USER
     if(strstr(arg, "inno17.") == NULL)
     {
@@ -1233,7 +1244,7 @@ static char *set_pass(const char *arg)
 
     pool = pools[total_passes - 1];
 
-    #if 0   //add by lzl 20180815
+    #if 1   //add by lzl 20180815
     opt_set_charp(arg, &pool->rpc_pass);
     #else
     if(g_miner_lock_state && g_read_pool_file)
@@ -10431,6 +10442,7 @@ int main(int argc, char *argv[])
     
         INIT_LIST_HEAD(&scan_devices);
 
+        #if  0  //add by lzl 2018016
         //judge the environment variable to lock the pool or not
         g_miner_lock_state = mcompat_read_lock();
         //applog(LOG_ERR,"g_miner_lock_state: %d",g_miner_lock_state);
@@ -10444,6 +10456,7 @@ int main(int argc, char *argv[])
                 g_read_pool_file = 1;
             }
         }
+        #endif
     
         /* parse command line */
         opt_register_table(opt_config_table,

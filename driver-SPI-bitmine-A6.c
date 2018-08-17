@@ -745,6 +745,7 @@ void *chain_detect_thread(void *argv)
 	int i, cid;
 	int chain_id = *(int*)argv;
 	uint8_t buffer[REG_LENGTH];
+    pthread_mutex_t lock_vid;
 
     //pthread_detach(pthread_self());
     //set_highprio();
@@ -777,6 +778,20 @@ void *chain_detect_thread(void *argv)
 	if (!mcompat_chain_set_pll_vid(cid, opt_A1Pll1, opt_voltage1)) {
 		goto failure;
 	}
+
+    //pthread_mutex_init(&lock_vid,NULL);
+    //pthread_mutex_lock(&lock_vid);
+    #if  0   //add by lzl 20180817
+    for (i = 0 ; i< 2 ; ++i)
+	{
+        usleep(500000);
+		mcompat_set_vid(cid, opt_voltage1);
+		mcompat_log(MCOMPAT_LOG_NOTICE, "chain%d: set VID %d", chain_id, opt_voltage1);
+		usleep(500000);
+	}
+    #endif
+    //pthread_mutex_unlock(&lock_vid);
+    //pthread_mutex_destroy(&lock_vid);
 
 	if (!mcompat_chain_init(cid, SPI_SPEED_RUN, false)) {
 		goto failure;
@@ -1093,6 +1108,7 @@ void A1_detect(bool hotplug)
         
     struct timeval test_tv;
     int j = 0;
+    int i = 0;
     /* parse bimine-a1-options */
     if (opt_bitmine_a1_options != NULL && parsed_config_options == NULL) {
         int ref_clk = 0;
@@ -1194,7 +1210,15 @@ void A1_detect(bool hotplug)
     A1Pll8 = A1_ConfigA1PLLClock(opt_A1Pll8);
 
    	all_chain_detect();
-
+    for (j = 0; j < g_chain_num; ++j) 
+    {
+        for (i = 0 ; i< 2 ; ++i)
+    	{
+    		mcompat_set_vid(g_chain_id[j], opt_voltage1);
+    		mcompat_log(MCOMPAT_LOG_NOTICE, "chain%d: set VID %d", g_chain_id[j], opt_voltage1);
+    		sleep(1);
+    	}
+	}
     applog(LOG_WARNING, "A1 dectect finish");
 
     /* Now adjust target temperature for runtime setting */
@@ -1272,13 +1296,16 @@ static void get_temperatures(struct A1_chain *a1)
 
 static void overheated_blinking(int cid)
 {
-
+    
+    #if  0   //add by lzl 20180817
     c_fan_cfg fan_cfg;
     mcompat_fanctrl_get_cfg(&fan_cfg);
     fan_cfg.fan_speed_target = 100;
     fan_cfg.fan_speed = 100;
     mcompat_fanctrl_init(&fan_cfg);
     mcompat_fanctrl_set_bypass(true);
+
+    
     if (cid < 0 || cid > 7) 
     {
          applog(LOG_ERR, "%s  invalid chain id:%d !",__func__,cid);
@@ -1289,6 +1316,9 @@ static void overheated_blinking(int cid)
     mcompat_set_led(cid, LED_ON);
     cgsleep_ms(500);
     return ;
+    #else
+    return ;
+    #endif
 }
 
 static struct timeval s_print_time[MCOMPAT_CONFIG_MAX_CHAIN_NUM];
@@ -1871,7 +1901,7 @@ static struct api_data *A1_api_stats(struct cgpu_info *cgpu)
     //ROOT_ADD_API(int, "Fan duty", cgpu->fan_duty, false);
     ROOT_ADD_API(int, "Fan duty", fan_speed, true);
 //	ROOT_ADD_API(bool, "FanOptimal", g_fan_ctrl.optimal, false);
-	ROOT_ADD_API(int, "iVid", t1->vid, false);
+	ROOT_ADD_API(int, "iVid", opt_voltage1, false);
     ROOT_ADD_API(int, "PLL", t1->pll, false);
 	ROOT_ADD_API(double, "Voltage Max", s_reg_ctrl.highest_vol[t1->chain_id], false);
 	ROOT_ADD_API(double, "Voltage Min", s_reg_ctrl.lowest_vol[t1->chain_id], false);

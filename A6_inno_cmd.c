@@ -505,6 +505,8 @@ bool inno_cmd_write_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 
 bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
 {
+    bool ret = true;
+    static int tries[8] = {0,};
     #if  0   //add by lzl 20180509
     int i,j;
     int tx_len;
@@ -579,8 +581,39 @@ bool inno_cmd_read_reg(struct A1_chain *pChain, uint8_t chip_id, uint8_t *reg)
     
     return false;
 	#else
-	return mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);  //寄存器的长度必须传对
-	
+	//return mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);  //寄存器的长度必须传对
+    if (!pChain) 
+    {
+         applog(LOG_ERR, "%s    line:%d  null pointer !",__func__,__LINE__);
+         return false;
+    } 
+    ret = mcompat_cmd_read_register(pChain->chain_id,chip_id, reg,REG_LENGTH);
+    if (ret)
+    {
+        tries[pChain->chain_id] = 0;
+        return true;
+    }
+    else
+    {
+        tries[pChain->chain_id]++;
+        
+        if ((pChain->cgpu->accepted != 0) && (tries[pChain->chain_id] >= 100))
+        {
+            tries[pChain->chain_id] = 0;
+            chain_all_exit();
+            sys_platform_exit();
+            sleep(3);
+            quit(1, "chain_id  %d failed to recv spi data ,so power down all chains\n", pChain->chain_id); 
+            return false;  
+        }
+        else
+        {
+            return false;  
+        }
+    }
+ 
+    
+    return false;
 	#endif
 }
 
