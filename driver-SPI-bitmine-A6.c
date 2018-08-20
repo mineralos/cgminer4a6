@@ -1146,7 +1146,12 @@ void A1_detect(bool hotplug)
 
 	// FIXME: get correct hwver and chain num to init platform
 	//sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_T1, MAX_CHAIN_NUM, MAX_CHIP_NUM);
-	sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+    #ifdef USE_HARDWARE_SOC
+    sys_platform_init(PLATFORM_SOC_HUB, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+    #else
+    sys_platform_init(PLATFORM_ZYNQ_HUB_G19, MCOMPAT_LIB_MINER_TYPE_A6, ASIC_CHAIN_NUM, ASIC_CHIP_NUM );
+    #endif
+    
     sys_platform_debug_init(MCOMPAT_LOG_INFO);
 	applog(LOG_NOTICE, "vid type detected: %d", misc_get_vid_type());
 

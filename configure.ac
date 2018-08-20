@@ -642,6 +642,29 @@ else
 	LIBSYSTEMD_LIBS=""
 fi
 
+# Hardware SOC is in used
+hardware_soc="no"
+
+AC_ARG_WITH([hardware_soc],
+       [AC_HELP_STRING([--use-hardware_soc],[Compile support for Hardware SOC ])],
+       [hardware_soc=$enableval]
+       )
+
+if test "x$hardware_soc" = xyes; then
+       AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
+fi
+
+
+
+AC_ARG_WITH([hardware_soc],
+       [AC_HELP_STRING([--use-hardware_soc],[Compile support for Hardware SOC ])],
+       [hardware_soc=$enableval]
+       )
+
+if test "x$hardware_soc" = xyes; then
+       AC_DEFINE([USE_HARDWARE_SOC], [1], [Defined to 1 if Hardware SOC used])
+fi
+
 #check execv signature
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		   #include <process.h>
