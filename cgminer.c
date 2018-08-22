@@ -2225,9 +2225,9 @@ static struct opt_table opt_config_table[] = {
     OPT_WITH_ARG("--user|-u",
              set_user, NULL, &opt_set_null,
              "Username for bitcoin JSON-RPC server"),
-    OPT_WITH_ARG("--userpass|-O",
-             set_userpass, NULL, &opt_set_null,
-             "Username:Password pair for bitcoin JSON-RPC server"),
+    //OPT_WITH_ARG("--userpass|-O",
+             //set_userpass, NULL, &opt_set_null,
+             //"Username:Password pair for bitcoin JSON-RPC server"),
     OPT_WITHOUT_ARG("--verbose",
             opt_set_bool, &opt_log_output,
             "Log verbose output to stderr as well as status output"),
@@ -10467,7 +10467,7 @@ int main(int argc, char *argv[])
     
         INIT_LIST_HEAD(&scan_devices);
 
-        #if  0  //add by lzl 2018016
+        #if  1  //add by lzl 2018016
         //judge the environment variable to lock the pool or not
         g_miner_lock_state = mcompat_read_lock();
         //applog(LOG_ERR,"g_miner_lock_state: %d",g_miner_lock_state);
@@ -10580,8 +10580,7 @@ int main(int argc, char *argv[])
         pthread_detach(thr->pth);
 #endif
 
-        get_nand_access();
-        mcompat_record_params();
+       
         /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
         DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
     
@@ -10671,6 +10670,9 @@ int main(int argc, char *argv[])
     begin_bench:
         /* Use the DRIVER_PARSE_COMMANDS macro to detect all devices */
         DRIVER_PARSE_COMMANDS(DRIVER_DRV_DETECT_ALL)
+
+        get_nand_access();
+        mcompat_record_params();
     
         if (opt_display_devs) {
             applog(LOG_ERR, "Devices detected:");
