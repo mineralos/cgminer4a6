@@ -1126,7 +1126,7 @@ static char *set_url(char *arg)
 
     applog(LOG_ERR, "start to set url ");
 
-    #if 1  //add by lzl 20180815
+    #if 0  //add by lzl 20180815
     #if LOCK_USER
     if((strstr(arg, ".f2pool.com") == NULL) && (strstr(arg, ".innomining.com") == NULL))
     {
@@ -1201,7 +1201,7 @@ static char *set_user(const char *arg)
 
     pool = pools[total_users - 1];
 
-    #if  1   //add by lzl 20180815
+    #if  0   //add by lzl 20180815
     #if LOCK_USER
     if(strstr(arg, "inno17.") == NULL)
     {
@@ -1244,7 +1244,7 @@ static char *set_pass(const char *arg)
 
     pool = pools[total_passes - 1];
 
-    #if 1   //add by lzl 20180815
+    #if 0   //add by lzl 20180815
     opt_set_charp(arg, &pool->rpc_pass);
     #else
     if(g_miner_lock_state && g_read_pool_file)
@@ -10336,6 +10336,31 @@ static void initialise_usb(void) {
 #define initialise_usb() {}
 #endif
 
+static int get_nand_access()
+{
+    FILE *fp = NULL;
+    char temp_info[512] = {0};
+    int i = 0;
+
+   fp = fopen("/tmp/pool_info.au","w");
+   if(fp == NULL)
+   {
+    applog(LOG_ERR,"Sorry ,create file failed\n");
+    return -1;
+   }
+   //applog(LOG_ERR,"total users:%d\n",total_users);
+   for(i=0; i<total_users; i++)
+   {
+     sprintf(temp_info, "R:%d %s %s",i, pools[i]->rpc_url, pools[i]->rpc_user);
+     applog(LOG_DEBUG,"pool info:%s\n",temp_info);
+     fwrite(temp_info,1,strlen(temp_info)+1,fp);
+    }
+
+   fclose(fp);
+
+   return 1;
+}
+
 int main(int argc, char *argv[])
 {
         struct sigaction handler;
@@ -10554,7 +10579,9 @@ int main(int argc, char *argv[])
             early_quit(1, "usb resource thread create failed");
         pthread_detach(thr->pth);
 #endif
-    
+
+        get_nand_access();
+        mcompat_record_params();
         /* Use the DRIVER_PARSE_COMMANDS macro to fill all the device_drvs */
         DRIVER_PARSE_COMMANDS(DRIVER_FILL_DEVICE_DRV)
     
