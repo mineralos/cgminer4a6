@@ -40,7 +40,6 @@
 
 
 
-
 #define A6_FANSPEED_INIT	(100)
 #define A6_TEMP_TARGET_INIT	(60)
 #define A6_TEMP_TARGET_RUN	(75)
@@ -116,6 +115,10 @@ uint8_t cLevelError4[3] = "%";
 uint8_t cLevelError5[3] = "*";
 uint8_t cLevelNormal[3] = "+";
 static struct timeval s_print_time[MCOMPAT_CONFIG_MAX_CHAIN_NUM];
+extern bool opt_T1_efficient;
+extern bool opt_T1_factory;
+extern bool opt_T1_performance;
+
 
 
 void inno_log_record(int cid, void* log, int len)
@@ -1098,7 +1101,31 @@ void A1_detect(bool hotplug)
 
 #else
 
+int  read_hwrevision()
+{
+    unsigned char buf[50];
+    FILE *fp;
+    int ret = 1;
 
+    memset(buf,0,sizeof(buf));
+    fp = fopen("/etc/hwrevision", "rb");
+    if (!fp)
+    {
+        applog(LOG_NOTICE, "open /etc/hwrevision failed !");
+        return 1;//default A6
+    }
+    fread(buf, sizeof(unsigned char), 50, fp);
+    fclose(fp);
+    if(strstr(buf,"a6"))
+    {
+        ret = 1;
+    }
+    else
+    {
+        ret = 0;
+    }
+    return ret ;
+}
 
 void A1_detect(bool hotplug)
 {
@@ -1109,6 +1136,7 @@ void A1_detect(bool hotplug)
     struct timeval test_tv;
     int j = 0;
     int i = 0;
+    int hw_type = 0;
     /* parse bimine-a1-options */
     if (opt_bitmine_a1_options != NULL && parsed_config_options == NULL) {
         int ref_clk = 0;
@@ -1214,6 +1242,38 @@ void A1_detect(bool hotplug)
     A1Pll7 = A1_ConfigA1PLLClock(opt_A1Pll7);
     A1Pll8 = A1_ConfigA1PLLClock(opt_A1Pll8);
 
+    #if  0   //add by lzl 20180829 for A4+
+    hw_type = read_hwrevision();
+    if (hw_type == 0)
+    {
+        if (!opt_T1_efficient && !opt_T1_factory && !opt_T1_performance)
+        {
+            opt_A1Pll1 = 1100 ;
+            opt_voltage1 = 22 ;
+        }
+        if (opt_T1_efficient)   //750w
+        {
+            opt_A1Pll1 = 1052 ;
+            opt_voltage1 = 26 ; // 25/26
+        }
+        if (opt_T1_factory)
+        {
+            opt_A1Pll1 = 1100 ;
+            opt_voltage1 = 22 ; 
+        }
+        if (opt_T1_performance)   //980w
+        {
+            opt_A1Pll1 = 1152 ;
+            opt_voltage1 = 14 ;
+        }
+    }
+    else
+    {
+        opt_A1Pll1 = 1100 ;
+        opt_voltage1 = 22 ;
+    }
+    #endif
+    
    	all_chain_detect();
     for (j = 0; j < g_chain_num; ++j) 
     {

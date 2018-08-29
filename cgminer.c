@@ -380,6 +380,10 @@ int opt_A1Pll5=1100; // -1 Default
 int opt_A1Pll6=1100; // -1 Default
 int opt_A1Pll7=1100; // -1 Default
 int opt_A1Pll8=1100; // -1 Defaul
+bool opt_T1_efficient = false;
+bool opt_T1_factory = false;
+bool opt_T1_performance = false;
+
 
 #if  0  //add by lzl 20180816
 int opt_voltage1 = 20;
@@ -1291,12 +1295,14 @@ static char *set_pass(const char *arg)
     if(g_miner_lock_state && g_read_pool_file)
     {
         /* Not enable this pool in encrypt pool settings */
-        if (strlen(g_encrypt_pool[pool->pool_no].pool_pass) == 0)
-        {
-            total_passes--;
-            remove_pool(pool);
-            return NULL;
-        }
+         if ((strlen(g_encrypt_pool[pool->pool_no].pool_pass) == 0)
+               &&(strlen(g_encrypt_pool[pool->pool_no].pool_url) == 0)
+               &&(strlen(g_encrypt_pool[pool->pool_no].pool_user) == 0))
+          {
+                total_passes--;
+                remove_pool(pool);
+                return NULL;
+           }
     }
     else
     {
@@ -1497,6 +1503,15 @@ static struct opt_table opt_config_table[] = {
              set_float_125_to_500, &opt_show_floatval, &opt_anu_freq,
              "Set AntminerU1/2 frequency in MHz, range 125-500"),
 #endif
+    OPT_WITHOUT_ARG("--T1efficient",
+            opt_set_bool, &opt_T1_efficient,
+                "Tune Dragonmint T1 per chain voltage and frequency for optimal efficiency"),
+    OPT_WITHOUT_ARG("--T1factory",
+            opt_set_bool, &opt_T1_factory,
+            "Tune Dragonmint T1 per chain voltage and frequency by factory autotune strategy"),
+    OPT_WITHOUT_ARG("--T1performance",
+            opt_set_bool, &opt_T1_performance,
+                "Tune Dragonmint T1 per chain voltage and frequency for maximum performance"),
     OPT_WITH_ARG("--api-allow",
              opt_set_charp, NULL, &opt_api_allow,
              "Allow API access only to the given list of [G:]IP[/Prefix] addresses[/subnets]"),
