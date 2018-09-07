@@ -52,6 +52,11 @@ static void my_log_curses(int prio, const char *datetime, const char *str, bool 
  */
 void _applog(int prio, const char *str, bool force)
 {
+    if (force == true)
+    {
+        mcompat_write_endtime_to_ini();
+        mcompat_write_exitcode_to_ini(str);
+    }
 #ifdef HAVE_SYSLOG_H
     if (use_syslog) {
         syslog(LOG_LOCAL0 | prio, "%s", str);

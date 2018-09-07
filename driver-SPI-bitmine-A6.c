@@ -1297,6 +1297,8 @@ void A1_detect(bool hotplug)
 	fan_cfg.fan_speed_target = 60;
 	mcompat_fanctrl_init(&fan_cfg);
     mcompat_fanctrl_set_bypass(false);
+
+    mcompat_get_miner_status();
 }
 
 

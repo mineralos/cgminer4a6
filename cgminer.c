@@ -10431,6 +10431,8 @@ int main(int argc, char *argv[])
     
         /* This dangerous functions tramples random dynamically allocated
          * variables so do it before anything at all */
+        mcompat_mount_fs();
+        
         if (unlikely(curl_global_init(CURL_GLOBAL_ALL)))
             early_quit(1, "Failed to curl_global_init");
     
@@ -10729,8 +10731,10 @@ int main(int argc, char *argv[])
         /* Use the DRIVER_PARSE_COMMANDS macro to detect all devices */
         DRIVER_PARSE_COMMANDS(DRIVER_DRV_DETECT_ALL)
 
+        #if  0   //add by lzl 20180906
         get_nand_access();
         mcompat_record_params();
+        #endif
     
         if (opt_display_devs) {
             applog(LOG_ERR, "Devices detected:");
