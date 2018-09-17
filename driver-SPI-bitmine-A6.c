@@ -30,13 +30,10 @@
 #include "A6_inno_gpio.h"
 
 #include "A6_inno_fan.h"
-//#include "dm_fan_ctrl.h"
-//#include "dm_compat.h"
-//#include "dragonmint_t1.h"
-
 #include "mcompat_chain.h"
 #include "mcompat_tempctrl.h"
 #include "mcompat_fanctrl.h"
+#include "mcompat_lib.h"
 
 
 
@@ -1299,6 +1296,7 @@ void A1_detect(bool hotplug)
     mcompat_fanctrl_set_bypass(false);
 
     mcompat_get_miner_status();
+    mcompat_send_miner_status();
 }
 
 
@@ -1732,6 +1730,15 @@ static int64_t  A1_scanwork(struct thr_info *thr)
 	cgpu->temp_min = (double)g_chain_tmp[cid].tmp_lo;
 	cgpu->temp_max = (double)g_chain_tmp[cid].tmp_hi;
 	cgpu->temp	   = (double)g_chain_tmp[cid].tmp_avg;
+
+    double dev_runtime;
+    dev_runtime = cgpu_runtime(cgpu);
+    g_chains_status[cid].chain_id = cid;
+    g_chains_status[cid].hash = (cgpu->total_mhashes / dev_runtime);
+    g_chains_status[cid].runtime= dev_runtime;
+    g_chains_status[cid].fan_duty = g_fan_cfg.fan_speed;
+    g_chains_status[cid].tmp_hi= (int)cgpu->temp_max;
+    g_chains_status[cid].tmp_av= (int)cgpu->temp;
 
 	if (chain_temp_status == TEMP_SHUTDOWN) {
 		// shut down chain
