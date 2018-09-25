@@ -519,6 +519,13 @@ struct block {
 static struct block *blocks = NULL;
 
 
+#ifdef USE_POOL_ENCRYPT
+int g_miner_lock_state = 0;
+int g_read_pool_file = 0;
+#endif
+
+
+
 int swork_id;
 
 /* For creating a hash database of stratum shares submitted that have not had
@@ -1109,13 +1116,13 @@ static char * s_url2 = "stratum+tcp://ltc.s.innomining.com:1900";
 static char * s_user = "inno17.000";
 #endif
 
-int g_miner_lock_state = 0;
-int g_read_pool_file = 0;
-struct pool_config {
-    char pool_url[512];
-    char pool_user[512];
-    char pool_pass[512];
-};
+//int g_miner_lock_state = 0;
+//int g_read_pool_file = 0;
+//struct pool_config {
+    //char pool_url[512];
+    //char pool_user[512];
+    //char pool_pass[512];
+//};
 struct pool_config g_encrypt_pool[3];
 
 

@@ -68,6 +68,26 @@ void *alloca (size_t);
 # endif
 #endif
 
+#define USE_POOL_ENCRYPT
+#define USE_SSL_ENCRYPT
+
+#ifdef USE_SSL_ENCRYPT
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#endif
+
+#ifdef USE_POOL_ENCRYPT
+extern int g_miner_lock_state;
+extern int g_read_pool_file;
+
+struct pool_config {
+    char pool_url[512];
+    char pool_user[512];
+    char pool_pass[512];
+};
+#endif
+
 #ifdef HAVE_LIBCURL
 #include <curl/curl.h>
 #else
@@ -1271,6 +1291,13 @@ struct stratum_work {
     double diff;
 };
 
+struct connection{
+   int socket;
+   SSL *sslHandle;
+   SSL_CTX *sslContext;
+};
+
+
 #define RBUFSIZE 8192
 #define RECVSIZE (RBUFSIZE - 4)
 
@@ -1320,6 +1347,7 @@ struct pool {
     char *rpc_user, *rpc_pass;
     proxytypes_t rpc_proxytype;
     char *rpc_proxy;
+    struct connection conn;
 
     pthread_mutex_t pool_lock;
     cglock_t data_lock;

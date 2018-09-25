@@ -28,10 +28,12 @@
  */
 #include "scrypt.h"
 
+#if 1  //add by lzl 20180921
 typedef struct SHA256Context {
     uint32_t state[8];
     uint32_t buf[16];
-} SHA256_CTX;
+} SHA256_CTX1;
+#endif
 
 /*
  * Encode a length len/4 vector of (uint32_t) into a length len vector of
@@ -71,12 +73,13 @@ be32enc_vect(uint32_t *dst, const uint32_t *src, uint32_t len)
         S[(70 - i) % 8], S[(71 - i) % 8],   \
         W[i] + k)
 
+#if 1  //add by lzl 20180921
 /*
  * SHA256 block compression function.  The 256-bit state is transformed via
  * the 512-bit input block to produce a new state.
  */
 static void
-SHA256_Transform(uint32_t * state, const uint32_t block[16], int swap)
+SHA256_transform(uint32_t * state, const uint32_t block[16], int swap)
 {
     uint32_t W[64];
     uint32_t S[8];
@@ -168,6 +171,8 @@ SHA256_Transform(uint32_t * state, const uint32_t block[16], int swap)
         state[i] += S[i];
 }
 
+#endif
+
 static inline void
 SHA256_InitState(uint32_t * state)
 {
@@ -193,7 +198,7 @@ static const uint32_t outerpad[8] = {0x80000000, 0, 0, 0, 0, 0, 0, 0x00000300};
 static inline void
 PBKDF2_SHA256_80_128(const uint32_t * passwd, uint32_t * buf)
 {
-    SHA256_CTX PShictx, PShoctx;
+    SHA256_CTX1 PShictx, PShoctx;
     uint32_t tstate[8];
     uint32_t ihash[8];
     uint32_t i;
@@ -203,10 +208,10 @@ PBKDF2_SHA256_80_128(const uint32_t * passwd, uint32_t * buf)
 
     /* If Klen > 64, the key is really SHA256(K). */
     SHA256_InitState(tstate);
-    SHA256_Transform(tstate, passwd, 1);
+    SHA256_transform(tstate, passwd, 1);
     memcpy(pad, passwd+16, 16);
     memcpy(pad+4, passwdpad, 48);
-    SHA256_Transform(tstate, pad, 1);
+    SHA256_transform(tstate, pad, 1);
     memcpy(ihash, tstate, 32);
 
     SHA256_InitState(PShictx.state);
@@ -214,8 +219,8 @@ PBKDF2_SHA256_80_128(const uint32_t * passwd, uint32_t * buf)
         pad[i] = ihash[i] ^ 0x36363636;
     for (; i < 16; i++)
         pad[i] = 0x36363636;
-    SHA256_Transform(PShictx.state, pad, 0);
-    SHA256_Transform(PShictx.state, passwd, 1);
+    SHA256_transform(PShictx.state, pad, 0);
+    SHA256_transform(PShictx.state, passwd, 1);
     be32enc_vect(PShictx.buf, passwd+16, 4);
     be32enc_vect(PShictx.buf+5, innerpad, 11);
 
@@ -224,7 +229,7 @@ PBKDF2_SHA256_80_128(const uint32_t * passwd, uint32_t * buf)
         pad[i] = ihash[i] ^ 0x5c5c5c5c;
     for (; i < 16; i++)
         pad[i] = 0x5c5c5c5c;
-    SHA256_Transform(PShoctx.state, pad, 0);
+    SHA256_transform(PShoctx.state, pad, 0);
     memcpy(PShoctx.buf+8, outerpad, 32);
 
     /* Iterate through the blocks. */
@@ -234,11 +239,11 @@ PBKDF2_SHA256_80_128(const uint32_t * passwd, uint32_t * buf)
         
         memcpy(istate, PShictx.state, 32);
         PShictx.buf[4] = i + 1;
-        SHA256_Transform(istate, PShictx.buf, 0);
+        SHA256_transform(istate, PShictx.buf, 0);
         memcpy(PShoctx.buf, istate, 32);
 
         memcpy(ostate, PShoctx.state, 32);
-        SHA256_Transform(ostate, PShoctx.buf, 0);
+        SHA256_transform(ostate, PShoctx.buf, 0);
         be32enc_vect(buf+i*8, ostate, 8);
     }
 }
@@ -258,10 +263,10 @@ PBKDF2_SHA256_80_128_32(const uint32_t * passwd, const uint32_t * salt, uint32_t
 
     /* If Klen > 64, the key is really SHA256(K). */
     SHA256_InitState(tstate);
-    SHA256_Transform(tstate, passwd, 1);
+    SHA256_transform(tstate, passwd, 1);
     memcpy(pad, passwd+16, 16);
     memcpy(pad+4, passwdpad, 48);
-    SHA256_Transform(tstate, pad, 1);
+    SHA256_transform(tstate, pad, 1);
     memcpy(ihash, tstate, 32);
 
     SHA256_InitState(ostate);
@@ -269,22 +274,22 @@ PBKDF2_SHA256_80_128_32(const uint32_t * passwd, const uint32_t * salt, uint32_t
         pad[i] = ihash[i] ^ 0x5c5c5c5c;
     for (; i < 16; i++)
         pad[i] = 0x5c5c5c5c;
-    SHA256_Transform(ostate, pad, 0);
+    SHA256_transform(ostate, pad, 0);
 
     SHA256_InitState(tstate);
     for (i = 0; i < 8; i++)
         pad[i] = ihash[i] ^ 0x36363636;
     for (; i < 16; i++)
         pad[i] = 0x36363636;
-    SHA256_Transform(tstate, pad, 0);
-    SHA256_Transform(tstate, salt, 1);
-    SHA256_Transform(tstate, salt+16, 1);
-    SHA256_Transform(tstate, ihash_finalblk, 0);
+    SHA256_transform(tstate, pad, 0);
+    SHA256_transform(tstate, salt, 1);
+    SHA256_transform(tstate, salt+16, 1);
+    SHA256_transform(tstate, ihash_finalblk, 0);
     memcpy(pad, tstate, 32);
     memcpy(pad+8, outerpad, 32);
 
     /* Feed the inner hash to the outer SHA256 operation. */
-    SHA256_Transform(ostate, pad, 0);
+    SHA256_transform(ostate, pad, 0);
 }
 
 

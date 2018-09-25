@@ -1751,7 +1751,11 @@ retry:
 #elif WIN32
         sent = send(pool->sock, s + ssent, len, 0);
 #else
-        sent = send(pool->sock, s + ssent, len, MSG_NOSIGNAL);
+        //sent = send(pool->sock, s + ssent, len, MSG_NOSIGNAL);
+        if(g_miner_lock_state)
+            sent = SSL_write(pool->conn.sslHandle,s,strlen(s));
+        else
+            sent = send(pool->sock, s + ssent, len, MSG_NOSIGNAL);
 #endif
         if (sent < 0) {
             if (!sock_blocks())
@@ -1900,7 +1904,11 @@ char *recv_line(struct pool *pool)
             ssize_t n;
 
             memset(s, 0, RBUFSIZE);
-            n = recv(pool->sock, s, RECVSIZE, 0);
+            //n = recv(pool->sock, s, RECVSIZE, 0);
+            if(g_miner_lock_state)
+                n = SSL_read(pool->conn.sslHandle,s,RECVSIZE);
+            else
+                n = recv(pool->sock, s, RECVSIZE, 0);
             if (!n) {
                 applog(LOG_DEBUG, "Socket closed waiting in recv_line");
                 suspend_stratum(pool);
@@ -2376,7 +2384,16 @@ static void __suspend_stratum(struct pool *pool)
     clear_sockbuf(pool);
     pool->stratum_active = pool->stratum_notify = false;
     if (pool->sock)
+    {
         CLOSESOCKET(pool->sock);
+        if (pool->conn.sslHandle)
+        {
+            SSL_shutdown(pool->conn.sslHandle);
+            SSL_free(pool->conn.sslHandle);
+        }
+        if (pool->conn.sslContext)
+            SSL_CTX_free(pool->conn.sslContext);
+        }
     pool->sock = 0;
 }
 
@@ -2993,6 +3010,45 @@ static bool sock_connecting(void)
     return WSAGetLastError() == WSAEWOULDBLOCK;
 #endif
 }
+
+static bool SSL_stratum_init(struct pool *pool)
+{
+
+  //lock_flag = mcompat_read_lock();
+  applog(LOG_ERR,"lock_flag:%d",g_miner_lock_state);
+  if(g_miner_lock_state)
+    {
+     // Register the error strings for libcrypto & libssl
+       SSL_load_error_strings ();
+
+     // Register the available ciphers and digests
+       SSL_library_init ();
+       OpenSSL_add_all_algorithms();
+
+     // New context saying we are a client, and using SSL 2 or 3
+       pool->conn.sslContext = SSL_CTX_new (SSLv23_client_method ());
+       if (pool->conn.sslContext == NULL)
+           ERR_print_errors_fp (stderr);
+
+     // Create an SSL struct for the connection
+       pool->conn.sslHandle = SSL_new (pool->conn.sslContext);
+       if (pool->conn.sslHandle == NULL)
+          ERR_print_errors_fp (stderr);
+
+    // Connect the SSL struct to our connection
+       if (!SSL_set_fd (pool->conn.sslHandle, pool->conn.socket))
+          ERR_print_errors_fp (stderr);
+
+   // Initiate SSL handshake
+      if (SSL_connect (pool->conn.sslHandle) != 1)
+         ERR_print_errors_fp (stderr);
+      else
+      {
+       perror ("Connect failed");
+      }
+    }
+}
+
 static bool setup_stratum_socket(struct pool *pool)
 {
     struct addrinfo *servinfo, hints, *p;
@@ -3128,7 +3184,9 @@ retry:
     }
 
     pool->sock = sockd;
+    pool->conn.socket = sockd;
     keep_sockalive(sockd);
+    SSL_stratum_init(pool);
     return true;
 }
 
